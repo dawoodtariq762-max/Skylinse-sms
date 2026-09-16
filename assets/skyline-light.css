@@ -1,0 +1,154 @@
+/* ============================================================================
+   SKYLINE SMS — LIGHT THEME (skyline-light.css)
+   Applied when body.gx-light / body.sk-light is active.
+   High-contrast, professional enterprise slate & cobalt palette.
+   ========================================================================== */
+
+html.gx-light, html.sk-light {
+  --sk-bg: #f8fafc;
+  --sk-bg-canvas: #f1f5f9;
+  --sk-bg-subtle: #e2e8f0;
+  --sk-surface: #ffffff;
+  --sk-surface-2: #f1f5f9;
+  --sk-surface-3: #e2e8f0;
+  --sk-row: #ffffff;
+  --sk-row-alt: #f8fafc;
+  --sk-border: #e2e8f0;
+  --sk-border-strong: #cbd5e1;
+  --sk-text: #0f172a;
+  --sk-text-2: #334155;
+  --sk-muted: #64748b;
+  --sk-dim: #94a3b8;
+  --sk-sidebar: #ffffff;
+  --sk-topbar: rgba(255, 255, 255, 0.94);
+  --sk-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --sk-shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.06);
+
+  --bg: #f8fafc !important;
+  background: #f8fafc !important;
+  color-scheme: light;
+}
+
+body.gx-light, body.sk-light {
+  background:
+    radial-gradient(900px 500px at 90% -10%, rgba(37, 99, 235, 0.06), transparent 60%),
+    radial-gradient(800px 460px at -10% 110%, rgba(56, 189, 248, 0.06), transparent 60%),
+    #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body.gx-light ::-webkit-scrollbar-thumb, body.sk-light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-color: #f8fafc;
+}
+
+body.gx-light .sidebar, body.sk-light .sidebar,
+body.gx-light .rail, body.sk-light .rail {
+  background: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.gx-light .sb-brand h1, body.sk-light .sb-brand h1,
+body.gx-light .brand h1, body.sk-light .brand h1 {
+  color: #0f172a !important;
+}
+
+body.gx-light .nav-item, body.sk-light .nav-item {
+  color: #475569 !important;
+}
+
+body.gx-light .nav-item svg, body.sk-light .nav-item svg {
+  stroke: #64748b !important;
+}
+
+body.gx-light .nav-item:hover, body.sk-light .nav-item:hover {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+body.gx-light .nav-item:hover svg, body.sk-light .nav-item:hover svg {
+  stroke: #2563eb !important;
+}
+
+body.gx-light .nav-item.active, body.sk-light .nav-item.active {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  box-shadow: inset 0 0 0 1px #bfdbfe !important;
+}
+body.gx-light .nav-item.active svg, body.sk-light .nav-item.active svg {
+  stroke: #2563eb !important;
+}
+
+body.gx-light .topbar, body.sk-light .topbar {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.gx-light .clock, body.sk-light .clock,
+body.gx-light .tb-date, body.sk-light .tb-date {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.gx-light .page-head h2, body.sk-light .page-head h2 {
+  color: #0f172a !important;
+}
+
+body.gx-light .card, body.sk-light .card,
+body.gx-light .table-wrap, body.sk-light .table-wrap,
+body.gx-light .toolbar, body.sk-light .toolbar {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+  color: #0f172a !important;
+}
+
+body.gx-light .card-head h3, body.sk-light .card-head h3,
+body.gx-light .card h3, body.sk-light .card h3 {
+  color: #0f172a !important;
+}
+
+body.gx-light .stat-card, body.sk-light .stat-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
+}
+body.gx-light .stat-card .stat-info p, body.sk-light .stat-card .stat-info p {
+  color: #64748b !important;
+}
+body.gx-light .stat-card .stat-info h3, body.sk-light .stat-card .stat-info h3 {
+  color: #0f172a !important;
+}
+
+body.gx-light table th, body.sk-light table th,
+body.gx-light thead th, body.sk-light thead th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom-color: #cbd5e1 !important;
+}
+
+body.gx-light tbody tr td, body.sk-light tbody tr td {
+  color: #1e293b !important;
+  border-bottom-color: #f1f5f9 !important;
+}
+body.gx-light tbody tr:nth-child(even) td, body.sk-light tbody tr:nth-child(even) td {
+  background: #f8fafc !important;
+}
+body.gx-light tbody tr:hover td, body.sk-light tbody tr:hover td {
+  background: #eff6ff !important;
+}
+
+body.gx-light input, body.sk-light input,
+body.gx-light select, body.sk-light select,
+body.gx-light textarea, body.sk-light textarea {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+body.gx-light input:focus, body.sk-light input:focus,
+body.gx-light select:focus, body.sk-light select:focus {
+  background: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}

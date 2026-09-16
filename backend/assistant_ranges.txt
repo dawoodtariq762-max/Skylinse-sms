@@ -1,0 +1,32 @@
+SKYLINE SMS — CURRENT RANGE & RATE INFORMATION
+Auto-generated: 2026-09-16 11:10 UTC
+========================================================
+
+Range      : PK-Jazz-Direct
+Prefix     : 9230
+Country    : Pakistan
+Provider   : Skyline Global Route
+Payment    : weekly
+Rates      : Daily(1/1)=0.028 | Weekly(7/1)=0.025 | Weekly(7/7)=0.022 | Monthly(30/45)=0.020
+--------------------------------------------------------
+Range      : UAE-Etisalat-Fast
+Prefix     : 9715
+Country    : United Arab Emirates
+Provider   : Skyline ME Hub
+Payment    : weekly
+Rates      : Daily(1/1)=0.065 | Weekly(7/1)=0.062 | Weekly(7/7)=0.058 | Monthly(30/45)=0.055
+--------------------------------------------------------
+Range      : UK-Vodafone-VIP
+Prefix     : 4479
+Country    : United Kingdom
+Provider   : Skyline Telecom Europe
+Payment    : weekly
+Rates      : Daily(1/1)=0.038 | Weekly(7/1)=0.035 | Weekly(7/7)=0.032 | Monthly(30/45)=0.030
+--------------------------------------------------------
+Range      : US-Tier1-T-Mobile
+Prefix     : 1202
+Country    : United States
+Provider   : Skyline Direct
+Payment    : weekly
+Rates      : Daily(1/1)=0.045 | Weekly(7/1)=0.042 | Weekly(7/7)=0.040 | Monthly(30/45)=0.038
+--------------------------------------------------------

@@ -1,0 +1,1409 @@
+/* ============================================================================
+   SKYLINE SMS — Enterprise Design System (skyline.css)
+   Visual language: Bold Cobalt + Deep Navy + Architectural Skyline & Network Motif
+   Zero functional changes — pure visual & UX elevation.
+   ========================================================================== */
+
+:root {
+  /* Brand palette derived from official Skyline SMS identity */
+  --sk-primary: #2563eb;
+  --sk-primary-dark: #1d4ed8;
+  --sk-primary-light: #3b82f6;
+  --sk-accent: #38bdf8;
+  --sk-accent-hover: #60a5fa;
+  --sk-accent-glow: rgba(56, 189, 248, 0.35);
+
+  /* Surfaces & Backgrounds */
+  --sk-bg: #070b14;
+  --sk-bg-canvas: #090e1b;
+  --sk-bg-subtle: #0d1527;
+  --sk-surface: #111a2f;
+  --sk-surface-2: #16233e;
+  --sk-surface-3: #1d2e50;
+  --sk-row: #0e172a;
+  --sk-row-alt: rgba(22, 35, 62, 0.45);
+
+  /* Structural Borders */
+  --sk-border: rgba(56, 189, 248, 0.12);
+  --sk-border-strong: rgba(56, 189, 248, 0.28);
+  --sk-border-subtle: rgba(255, 255, 255, 0.06);
+
+  /* High-Contrast Typography */
+  --sk-text: #f8fafc;
+  --sk-text-2: #cbd5e1;
+  --sk-muted: #788fa8;
+  --sk-dim: #4d627c;
+
+  /* Semantic Status */
+  --sk-success: #10b981;
+  --sk-warning: #f59e0b;
+  --sk-danger: #ef4444;
+  --sk-info: #38bdf8;
+
+  /* Skyline Gradients */
+  --sk-grad-primary: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #38bdf8 100%);
+  --sk-grad-accent: linear-gradient(90deg, #2563eb, #38bdf8);
+  --sk-grad-dark: linear-gradient(180deg, #111a2f 0%, #0d1527 100%);
+  --sk-grad-stat: linear-gradient(145deg, #14203a 0%, #0d1527 100%);
+
+  /* Navigation & Chrome */
+  --sk-sidebar: #060a12;
+  --sk-topbar: rgba(7, 11, 20, 0.92);
+
+  /* Shadows & Elevation */
+  --sk-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --sk-shadow-sm: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --sk-glow: 0 0 0 1px rgba(56, 189, 248, 0.35), 0 0 18px rgba(37, 99, 235, 0.25);
+
+  /* Legacy variable mappings for complete seamless backward compatibility */
+  --bg: var(--sk-bg);
+  --bg2: var(--sk-bg-subtle);
+  --panel: var(--sk-surface);
+  --panel2: var(--sk-surface-2);
+  --row: var(--sk-row);
+  --border: var(--sk-border);
+  --border2: var(--sk-border-strong);
+  --text: var(--sk-text);
+  --muted: var(--sk-muted);
+  --accent: var(--sk-primary);
+  --accent2: var(--sk-accent);
+  --blue: var(--sk-primary);
+  --red: var(--sk-danger);
+  --green: var(--sk-success);
+  --amber: var(--sk-warning);
+  --cyan: var(--sk-accent);
+  --sidebar: var(--sk-sidebar);
+  --topbar: var(--sk-topbar);
+  --grad: var(--sk-grad-accent);
+  --shadow: var(--sk-shadow);
+  --glow: var(--sk-glow);
+
+  /* Legacy compatibility variables */
+  --px-bg: var(--sk-bg);
+  --px-bg-2: var(--sk-bg-subtle);
+  --px-surface: var(--sk-surface);
+  --px-surface-2: var(--sk-surface-2);
+  --px-surface-3: var(--sk-surface-3);
+  --px-rail: var(--sk-sidebar);
+  --px-accent: var(--sk-accent);
+  --px-accent-2: var(--sk-primary-light);
+  --px-accent-3: var(--sk-muted);
+  --px-accent-soft: rgba(56, 189, 248, 0.12);
+  --px-accent-line: rgba(56, 189, 248, 0.32);
+  --px-ok: var(--sk-success);
+  --px-warn: var(--sk-warning);
+  --px-danger: var(--sk-danger);
+  --px-info: var(--sk-info);
+  --px-text: var(--sk-text);
+  --px-text-2: var(--sk-text-2);
+  --px-muted: var(--sk-muted);
+  --px-dim: var(--sk-dim);
+  --px-border: var(--sk-border);
+  --px-border-2: var(--sk-border-strong);
+  --px-radius: 12px;
+  --px-radius-lg: 16px;
+  --px-shadow: var(--sk-shadow);
+  --px-shadow-sm: var(--sk-shadow-sm);
+  --px-glow: var(--sk-glow);
+}
+
+/* ============================================================================
+   GLOBAL BASE & RESET
+   ========================================================================== */
+html {
+  background: var(--sk-bg) !important;
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1000px 520px at 85% -5%, rgba(37, 99, 235, 0.14), transparent 65%),
+    radial-gradient(850px 480px at 10% 105%, rgba(56, 189, 248, 0.09), transparent 60%),
+    linear-gradient(rgba(56, 189, 248, 0.02) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, rgba(56, 189, 248, 0.02) 1px, transparent 1px) 0 0 / 48px 48px,
+    var(--sk-bg) !important;
+  color: var(--sk-text) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Crisp Scrollbars */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: var(--sk-bg-subtle);
+}
+::-webkit-scrollbar-thumb {
+  background: #192742;
+  border-radius: 6px;
+  border: 2px solid var(--sk-bg-subtle);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #253960;
+}
+* {
+  scrollbar-color: #192742 var(--sk-bg-subtle);
+  scrollbar-width: thin;
+}
+
+::selection {
+  background: rgba(37, 99, 235, 0.45);
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--sk-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ============================================================================
+   SIDEBAR & NAVIGATION
+   ========================================================================== */
+.sidebar, .rail, .navshell {
+  background: var(--sk-sidebar) !important;
+  border-right: 1px solid var(--sk-border) !important;
+  box-shadow: 18px 0 50px rgba(0, 0, 0, 0.6) !important;
+  color: var(--sk-text-2) !important;
+}
+
+.sidebar::after, .rail::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.4) 0%, rgba(37, 99, 235, 0.25) 50%, transparent 100%) !important;
+  pointer-events: none !important;
+}
+
+/* Brand area */
+.sb-brand, .rail-brand, .brand-text, .appbar-top, .side .brand, .brand {
+  background: transparent !important;
+  border-bottom: 1px solid var(--sk-border) !important;
+  padding: 16px 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.sb-logo, .brand .logo, .rail .logo, .sb-brand .logo, .brand-logo .logo, .logo {
+  background: #090e1a !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--sk-border-strong) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.22) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+}
+
+.skyline-logo-img, .powerx-logo-img, .logo img, .login-hero-logo, .brand img, .sb-logo img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.sb-brand h1, .brand h1, .brand-text h1, .brand-logo h1, .sidebar h1, .appbar h1, .brand b {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  font-size: 16px !important;
+  text-transform: uppercase !important;
+  line-height: 1.2 !important;
+}
+
+.sb-brand small, .brand small, .brand-text small, .sidebar small, .appbar small, .brand .muted {
+  color: var(--sk-accent) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  display: block !important;
+  margin-top: 2px !important;
+}
+
+/* Navigation items */
+.sb-section, .sb-sec, .sec, .side-group, .nav-section, .group-label, .sidebar .group, .sidebar .sg-title {
+  color: var(--sk-dim) !important;
+  font-weight: 750 !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  padding: 16px 14px 6px !important;
+}
+
+.nav-item, .sub-item, .tab, .ritem, .rsubitem, .navtab, .dropitem, .item {
+  color: var(--sk-muted) !important;
+  background: transparent !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  position: relative !important;
+  padding: 9px 12px !important;
+  margin: 2px 8px !important;
+  transition: all 0.16s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.nav-item svg, .sub-item svg, .tab svg, .ritem svg, .rsubitem svg, .navtab svg, .item svg {
+  stroke: var(--sk-muted) !important;
+  color: var(--sk-muted) !important;
+  width: 17px !important;
+  height: 17px !important;
+  flex: 0 0 auto !important;
+  transition: stroke 0.16s ease !important;
+}
+
+.nav-item:hover, .sub-item:hover, .tab:hover, .ritem:hover, .rsubitem:hover, .navtab:hover, .dropitem:hover, .item:hover {
+  background: rgba(56, 189, 248, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.nav-item:hover svg, .sub-item:hover svg, .tab:hover svg, .ritem:hover svg, .item:hover svg {
+  stroke: var(--sk-accent) !important;
+  color: var(--sk-accent) !important;
+}
+
+/* Active navigation item with Skyline Cobalt/Cyan Indicator */
+.nav-item.active, .tab.active, .ritem.active, .navtab.active, .item.active {
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.22) 0%, rgba(56, 189, 248, 0.08) 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.24) !important;
+}
+
+.nav-item.active::before, .ritem.active::before, .item.active::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 15% !important;
+  bottom: 15% !important;
+  width: 3.5px !important;
+  border-radius: 0 3px 3px 0 !important;
+  background: var(--sk-grad-primary) !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.8) !important;
+}
+
+.nav-item.active svg, .tab.active svg, .ritem.active svg, .navtab.active svg, .item.active svg {
+  stroke: var(--sk-accent) !important;
+  color: var(--sk-accent) !important;
+}
+
+.sub-item {
+  padding-left: 28px !important;
+  font-size: 12.5px !important;
+}
+
+.sub-item .dot {
+  width: 5px !important;
+  height: 5px !important;
+  border-radius: 50% !important;
+  background: var(--sk-dim) !important;
+  box-shadow: none !important;
+  margin-right: 6px !important;
+}
+
+.sub-item.active {
+  background: rgba(37, 99, 235, 0.16) !important;
+  color: #ffffff !important;
+}
+.sub-item.active .dot {
+  background: var(--sk-accent) !important;
+  box-shadow: 0 0 8px var(--sk-accent) !important;
+}
+
+.nav-item .chev, .ritem .chev {
+  margin-left: auto !important;
+  stroke: var(--sk-dim) !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* ============================================================================
+   TOPBAR & HEADER
+   ========================================================================== */
+.topbar, .tb1, .navshell, .mgr-topbar, .top, .headerbar {
+  background: var(--sk-topbar) !important;
+  border-bottom: 1px solid var(--sk-border) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  color: var(--sk-text) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 40 !important;
+}
+
+.tb-btn, .hamburger, .mgr-topbar-menu, .icon-btn {
+  color: var(--sk-muted) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  transition: all 0.15s ease !important;
+}
+
+.tb-btn:hover, .hamburger:hover, .mgr-topbar-menu:hover {
+  background: rgba(56, 189, 248, 0.10) !important;
+  border-color: var(--sk-border) !important;
+  color: var(--sk-accent) !important;
+}
+
+.clock, .tb-date {
+  background: rgba(13, 21, 39, 0.85) !important;
+  color: var(--sk-text-2) !important;
+  border: 1px solid var(--sk-border) !important;
+  border-radius: 8px !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: 0.02em !important;
+}
+
+.avatar, .av, .who .av {
+  background: var(--sk-grad-primary) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(56, 189, 248, 0.45) !important;
+  font-weight: 800 !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
+  border-radius: 50% !important;
+}
+
+/* Page Headers */
+.page-head, .head {
+  border-bottom: 1px solid var(--sk-border) !important;
+  padding-bottom: 14px !important;
+  margin-bottom: 20px !important;
+}
+
+.page-head h2, .head h2 {
+  color: #ffffff !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.025em !important;
+  font-size: 21px !important;
+}
+
+.breadcrumb, .sub, .muted, .cell-sub, .hint, .info {
+  color: var(--sk-muted) !important;
+}
+
+/* ============================================================================
+   CARDS & CONTAINERS
+   ========================================================================== */
+.card, .toolbar, .table-wrap, .modal, .modal-box, .ms-modal, .box, .dash-note-card {
+  background: var(--sk-surface) !important;
+  border: 1px solid var(--sk-border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--sk-shadow-sm) !important;
+  color: var(--sk-text) !important;
+  position: relative !important;
+  transition: border-color 0.16s ease !important;
+}
+
+.card:hover, .table-wrap:hover {
+  border-color: var(--sk-border-strong) !important;
+}
+
+.card-head {
+  border-bottom: 1px solid var(--sk-border) !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 14px !important;
+}
+
+.card-head h3, .card h3, .box h3 {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Architectural top border accent on major cards */
+.card::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--sk-primary) 30%, var(--sk-accent) 70%, transparent 100%) !important;
+  opacity: 0.6;
+  border-radius: 14px 14px 0 0;
+}
+
+/* ============================================================================
+   DASHBOARD STAT METRICS (Skyline Architectural Cards)
+   ========================================================================== */
+.gx-dash-grid .stat-card, .stats-grid .stat-card, .dash-metrics .stat-card, .stat-card {
+  background: var(--sk-grad-stat) !important;
+  border: 1px solid var(--sk-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  padding: 18px 20px !important;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.gx-dash-grid .stat-card:hover, .stats-grid .stat-card:hover, .dash-metrics .stat-card:hover, .stat-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: var(--sk-border-strong) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Subtle architectural diagonal beam in stat cards matching the Skyline arrow motif */
+.gx-dash-grid .stat-card::after, .stats-grid .stat-card::after, .dash-metrics .stat-card::after {
+  content: "" !important;
+  position: absolute !important;
+  width: 180px !important;
+  height: 180px !important;
+  right: -50px !important;
+  bottom: -60px !important;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(37, 99, 235, 0.05) 50%, transparent 70%) !important;
+  pointer-events: none !important;
+}
+
+.gx-dash-grid .stat-card::before, .stats-grid .stat-card::before, .dash-metrics .stat-card::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  height: 2.5px !important;
+  background: linear-gradient(90deg, #1d4ed8, #38bdf8) !important;
+  opacity: 0.9 !important;
+}
+
+.stat-info p, .stat-card .stat-info p {
+  color: var(--sk-muted) !important;
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.12em !important;
+  margin-bottom: 6px !important;
+}
+
+.stat-info h3, .stat-card .stat-info h3 {
+  color: #ffffff !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: -0.02em !important;
+}
+
+.stat-info span, .stat-card .stat-info span {
+  color: var(--sk-dim) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+/* Stat card action badge / arrow icon */
+.dash-metrics .dash-go, .stats-grid .dash-go, .gx-dash-grid .dash-go {
+  width: 38px !important;
+  height: 38px !important;
+  background: rgba(37, 99, 235, 0.15) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  color: var(--sk-accent) !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.16s ease !important;
+}
+
+.stat-card:hover .dash-go {
+  background: var(--sk-primary) !important;
+  border-color: var(--sk-accent) !important;
+  color: #ffffff !important;
+  transform: scale(1.05) !important;
+}
+
+/* Payout chips in payment & dashboard */
+.gx-pay-chip {
+  background: linear-gradient(135deg, #111a2f 0%, #172440 100%) !important;
+  border: 1px solid var(--sk-border-strong) !important;
+  border-radius: 14px !important;
+  padding: 16px 18px !important;
+  box-shadow: var(--sk-shadow-sm) !important;
+}
+.gx-pay-chip:first-child {
+  border-left: 3px solid var(--sk-accent) !important;
+}
+.gx-pay-chip:last-child {
+  border-left: 3px solid var(--sk-primary) !important;
+}
+.gx-pay-chip .t { color: var(--sk-muted) !important; font-size: 11px !important; font-weight: 700 !important; text-transform: uppercase !important; }
+.gx-pay-chip .v { color: #ffffff !important; font-size: 20px !important; font-weight: 800 !important; font-variant-numeric: tabular-nums !important; }
+.gx-pay-chip .s { color: var(--sk-accent) !important; font-size: 11.5px !important; font-weight: 600 !important; }
+
+/* ============================================================================
+   BUTTONS
+   ========================================================================== */
+.btn, button.btn, .ms-btn {
+  border-radius: 10px !important;
+  font-weight: 650 !important;
+  font-size: 13px !important;
+  padding: 8px 15px !important;
+  border: 1px solid transparent !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+}
+
+.btn:hover, button.btn:hover, .ms-btn:hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.08) !important;
+}
+.btn:active, button.btn:active {
+  transform: translateY(0) !important;
+}
+
+/* Primary Skyline Button */
+.btn-blue, .btn-primary, .ms-btn.primary, .btn:not([class*="btn-"]):not(.gx-btn):not(.tb-btn):not(.hamburger):not([class*="page"]) {
+  background: var(--sk-grad-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.3) !important;
+  border: 0 !important;
+}
+.btn-blue:hover, .btn-primary:hover, .ms-btn.primary:hover {
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.45) !important;
+}
+
+/* Neutral Ghost Button */
+.btn-gray, .btn-ghost, .ms-btn.ghost, .btn.ghost {
+  background: var(--sk-surface-2) !important;
+  color: var(--sk-text-2) !important;
+  border: 1px solid var(--sk-border-strong) !important;
+  box-shadow: none !important;
+}
+.btn-gray:hover, .btn-ghost:hover {
+  background: var(--sk-surface-3) !important;
+  color: #ffffff !important;
+  border-color: var(--sk-accent) !important;
+}
+
+/* Semantic Buttons */
+.btn-green {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.28) !important;
+}
+.btn-red {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.28) !important;
+}
+.btn-amber, .btn-orange {
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%) !important;
+  color: #1e1302 !important;
+  font-weight: 750 !important;
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.28) !important;
+}
+
+/* Compact Icon Action Buttons (.gx-btn) */
+.gx-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  background: var(--sk-surface-2) !important;
+  border: 1px solid var(--sk-border-strong) !important;
+  color: var(--sk-text-2) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+.gx-btn svg {
+  width: 15px !important;
+  height: 15px !important;
+  stroke: currentColor !important;
+}
+.gx-btn:hover {
+  background: var(--sk-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--sk-accent) !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+}
+.gx-btn.danger:hover {
+  background: var(--sk-danger) !important;
+  border-color: #f87171 !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4) !important;
+}
+.gx-btn.ok:hover, .gx-btn.gx-green:hover {
+  background: var(--sk-success) !important;
+  border-color: #34d399 !important;
+}
+
+/* Tooltip */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0d162b;
+  color: #ffffff;
+  border: 1px solid var(--sk-border-strong);
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6);
+  animation: skTip 0.12s ease;
+}
+@keyframes skTip {
+  from { opacity: 0; transform: translateX(-50%) translateY(3px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ============================================================================
+   TABLES & DATA
+   ========================================================================== */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+}
+
+thead th, table th {
+  background: #090e1b !important;
+  color: var(--sk-muted) !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 5 !important;
+  padding: 10px 14px !important;
+  border-bottom: 1px solid var(--sk-border-strong) !important;
+}
+
+tbody tr, table tr {
+  border-bottom: 1px solid rgba(56, 189, 248, 0.06) !important;
+  transition: background-color 0.12s ease !important;
+}
+
+tbody tr td {
+  padding: 11px 14px !important;
+  color: var(--sk-text) !important;
+  font-size: 13px !important;
+}
+
+tbody tr:nth-child(even) td {
+  background: rgba(22, 35, 62, 0.25) !important;
+}
+
+tbody tr:hover td {
+  background: rgba(37, 99, 235, 0.10) !important;
+  color: #ffffff !important;
+}
+
+/* Status Tags & Badges */
+.tag, .chip {
+  border-radius: 6px !important;
+  padding: 3px 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.02em !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.tag-mgr {
+  background: rgba(56, 189, 248, 0.14) !important;
+  color: #7dd3fc !important;
+  border: 1px solid rgba(56, 189, 248, 0.32) !important;
+}
+.tag-agt {
+  background: rgba(37, 99, 235, 0.16) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(37, 99, 235, 0.36) !important;
+}
+.tag-cli, .tag-client {
+  background: rgba(148, 163, 184, 0.14) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+.tag-green {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #6ee7b7 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+.tag-red {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+.tag-amber, .tag-orange {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fcd34d !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+.tag-gray {
+  background: rgba(100, 116, 139, 0.14) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(100, 116, 139, 0.25) !important;
+}
+.tag-blue {
+  background: rgba(37, 99, 235, 0.15) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(37, 99, 235, 0.3) !important;
+}
+
+/* Monospace & Values */
+.mono, .cell-money, .payout-rate, .rate-cell, .money, .otp {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.cell-money {
+  color: #34d399 !important;
+  font-weight: 700 !important;
+}
+.otp {
+  color: var(--sk-accent) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+}
+
+/* Pagination */
+.pagination button, .pager button, .page-btn, .pg-btn, button[class*="page"] {
+  background: var(--sk-surface-2) !important;
+  color: var(--sk-muted) !important;
+  border: 1px solid var(--sk-border) !important;
+  border-radius: 8px !important;
+  padding: 5px 11px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  transition: all 0.14s ease !important;
+}
+.pagination button:hover, .pager button:hover, .page-btn:hover {
+  background: var(--sk-surface-3) !important;
+  color: #ffffff !important;
+  border-color: var(--sk-accent) !important;
+}
+.pagination button.active, .pager button.active, .page-btn.active {
+  background: var(--sk-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--sk-accent) !important;
+  font-weight: 750 !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+}
+
+/* ============================================================================
+   FORMS & INPUTS
+   ========================================================================== */
+input, select, textarea {
+  background: #090e1b !important;
+  color: var(--sk-text) !important;
+  border: 1px solid var(--sk-border-strong) !important;
+  border-radius: 9px !important;
+  padding: 8px 12px !important;
+  font-size: 13.5px !important;
+  transition: all 0.15s ease !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--sk-dim) !important;
+}
+
+input:hover, select:hover, textarea:hover {
+  border-color: rgba(56, 189, 248, 0.38) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--sk-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22) !important;
+  background: #0c1426 !important;
+  outline: none !important;
+}
+
+select option {
+  background: #0d1527 !important;
+  color: var(--sk-text) !important;
+}
+
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--sk-primary) !important;
+}
+
+label {
+  color: var(--sk-text-2) !important;
+  font-weight: 600 !important;
+  font-size: 12.5px !important;
+}
+
+/* ============================================================================
+   MODALS & OVERLAYS
+   ========================================================================== */
+.overlay, .modal-overlay {
+  background: rgba(4, 7, 14, 0.78) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.modal, .modal-box, .ms-modal, .box {
+  background: var(--sk-surface) !important;
+  border: 1px solid var(--sk-border-strong) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.75) !important;
+}
+
+.modal-head, .ms-modal-head {
+  border-bottom: 1px solid var(--sk-border) !important;
+}
+.modal-foot, .ms-modal-foot {
+  border-top: 1px solid var(--sk-border) !important;
+}
+
+/* ============================================================================
+   CHARTS & GRAPHS (Skyline Architectural Bars)
+   ========================================================================== */
+.chart .bar, .bar {
+  background: rgba(17, 26, 47, 0.6) !important;
+  border-radius: 6px !important;
+}
+.chart .bar .fill, .bar .fill {
+  background: var(--sk-grad-primary) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 14px rgba(37, 99, 235, 0.35) !important;
+}
+.chart .bar .val, .bar .val {
+  color: var(--sk-text-2) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* ============================================================================
+   RECENT ACTIVITY & LIST ITEMS
+   ========================================================================== */
+.li, .dashboard-recent .li {
+  border-bottom: 1px solid rgba(56, 189, 248, 0.07) !important;
+  padding: 11px 8px !important;
+  transition: background-color 0.12s ease !important;
+}
+.li:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border-radius: 8px !important;
+}
+.li .t1 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+.li .t2 {
+  color: var(--sk-muted) !important;
+  font-size: 11.5px !important;
+}
+
+/* ============================================================================
+   RESPONSIVE (Mobile / Tablet)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 260px !important;
+    box-shadow: 24px 0 60px rgba(0, 0, 0, 0.8) !important;
+  }
+  .stats-grid.dash-metrics, .gx-dash-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .gx-cards table, table.gx-cards {
+    display: block !important;
+  }
+  table.gx-cards thead {
+    display: none !important;
+  }
+  table.gx-cards tbody {
+    display: block !important;
+  }
+  table.gx-cards tr {
+    display: block !important;
+    background: var(--sk-surface) !important;
+    border: 1px solid var(--sk-border) !important;
+    border-radius: 12px !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+  }
+  table.gx-cards td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border: 0 !important;
+    padding: 6px 0 !important;
+  }
+  table.gx-cards td::before {
+    content: attr(data-label);
+    color: var(--sk-muted) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+  }
+  table.gx-cards td.gx-num {
+    background: rgba(37, 99, 235, 0.12) !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    margin-bottom: 6px !important;
+  }
+  table.gx-cards td.gx-num, table.gx-cards td.gx-num * {
+    color: #ffffff !important;
+    font-weight: 750 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid.dash-metrics, .gx-dash-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ==========================================================================
+   SKYLINE EXECUTIVE DASHBOARD SYSTEM (Zero-Load High-Performance Layout)
+   ========================================================================== */
+.sky-dash-top-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 16px !important;
+  margin-bottom: 20px !important;
+}
+
+.sky-hero-card {
+  background: linear-gradient(180deg, #0e1628 0%, #0a0f1d 100%) !important;
+  border: 1px solid rgba(59, 130, 246, 0.22) !important;
+  border-radius: 14px !important;
+  padding: 18px 20px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.sky-hero-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 20px rgba(37, 99, 235, 0.2) !important;
+}
+
+.sky-card-sms::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, #2563eb, #38bdf8) !important;
+}
+
+.sky-card-pay::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, #10b981, #34d399) !important;
+}
+
+.sky-hero-card .sky-card-label {
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  color: #94a3b8 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+.sky-hero-card .sky-card-val {
+  font-size: 32px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.02em !important;
+  margin: 10px 0 6px !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1.1 !important;
+}
+.sky-hero-card .sky-card-val.green {
+  color: #10b981 !important;
+  text-shadow: 0 0 24px rgba(16, 185, 129, 0.28) !important;
+}
+.sky-hero-card .sky-card-sub {
+  font-size: 12px !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+.sky-trend-badge {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  padding: 2px 7px !important;
+  border-radius: 6px !important;
+}
+
+/* Main Split: 2fr Chart + 1fr Side Stack */
+.sky-dash-main {
+  display: grid !important;
+  grid-template-columns: 1.7fr 1fr !important;
+  gap: 20px !important;
+  margin-bottom: 24px !important;
+}
+
+.sky-chart-card {
+  background: linear-gradient(180deg, #0e1628 0%, #0a0f1d 100%) !important;
+  border: 1px solid rgba(59, 130, 246, 0.22) !important;
+  border-radius: 16px !important;
+  padding: 22px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sky-chart-card .card-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
+  padding-bottom: 14px !important;
+  margin-bottom: 16px !important;
+}
+
+.sky-chart-legend {
+  display: flex !important;
+  gap: 16px !important;
+  font-size: 12px !important;
+  color: #94a3b8 !important;
+  margin-bottom: 12px !important;
+}
+.sky-legend-dot {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  margin-right: 6px !important;
+}
+.sky-legend-dot.blue { background: #38bdf8 !important; box-shadow: 0 0 8px #38bdf8 !important; }
+.sky-legend-dot.green { background: #10b981 !important; box-shadow: 0 0 8px #10b981 !important; }
+
+/* Side Stack Card */
+.sky-side-stack-card {
+  background: linear-gradient(180deg, #0e1628 0%, #0a0f1d 100%) !important;
+  border: 1px solid rgba(59, 130, 246, 0.22) !important;
+  border-radius: 16px !important;
+  padding: 18px 22px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-around !important;
+  gap: 12px !important;
+}
+
+.sky-side-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 0 !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08) !important;
+}
+.sky-side-item:last-child {
+  border-bottom: 0 !important;
+}
+.sky-side-item .info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+.sky-side-item .info .lbl {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+.sky-side-item .info .val {
+  font-size: 21px !important;
+  font-weight: 800 !important;
+  color: #f8fafc !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.sky-side-item .info .val.green {
+  color: #10b981 !important;
+}
+.sky-side-item .info .subtext {
+  font-size: 11px !important;
+  color: #64748b !important;
+}
+
+.sky-side-item .ico-box {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  background: rgba(37, 99, 235, 0.12) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #38bdf8 !important;
+}
+.sky-side-item .ico-box svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke: currentColor !important;
+}
+.sky-side-item .ico-box.green {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #10b981 !important;
+}
+
+.sky-pulse-dot {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+  background: #10b981 !important;
+  box-shadow: 0 0 10px #10b981 !important;
+  display: inline-block !important;
+  margin-right: 6px !important;
+  animation: skyPulseAnim 1.8s infinite ease-in-out !important;
+}
+@keyframes skyPulseAnim {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 14px #10b981; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+/* Live Table & OTP badges */
+.sky-otp-btn {
+  background: rgba(56, 189, 248, 0.14) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  color: #38bdf8 !important;
+  padding: 4px 10px !important;
+  border-radius: 7px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 13px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.05em !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.18s ease !important;
+}
+.sky-otp-btn:hover {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 14px rgba(37, 99, 235, 0.5) !important;
+  transform: translateY(-1px) !important;
+}
+.sky-otp-btn:active {
+  transform: translateY(0) !important;
+}
+
+.sky-app-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 3px 9px !important;
+  border-radius: 6px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+}
+.sky-app-whatsapp { background: rgba(37, 211, 102, 0.14) !important; color: #25d366 !important; border: 1px solid rgba(37, 211, 102, 0.3) !important; }
+.sky-app-telegram { background: rgba(34, 158, 217, 0.14) !important; color: #229ed9 !important; border: 1px solid rgba(34, 158, 217, 0.3) !important; }
+.sky-app-google { background: rgba(234, 67, 53, 0.14) !important; color: #ea4335 !important; border: 1px solid rgba(234, 67, 53, 0.3) !important; }
+.sky-app-binance { background: rgba(243, 186, 47, 0.14) !important; color: #f3ba2f !important; border: 1px solid rgba(243, 186, 47, 0.3) !important; }
+.sky-app-other { background: rgba(148, 163, 184, 0.14) !important; color: #94a3b8 !important; border: 1px solid rgba(148, 163, 184, 0.3) !important; }
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .sky-dash-top-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .sky-dash-main {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 580px) {
+  .sky-dash-top-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ========================================================
+   SKYLINE TEST PANEL REDESIGN (CONCEPT 1 - PRIVACY ARCHITECTURE)
+   ======================================================== */
+.sky-test-top-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 16px !important;
+  margin-bottom: 20px !important;
+}
+
+.sky-test-split {
+  display: grid !important;
+  grid-template-columns: 380px 1fr !important;
+  gap: 20px !important;
+  align-items: start !important;
+}
+
+.sky-test-card {
+  background: linear-gradient(180deg, rgba(16, 24, 48, 0.85), rgba(10, 15, 34, 0.95)) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(56, 189, 248, 0.18) !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45) !important;
+}
+
+.sky-test-card-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding-bottom: 14px !important;
+  margin-bottom: 14px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
+}
+
+.sky-test-card-head h3 {
+  font-size: 16px !important;
+  font-weight: 750 !important;
+  color: #f8fafc !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.sky-test-card-head .sub {
+  font-size: 12px !important;
+  color: #94a3b8 !important;
+  margin-top: 3px !important;
+}
+
+.sky-test-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 14px !important;
+}
+
+.sky-test-toolbar select,
+.sky-test-toolbar input {
+  background: rgba(7, 13, 31, 0.85) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  border-radius: 9px !important;
+  color: #f8fafc !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  outline: none !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.sky-test-toolbar select:focus,
+.sky-test-toolbar input:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15) !important;
+}
+
+.sky-num-row {
+  cursor: pointer !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.sky-num-row:hover td {
+  background: rgba(56, 189, 248, 0.08) !important;
+}
+
+.sky-num-row.active td {
+  background: rgba(56, 189, 248, 0.16) !important;
+  color: #38bdf8 !important;
+  font-weight: 700 !important;
+}
+
+.sky-copy-num-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(56, 189, 248, 0.1) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12.5px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.sky-copy-num-btn:hover {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
+}
+
+.sky-masked-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  letter-spacing: 0.15em !important;
+  background: rgba(148, 163, 184, 0.1) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-radius: 6px !important;
+  padding: 3px 9px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.sky-masked-cli {
+  display: inline-block !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+  color: #7dd3fc !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  border-radius: 6px !important;
+  padding: 2px 8px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+@media (max-width: 1100px) {
+  .sky-test-split {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 640px) {
+  .sky-test-top-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+

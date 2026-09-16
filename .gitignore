@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+.npm/
+
+# Runtime Database (Never commit active production databases)
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+backend/data.sqlite
+data.sqlite
+backend/backups/
+skyline-sms-backups/
+nova-sms-backups/
+
+# Environment & Secrets
+.env
+.env.local
+backend/.env
+
+# Logs & Runtime
+*.log
+npm-debug.log*
+.DS_Store
+.pm2/
+skyline-logs/
+powerx-logs/
+skyline-exports/
+powerx-exports/
+
+# Temporary test captures
+test_*.png
+test_*.jpg
+.cache/
+

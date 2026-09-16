@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SKYLINE SMS — Visual Interface Gallery & Screenshots</title>
+  <link rel="icon" type="image/png" href="/assets/skyline-favicon.png">
+  <style>
+    :root {
+      --bg: #080c14;
+      --bg-card: #0f172a;
+      --bg-card-hover: #16243f;
+      --border: rgba(59, 130, 246, 0.22);
+      --border-hover: rgba(56, 189, 248, 0.5);
+      --cobalt: #2563eb;
+      --cyan: #38bdf8;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      padding: 32px 24px;
+      line-height: 1.5;
+    }
+    .header {
+      max-width: 1400px;
+      margin: 0 auto 36px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand img {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .brand h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .stats-badge {
+      display: flex;
+      gap: 12px;
+    }
+    .badge {
+      background: rgba(37, 99, 235, 0.15);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cyan);
+    }
+    .filters {
+      max-width: 1400px;
+      margin: 0 auto 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .filter-btn {
+      background: #111a2f;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 7px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .filter-btn:hover {
+      background: #1a2744;
+      color: #fff;
+      border-color: var(--cyan);
+    }
+    .filter-btn.active {
+      background: var(--cobalt);
+      color: #fff;
+      border-color: var(--cyan);
+      box-shadow: 0 0 16px rgba(37, 99, 235, 0.4);
+    }
+    .theme-toggle-group {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      background: #111a2f;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+    .theme-btn {
+      padding: 5px 14px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .theme-btn.active {
+      background: var(--cobalt);
+      color: #fff;
+    }
+    .gallery-grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-hover);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), 0 0 20px rgba(37, 99, 235, 0.25);
+    }
+    .card-thumb {
+      position: relative;
+      background: #04070e;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      transition: transform 0.3s ease;
+    }
+    .card:hover .card-thumb img {
+      transform: scale(1.03);
+    }
+    .card-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(8, 12, 20, 0.85);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .card-tag.dark { color: #60a5fa; border-color: rgba(96, 165, 250, 0.3); }
+    .card-tag.light { color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
+    .card-info {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .card-info h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .card-info p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(4, 7, 14, 0.92);
+      backdrop-filter: blur(8px);
+      padding: 24px;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      max-width: 95vw;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+    }
+    .modal-header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h2 { font-size: 16px; font-weight: 700; }
+    .modal-close {
+      background: transparent;
+      border: 0;
+      color: var(--text-muted);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-body {
+      overflow: auto;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+    }
+    .modal-body img {
+      max-width: 100%;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand">
+      <img src="/assets/skyline-mark.png" alt="Skyline SMS">
+      <div>
+        <h1>SKYLINE SMS — Interface Gallery</h1>
+        <p>Complete Enterprise Visual Documentation (Dark & Light Themes)</p>
+      </div>
+    </div>
+    <div class="stats-badge">
+      <div class="badge">9 Functional Panels</div>
+      <div class="badge">52 High-Res Captures</div>
+      <div class="badge">Dual Theme System</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All Panels</button>
+    <button class="filter-btn" data-filter="login">Login Portal</button>
+    <button class="filter-btn" data-filter="admin">Admin</button>
+    <button class="filter-btn" data-filter="manager">Manager</button>
+    <button class="filter-btn" data-filter="agent">Agent</button>
+    <button class="filter-btn" data-filter="client">Client</button>
+    <button class="filter-btn" data-filter="management">Management</button>
+    <button class="filter-btn" data-filter="payment">Payment</button>
+    <button class="filter-btn" data-filter="sharing">Panel Sharing</button>
+    <button class="filter-btn" data-filter="test">Test Lab</button>
+
+    <div class="theme-toggle-group">
+      <button class="theme-btn active" data-theme="all">All</button>
+      <button class="theme-btn" data-theme="dark">Dark</button>
+      <button class="theme-btn" data-theme="light">Light</button>
+    </div>
+  </div>
+
+  <div class="gallery-grid" id="grid"></div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Screenshot Preview</h2>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <img id="modalImg" src="" alt="Preview">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const items = [
+      { cat: 'admin', theme: 'dark', title: 'Admin Executive Redesign Dashboard (Dark)', file: '/screenshots/dash_admin_redesign.png', desc: 'Concept 2 Obsidian Executive Layout: Today SMS, Yesterday SMS, This Week SMS, This Week Payout, Volume Chart & 1-Click OTP Stream' },
+      { cat: 'manager', theme: 'dark', title: 'Manager Executive Redesign Dashboard (Dark)', file: '/screenshots/dash_manager_redesign.png', desc: 'Manager Hierarchy Layout: Today, Yesterday, Week, Month, Active Agents Today & Live Ingest Feed' },
+      { cat: 'agent', theme: 'dark', title: 'Agent Performance Redesign Dashboard (Dark)', file: '/screenshots/dash_agent_redesign.png', desc: 'Agent Performance Layout: Core SMS & Payout metrics, Account Balance & 1-Click OTP Copy' },
+      { cat: 'client', theme: 'dark', title: 'Client 5-Metric Redesign Dashboard (Dark)', file: '/screenshots/dash_client_redesign.png', desc: 'Restricted 5-Metric Executive Layout: Today, Yesterday, This Week SMS, This Week Payout & Month Payout' },
+
+      { cat: 'login', theme: 'dark', title: 'Login Gateway (Dark)', file: '/screenshots/01_login_portal_default_dark.png', desc: 'Enterprise Authentication Gateway with carrier telemetry metrics' },
+      { cat: 'login', theme: 'light', title: 'Login Gateway (Light)', file: '/screenshots/01_login_portal_default_light.png', desc: 'High-contrast light mode login portal' },
+      
+      { cat: 'admin', theme: 'dark', title: 'Admin Dashboard (Dark)', file: '/screenshots/02_admin_dashboard_dark.png', desc: 'Real-time telemetry, SMS throughput, and payout commitments' },
+      { cat: 'admin', theme: 'light', title: 'Admin Dashboard (Light)', file: '/screenshots/02_admin_dashboard_light.png', desc: 'Light theme admin operations control center' },
+      { cat: 'admin', theme: 'dark', title: 'Admin Numbers Inventory (Dark)', file: '/screenshots/02_admin_numbers_dark.png', desc: 'Full pool inventory with multi-level ownership allocations' },
+      { cat: 'admin', theme: 'light', title: 'Admin Numbers Inventory (Light)', file: '/screenshots/02_admin_numbers_light.png', desc: 'Number management table in light mode' },
+      { cat: 'admin', theme: 'dark', title: 'Admin Live SMS Feed (Dark)', file: '/screenshots/02_admin_live_sms_dark.png', desc: 'Incoming carrier CDR stream with OTP auto-detection' },
+      { cat: 'admin', theme: 'light', title: 'Admin Live SMS Feed (Light)', file: '/screenshots/02_admin_live_sms_light.png', desc: 'Live SMS logs in crisp light theme' },
+      { cat: 'admin', theme: 'dark', title: 'Admin User Hierarchy (Dark)', file: '/screenshots/02_admin_users_dark.png', desc: 'Role management: Managers, Agents, and Clients' },
+      { cat: 'admin', theme: 'light', title: 'Admin User Hierarchy (Light)', file: '/screenshots/02_admin_users_light.png', desc: 'User hierarchy view in light theme' },
+      { cat: 'admin', theme: 'dark', title: 'Admin Financial Management (Dark)', file: '/screenshots/02_admin_payment_mgmt_dark.png', desc: 'Payout ledger, TRC20 addresses, and multi-cycle rate cards' },
+      { cat: 'admin', theme: 'light', title: 'Admin Financial Management (Light)', file: '/screenshots/02_admin_payment_mgmt_light.png', desc: 'Financial audit view in light theme' },
+      { cat: 'admin', theme: 'dark', title: 'Admin AI Knowledge Base (Dark)', file: '/screenshots/02_admin_ai_assistant_dark.png', desc: 'Skyline AI Assistant prompt knowledge editor and export' },
+      { cat: 'admin', theme: 'light', title: 'Admin AI Knowledge Base (Light)', file: '/screenshots/02_admin_ai_assistant_light.png', desc: 'AI knowledge base in light theme' },
+
+      { cat: 'manager', theme: 'dark', title: 'Manager Dashboard (Dark)', file: '/screenshots/03_manager_dashboard_dark.png', desc: 'Team overview, aggregated volume, and margin controls' },
+      { cat: 'manager', theme: 'light', title: 'Manager Dashboard (Light)', file: '/screenshots/03_manager_dashboard_light.png', desc: 'Manager dashboard in light theme' },
+      { cat: 'manager', theme: 'dark', title: 'Manager Agent Roster (Dark)', file: '/screenshots/03_manager_agents_dark.png', desc: 'Sub-agent allocation accounts and balance monitors' },
+      { cat: 'manager', theme: 'light', title: 'Manager Agent Roster (Light)', file: '/screenshots/03_manager_agents_light.png', desc: 'Agent accounts list in light theme' },
+      { cat: 'manager', theme: 'dark', title: 'Manager Numbers (Dark)', file: '/screenshots/03_manager_numbers_dark.png', desc: 'Assigned pool allocation and client assignment' },
+      { cat: 'manager', theme: 'light', title: 'Manager Numbers (Light)', file: '/screenshots/03_manager_numbers_light.png', desc: 'Assigned inventory in light theme' },
+      { cat: 'manager', theme: 'dark', title: 'Manager SMS Feed (Dark)', file: '/screenshots/03_manager_live_sms_dark.png', desc: 'Filtered incoming traffic for managed accounts' },
+      { cat: 'manager', theme: 'light', title: 'Manager SMS Feed (Light)', file: '/screenshots/03_manager_live_sms_light.png', desc: 'Manager SMS stream in light theme' },
+
+      { cat: 'agent', theme: 'dark', title: 'Agent Dashboard (Dark)', file: '/screenshots/04_agent_dashboard_dark.png', desc: 'Agent home with Skyline AI Assistant widget and live traffic' },
+      { cat: 'agent', theme: 'light', title: 'Agent Dashboard (Light)', file: '/screenshots/04_agent_dashboard_light.png', desc: 'Agent portal in clean light theme' },
+      { cat: 'agent', theme: 'dark', title: 'Agent Numbers (Dark)', file: '/screenshots/04_agent_numbers_dark.png', desc: 'Active numbers and instant client routing' },
+      { cat: 'agent', theme: 'light', title: 'Agent Numbers (Light)', file: '/screenshots/04_agent_numbers_light.png', desc: 'Agent numbers in light theme' },
+      { cat: 'agent', theme: 'dark', title: 'Agent SMS Logs (Dark)', file: '/screenshots/04_agent_live_sms_dark.png', desc: 'Real-time OTP verification stream' },
+      { cat: 'agent', theme: 'light', title: 'Agent SMS Logs (Light)', file: '/screenshots/04_agent_live_sms_light.png', desc: 'Agent SMS log stream in light theme' },
+      { cat: 'agent', theme: 'dark', title: 'Agent Payouts (Dark)', file: '/screenshots/04_agent_payouts_dark.png', desc: 'TRC20 wallet management and withdrawal history' },
+      { cat: 'agent', theme: 'light', title: 'Agent Payouts (Light)', file: '/screenshots/04_agent_payouts_light.png', desc: 'Agent financial balance in light theme' },
+
+      { cat: 'client', theme: 'dark', title: 'Client Dashboard (Dark)', file: '/screenshots/05_client_dashboard_dark.png', desc: 'Client real-time OTP stream with instant search' },
+      { cat: 'client', theme: 'light', title: 'Client Dashboard (Light)', file: '/screenshots/05_client_dashboard_light.png', desc: 'Client portal in light theme' },
+      { cat: 'client', theme: 'dark', title: 'Client Numbers (Dark)', file: '/screenshots/05_client_numbers_dark.png', desc: 'Dedicated client test numbers list' },
+      { cat: 'client', theme: 'light', title: 'Client Numbers (Light)', file: '/screenshots/05_client_numbers_light.png', desc: 'Client numbers in light theme' },
+
+      { cat: 'management', theme: 'dark', title: 'Management Hub (Dark)', file: '/screenshots/06_management_dashboard_dark.png', desc: 'Carrier integration & accounting overview' },
+      { cat: 'management', theme: 'light', title: 'Management Hub (Light)', file: '/screenshots/06_management_dashboard_light.png', desc: 'Carrier management in light theme' },
+      { cat: 'management', theme: 'dark', title: 'Carrier Providers (Dark)', file: '/screenshots/06_management_providers_dark.png', desc: 'Provider registry, payment terms, and trunk types' },
+      { cat: 'management', theme: 'light', title: 'Carrier Providers (Light)', file: '/screenshots/06_management_providers_light.png', desc: 'Carrier providers in light theme' },
+      { cat: 'management', theme: 'dark', title: 'Disaster Recovery (Dark)', file: '/screenshots/06_management_backups_dark.png', desc: 'VPS automated SQLite snapshot engine and restore' },
+      { cat: 'management', theme: 'light', title: 'Disaster Recovery (Light)', file: '/screenshots/06_management_backups_light.png', desc: 'Backup settings in light theme' },
+
+      { cat: 'payment', theme: 'dark', title: 'Payment Clearance (Dark)', file: '/screenshots/07_payment_dashboard_dark.png', desc: 'Settlement summary and pending payout batches' },
+      { cat: 'payment', theme: 'light', title: 'Payment Clearance (Light)', file: '/screenshots/07_payment_dashboard_light.png', desc: 'Financial clearance in light theme' },
+      { cat: 'payment', theme: 'dark', title: 'Payment Requests (Dark)', file: '/screenshots/07_payment_requests_dark.png', desc: 'Receipt verification and approval workflow' },
+      { cat: 'payment', theme: 'light', title: 'Payment Requests (Light)', file: '/screenshots/07_payment_requests_light.png', desc: 'Payout approval workflow in light theme' },
+
+      { cat: 'sharing', theme: 'dark', title: 'Panel Sharing (Dark)', file: '/screenshots/08_panel_sharing_dashboard_dark.png', desc: 'Upstream and downstream webhook forwarding telemetry' },
+      { cat: 'sharing', theme: 'light', title: 'Panel Sharing (Light)', file: '/screenshots/08_panel_sharing_dashboard_light.png', desc: 'Panel sharing hub in light theme' },
+      { cat: 'sharing', theme: 'dark', title: 'Forwarded Numbers (Dark)', file: '/screenshots/08_panel_sharing_numbers_dark.png', desc: 'Active forward rules and external endpoint mappings' },
+      { cat: 'sharing', theme: 'light', title: 'Forwarded Numbers (Light)', file: '/screenshots/08_panel_sharing_numbers_light.png', desc: 'Forwarded numbers in light theme' },
+
+      { cat: 'test', theme: 'dark', title: 'Test Sandbox (Dark)', file: '/screenshots/09_test_panel_dashboard_dark.png', desc: 'Isolated sandbox environment for testing incoming routes' },
+      { cat: 'test', theme: 'light', title: 'Test Sandbox (Light)', file: '/screenshots/09_test_panel_dashboard_light.png', desc: 'Test laboratory in light theme' },
+      { cat: 'test', theme: 'dark', title: 'Test Numbers Pool (Dark)', file: '/screenshots/09_test_panel_numbers_dark.png', desc: 'Assigned sandbox test numbers and DLR verifier' },
+      { cat: 'test', theme: 'light', title: 'Test Numbers Pool (Light)', file: '/screenshots/09_test_panel_numbers_light.png', desc: 'Sandbox numbers in light theme' }
+    ];
+
+    let activeFilter = 'all';
+    let activeTheme = 'all';
+
+    const grid = document.getElementById('grid');
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalClose = document.getElementById('modalClose');
+
+    function render() {
+      grid.innerHTML = '';
+      const filtered = items.filter(it => {
+        const catMatch = activeFilter === 'all' || it.cat === activeFilter;
+        const themeMatch = activeTheme === 'all' || it.theme === activeTheme;
+        return catMatch && themeMatch;
+      });
+
+      filtered.forEach(it => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-thumb">
+            <span class="card-tag ${it.theme}">${it.theme}</span>
+            <img src="${it.file}" alt="${it.title}" loading="lazy">
+          </div>
+          <div class="card-info">
+            <h3>${it.title}</h3>
+            <p>${it.desc}</p>
+          </div>
+        `;
+        card.addEventListener('click', () => {
+          modalImg.src = it.file;
+          modalTitle.textContent = it.title;
+          modal.classList.add('show');
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.filter;
+        render();
+      });
+    });
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeTheme = btn.dataset.theme;
+        render();
+      });
+    });
+
+    modalClose.addEventListener('click', () => modal.classList.remove('show'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
+
+    render();
+  </script>
+</body>
+</html>

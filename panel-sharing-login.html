@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=sky-1" />
+<title>SKYLINE SMS — Panel Sharing Gateway</title>
+<link rel="stylesheet" href="/assets/skyline.css?v=sky-1"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:
+    radial-gradient(1000px 600px at 70% 15%,rgba(37,99,235,.18),transparent 60%),
+    radial-gradient(800px 500px at 20% 85%,rgba(56,189,248,.10),transparent 55%),
+    linear-gradient(rgba(56,189,248,.025) 1px,transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg,rgba(56,189,248,.025) 1px,transparent 1px) 0 0/40px 40px,
+    #070b14;
+  display:flex;align-items:center;justify-content:center;padding:20px;color:#f8fafc;
+}
+.card{
+  width:min(440px,100%);background:rgba(14,22,40,.92);border:1px solid rgba(56,189,248,.2);
+  border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter:blur(18px);padding:34px 28px;position:relative;overflow:hidden;
+}
+.card::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:2.5px;
+  background:linear-gradient(90deg,#1d4ed8,#38bdf8);
+}
+.logo{
+  width:72px;height:72px;margin:0 auto 16px;border-radius:18px;overflow:hidden;
+  background:#090e1a;border:1px solid rgba(56,189,248,.35);box-shadow:0 10px 25px rgba(37,99,235,.3);
+  display:flex;align-items:center;justify-content:center;
+}
+.logo img{width:100%;height:100%;object-fit:cover}
+.eyebrow{text-align:center;color:#38bdf8;text-transform:uppercase;font-size:11px;font-weight:800;letter-spacing:.16em;margin-bottom:4px}
+.title{text-align:center;font-size:24px;font-weight:800;letter-spacing:-.02em;color:#fff;margin-bottom:6px}
+.sub{text-align:center;color:#788fa8;font-size:13px;line-height:1.5;margin-bottom:24px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:#cbd5e1;margin-bottom:6px}
+input{
+  width:100%;height:46px;background:#090e1b!important;border:1px solid rgba(56,189,248,.22)!important;
+  border-radius:10px!important;padding:0 14px!important;font-size:14px!important;color:#fff!important;outline:none!important;
+  transition:all .15s ease!important;
+}
+input:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgba(37,99,235,.22)!important;background:#0c1426!important}
+button{
+  width:100%;height:48px;border:0;border-radius:11px;background:linear-gradient(135deg,#1d4ed8,#2563eb 55%,#38bdf8);
+  color:#fff;font-weight:800;font-size:14px;letter-spacing:.02em;cursor:pointer;margin-top:8px;
+  box-shadow:0 10px 26px rgba(37,99,235,.35);transition:all .15s ease;
+}
+button:hover{transform:translateY(-1px);filter:brightness(1.06);box-shadow:0 14px 32px rgba(37,99,235,.45)}
+.msg{display:none;margin-top:14px;border-radius:9px;padding:10px 12px;font-size:12.5px;font-weight:600}
+.msg.show{display:block}
+.msg.error{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+.msg.success{background:rgba(16,185,129,.14);color:#6ee7b7;border:1px solid rgba(16,185,129,.35)}
+.hint{text-align:center;margin-top:18px;color:#64748b;font-size:11.5px;line-height:1.45}
+</style>
+<script src="/assets/skyline.js?v=sky-1" defer></script>
+</head>
+<body>
+<div class="card">
+  <div class="logo"><img src="/assets/skyline-mark.png" alt="SKYLINE SMS"></div>
+  <div class="eyebrow">Federated Access</div>
+  <div class="title">Panel Sharing</div>
+  <div class="sub">Inter-panel sync, shared number pools, and remote telemetry links.</div>
+  <form id="form">
+    <div class="field"><label>Admin Username</label><input id="username" autocomplete="username" placeholder="Enter username" required></div>
+    <div class="field"><label>Admin Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Enter password" required></div>
+    <button type="submit">Sign In to Panel Sharing</button>
+    <div class="msg" id="msg"></div>
+  </form>
+  <div class="hint">SKYLINE SMS Enterprise • Authorized administrator authentication.</div>
+</div>
+<script>
+function msg(t,c){const m=document.getElementById('msg');m.textContent=t;m.className='msg show '+c;}
+document.getElementById('form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  msg('Verifying credentials...','success');
+  try{
+    const r=await fetch('/api/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:username.value.trim(),password:password.value})
+    });
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(data.error||'Login failed');
+    if(data.user.role!=='admin')throw new Error('Panel Sharing requires an Admin account.');
+    sessionStorage.setItem('ms_token',data.token);
+    sessionStorage.setItem('ms_role',data.user.role);
+    sessionStorage.setItem('ms_user',data.user.username);
+    sessionStorage.setItem('ms_name',data.user.name||data.user.username);
+    localStorage.setItem('ms_token',data.token);
+    localStorage.setItem('ms_role',data.user.role);
+    localStorage.setItem('ms_user',data.user.username);
+    localStorage.setItem('ms_name',data.user.name||data.user.username);
+    localStorage.setItem('ms_last_page_panel_sharing','dashboard');
+    location.href='/panel-sharing';
+  }catch(err){
+    msg('❌ '+err.message,'error');
+  }
+});
+</script>
+</body>
+</html>

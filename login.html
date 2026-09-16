@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=sky-1" />
+<title>SKYLINE SMS — Secure Login</title>
+<link rel="stylesheet" href="/assets/skyline.css?v=sky-1"/>
+<style>
+  :root {
+    --sk-bg-dark: #060a12;
+    --sk-card-bg: rgba(14, 22, 40, 0.88);
+    --sk-border-card: rgba(56, 189, 248, 0.18);
+    --sk-border-glow: rgba(37, 99, 235, 0.45);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background:
+      radial-gradient(1200px 700px at 75% 15%, rgba(37, 99, 235, 0.18), transparent 60%),
+      radial-gradient(900px 600px at 20% 90%, rgba(56, 189, 248, 0.10), transparent 55%),
+      linear-gradient(rgba(56, 189, 248, 0.025) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, rgba(56, 189, 248, 0.025) 1px, transparent 1px) 0 0 / 40px 40px,
+      var(--sk-bg-dark);
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Architectural Horizon Glow */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent 5%, #1d4ed8 25%, #38bdf8 50%, #1d4ed8 75%, transparent 95%);
+    box-shadow: 0 0 24px rgba(56, 189, 248, 0.8);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .shell {
+    width: min(1080px, 100%);
+    display: grid;
+    grid-template-columns: 1.15fr 0.95fr;
+    background: var(--sk-card-bg);
+    border: 1px solid var(--sk-border-card);
+    border-radius: 24px;
+    box-shadow: 0 32px 90px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Left Brand Showcase Panel */
+  .brand-panel {
+    position: relative;
+    padding: 48px;
+    background:
+      radial-gradient(circle at 50% 35%, rgba(37, 99, 235, 0.22), transparent 60%),
+      linear-gradient(165deg, #090e1a 0%, #060a12 100%);
+    border-right: 1px solid var(--sk-border-card);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+
+  /* Architectural geometric network line overlays */
+  .brand-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px) 0 0 / 32px 32px,
+      linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px) 0 0 / 32px 32px;
+    pointer-events: none;
+    mask-image: radial-gradient(circle at 50% 40%, #000 35%, transparent 75%);
+    -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 35%, transparent 75%);
+  }
+
+  /* Diagonal speed beam accent */
+  .brand-panel::after {
+    content: "";
+    position: absolute;
+    left: -20%;
+    bottom: -10%;
+    width: 140%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.7), rgba(56, 189, 248, 0.9), transparent);
+    transform: rotate(-25deg);
+    pointer-events: none;
+  }
+
+  .brand-hero {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .hero-logo-wrap {
+    width: min(320px, 80%);
+    margin: 0 auto 20px;
+    filter: drop-shadow(0 16px 36px rgba(37, 99, 235, 0.35));
+    transition: transform 0.3s ease;
+  }
+  .hero-logo-wrap:hover {
+    transform: scale(1.02);
+  }
+  .hero-logo-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    border-radius: 18px;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #6ee7b7;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    animation: skPulseDot 1.8s infinite;
+  }
+  @keyframes skPulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  .hero-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+  .hero-desc {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #94a3b8;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  /* Architectural feature chips */
+  .brand-features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: auto;
+    position: relative;
+    z-index: 2;
+  }
+  .feature-chip {
+    background: rgba(17, 26, 47, 0.7);
+    border: 1px solid rgba(56, 189, 248, 0.14);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: all 0.2s ease;
+  }
+  .feature-chip:hover {
+    border-color: rgba(56, 189, 248, 0.35);
+    background: rgba(22, 35, 62, 0.8);
+    transform: translateY(-1px);
+  }
+  .feature-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(37, 99, 235, 0.2);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: #38bdf8;
+  }
+  .feature-icon svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+  }
+  .feature-text b {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 2px;
+  }
+  .feature-text span {
+    font-size: 11px;
+    color: #788fa8;
+    line-height: 1.35;
+    display: block;
+  }
+
+  /* Right Authentication Panel */
+  .login-panel {
+    padding: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0b1120;
+    position: relative;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 390px;
+  }
+
+  .login-head {
+    margin-bottom: 28px;
+  }
+  .login-head .eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #38bdf8;
+    font-weight: 800;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .login-head .eyebrow::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #2563eb;
+    border-radius: 2px;
+  }
+  .login-head h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #ffffff;
+    margin-bottom: 6px;
+  }
+  .login-head p {
+    color: #788fa8;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .field {
+    margin-bottom: 18px;
+  }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #cbd5e1;
+    margin-bottom: 7px;
+    letter-spacing: 0.01em;
+  }
+  .input-wrap {
+    position: relative;
+  }
+  .input-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 17px;
+    height: 17px;
+    stroke: #64748b;
+    pointer-events: none;
+    transition: stroke 0.16s ease;
+  }
+  .input-wrap input {
+    width: 100%;
+    height: 46px;
+    background: #070c18 !important;
+    border: 1px solid rgba(56, 189, 248, 0.20) !important;
+    color: #ffffff !important;
+    border-radius: 11px !important;
+    padding: 0 14px 0 42px !important;
+    font-size: 14px !important;
+    outline: none !important;
+    transition: all 0.16s ease !important;
+  }
+  .input-wrap input:hover {
+    border-color: rgba(56, 189, 248, 0.45) !important;
+  }
+  .input-wrap input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+    background: #091020 !important;
+  }
+  .input-wrap input:focus + svg, .input-wrap:focus-within svg {
+    stroke: #38bdf8 !important;
+  }
+
+  .toggle-pass {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    background: rgba(37, 99, 235, 0.12);
+    color: #38bdf8;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .toggle-pass:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #38bdf8;
+  }
+  .pass-input {
+    padding-right: 66px !important;
+  }
+
+  .captcha-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 10px;
+  }
+  .captcha-box {
+    height: 46px;
+    border: 1px dashed rgba(56, 189, 248, 0.4);
+    background: rgba(37, 99, 235, 0.08);
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 800;
+    color: #38bdf8;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+  .refresh-btn {
+    border: 0;
+    background: transparent;
+    color: #60a5fa;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: transform 0.2s ease, color 0.15s ease;
+  }
+  .refresh-btn:hover {
+    color: #ffffff;
+    transform: rotate(90deg);
+  }
+
+  .row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 0 20px;
+    font-size: 12.5px;
+  }
+  .checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox input {
+    width: 16px;
+    height: 16px;
+    accent-color: #2563eb;
+  }
+  .row-between a {
+    color: #38bdf8;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 12px;
+    transition: color 0.15s ease;
+  }
+  .row-between a:hover {
+    color: #60a5fa;
+    text-decoration: underline;
+  }
+
+  .btn-submit {
+    width: 100%;
+    height: 48px;
+    border: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 55%, #38bdf8 100%);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 14.5px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.38);
+    transition: all 0.16s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 36px rgba(37, 99, 235, 0.5);
+    filter: brightness(1.06);
+  }
+  .btn-submit:active {
+    transform: translateY(0);
+  }
+
+  .msg {
+    margin-top: 14px;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    display: none;
+    animation: skFadeIn 0.2s ease;
+  }
+  @keyframes skFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .msg.show { display: block; }
+  .msg.error {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+  }
+  .msg.success {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+  }
+
+  .footer {
+    text-align: center;
+    color: #64748b;
+    font-size: 11.5px;
+    margin-top: 24px;
+    letter-spacing: 0.02em;
+  }
+
+  /* Mobile Branding Header */
+  .m-brand-header {
+    display: none;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .m-brand-header img {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+  }
+
+  /* Responsive Rules */
+  @media (max-width: 900px) {
+    body {
+      padding: 16px 12px;
+      align-items: flex-start;
+    }
+    .shell {
+      grid-template-columns: 1fr;
+      max-width: 480px;
+      border-radius: 20px;
+    }
+    .brand-panel {
+      display: none;
+    }
+    .m-brand-header {
+      display: block;
+    }
+    .login-panel {
+      padding: 32px 22px 28px;
+    }
+    .login-head {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    .login-head .eyebrow {
+      justify-content: center;
+    }
+    .login-head h2 {
+      font-size: 24px;
+    }
+  }
+</style>
+<script src="/assets/skyline.js?v=sky-1" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <!-- Left Hero & Brand Showcase -->
+    <section class="brand-panel" aria-label="SKYLINE SMS Platform">
+      <div class="brand-hero">
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          Infrastructure Operational
+        </div>
+        <div class="hero-logo-wrap">
+          <img class="hero-logo-img" src="/assets/skyline-logo.png" alt="SKYLINE SMS" />
+        </div>
+        <h1 class="hero-title">High-Velocity SMS Infrastructure</h1>
+        <p class="hero-desc">Enterprise-grade multi-tier messaging, real-time OTP routing, and automated carrier allocation.</p>
+      </div>
+
+      <div class="brand-features">
+        <div class="feature-chip">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <div class="feature-text">
+            <b>Sub-Second Ingestion</b>
+            <span>High-throughput carrier webhooks</span>
+          </div>
+        </div>
+        <div class="feature-chip">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          </div>
+          <div class="feature-text">
+            <b>Multi-Tier Hierarchy</b>
+            <span>Admin, Manager, Agent, Client</span>
+          </div>
+        </div>
+        <div class="feature-chip">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div class="feature-text">
+            <b>Global Routing</b>
+            <span>Intelligent E.164 normalization</span>
+          </div>
+        </div>
+        <div class="feature-chip">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="feature-text">
+            <b>Secure Settlements</b>
+            <span>Automated ledger & rate cards</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Authentication Form Panel -->
+    <section class="login-panel">
+      <div class="login-card">
+        <div class="m-brand-header">
+          <img src="/assets/skyline-mark.png" alt="SKYLINE SMS" />
+          <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.02em;color:#fff">SKYLINE SMS</h2>
+          <span style="font-size:11.5px;color:#38bdf8;text-transform:uppercase;letter-spacing:0.12em;font-weight:700">Enterprise Control Panel</span>
+        </div>
+
+        <div class="login-head">
+          <div class="eyebrow">Enterprise Access Gateway</div>
+          <h2>Sign In to Panel</h2>
+          <p>Access your messaging telemetry, number pools, and real-time OTP routing controls.</p>
+        </div>
+
+        <form id="loginForm" autocomplete="off">
+          <div class="field">
+            <label for="username">Username</label>
+            <div class="input-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="username" placeholder="Enter username" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="input-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input class="pass-input" type="password" id="password" placeholder="Enter password" required />
+              <button type="button" class="toggle-pass" id="togglePass">Show</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="captcha">Security Verification</label>
+            <div class="captcha-row">
+              <div class="captcha-box">
+                <span id="captchaText">? + ?</span>
+                <button type="button" class="refresh-btn" id="refreshCaptcha" title="New math challenge">↻</button>
+              </div>
+              <div class="input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <input type="number" id="captcha" placeholder="Answer" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="row-between">
+            <label class="checkbox"><input type="checkbox" id="remember" /> Remember session</label>
+            <a href="#" onclick="alert('Please contact your administrator or manager to reset credentials.'); return false;">Need help?</a>
+          </div>
+
+          <button type="submit" class="btn-submit" id="submitBtn">
+            <span>Sign In to Skyline SMS</span>
+            <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+          <div class="msg" id="msg"></div>
+        </form>
+
+        <div class="footer">
+          © 2026 SKYLINE SMS • Enterprise Messaging Infrastructure
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+  let captchaAnswer = 0;
+  function newCaptcha(){
+    const a = Math.floor(Math.random() * 9) + 1;
+    const b = Math.floor(Math.random() * 9) + 1;
+    captchaAnswer = a + b;
+    document.getElementById('captchaText').textContent = a + ' + ' + b;
+    document.getElementById('captcha').value = '';
+  }
+  document.getElementById('refreshCaptcha').addEventListener('click', newCaptcha);
+  newCaptcha();
+
+  const passInput = document.getElementById('password');
+  const togglePass = document.getElementById('togglePass');
+  togglePass.addEventListener('click', () => {
+    if (passInput.type === 'password') {
+      passInput.type = 'text';
+      togglePass.textContent = 'Hide';
+    } else {
+      passInput.type = 'password';
+      togglePass.textContent = 'Show';
+    }
+  });
+
+  function showMsg(text, type){
+    const m = document.getElementById('msg');
+    m.textContent = text;
+    m.className = 'msg show ' + type;
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value;
+    const c = parseInt(document.getElementById('captcha').value, 10);
+    if (c !== captchaAnswer) {
+      showMsg('❌ Incorrect security answer. Please try again.', 'error');
+      newCaptcha();
+      return;
+    }
+    showMsg('⏳ Verifying credentials...', 'success');
+    fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    })
+    .then(async r => {
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Login failed');
+      return data;
+    })
+    .then(data => {
+      try {
+        sessionStorage.setItem('ms_token', data.token);
+        sessionStorage.setItem('ms_role', data.user.role);
+        sessionStorage.setItem('ms_user', data.user.username);
+        sessionStorage.setItem('ms_name', data.user.name || data.user.username);
+        localStorage.setItem('ms_token', data.token);
+        localStorage.setItem('ms_role', data.user.role);
+        localStorage.setItem('ms_user', data.user.username);
+        localStorage.setItem('ms_name', data.user.name || data.user.username);
+        localStorage.setItem('ms_last_page_' + data.user.role, 'dashboard');
+      } catch (e) {}
+      showMsg('✅ Welcome ' + (data.user.name || data.user.username) + '! Launching Skyline SMS...', 'success');
+      setTimeout(() => {
+        window.location.href = '/' + data.user.role.toLowerCase();
+      }, 550);
+    })
+    .catch(err => {
+      showMsg('❌ ' + err.message, 'error');
+      newCaptcha();
+    });
+  });
+</script>
+</body>
+</html>

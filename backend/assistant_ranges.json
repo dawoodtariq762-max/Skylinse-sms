@@ -1,0 +1,57 @@
+{
+  "generated_at": "2026-09-16T11:10:51.077Z",
+  "ranges": [
+    {
+      "id": 4,
+      "name": "PK-Jazz-Direct",
+      "prefix": "9230",
+      "country": "Pakistan",
+      "provider": "Skyline Global Route",
+      "payment_type": "weekly",
+      "rate_1_1": "0.028",
+      "rate_7_1": "0.025",
+      "rate_7_7": "0.022",
+      "rate_30_45": "0.020",
+      "status": "Active"
+    },
+    {
+      "id": 3,
+      "name": "UAE-Etisalat-Fast",
+      "prefix": "9715",
+      "country": "United Arab Emirates",
+      "provider": "Skyline ME Hub",
+      "payment_type": "weekly",
+      "rate_1_1": "0.065",
+      "rate_7_1": "0.062",
+      "rate_7_7": "0.058",
+      "rate_30_45": "0.055",
+      "status": "Active"
+    },
+    {
+      "id": 2,
+      "name": "UK-Vodafone-VIP",
+      "prefix": "4479",
+      "country": "United Kingdom",
+      "provider": "Skyline Telecom Europe",
+      "payment_type": "weekly",
+      "rate_1_1": "0.038",
+      "rate_7_1": "0.035",
+      "rate_7_7": "0.032",
+      "rate_30_45": "0.030",
+      "status": "Active"
+    },
+    {
+      "id": 1,
+      "name": "US-Tier1-T-Mobile",
+      "prefix": "1202",
+      "country": "United States",
+      "provider": "Skyline Direct",
+      "payment_type": "weekly",
+      "rate_1_1": "0.045",
+      "rate_7_1": "0.042",
+      "rate_7_7": "0.040",
+      "rate_30_45": "0.038",
+      "status": "Active"
+    }
+  ]
+}
