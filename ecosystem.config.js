@@ -44,36 +44,37 @@
 module.exports = {
   apps: [
     {
-      name: 'powerx',
+      name: 'skyline-sms',
       script: 'backend/server.js',
       cwd: __dirname,
 
-      // ---- single process (see note above) ----
+      // ---- single process (SQLite & scheduler safe) ----
       exec_mode: 'fork',
       instances: 1,
 
       // ---- restart policy ----
       autorestart: true,
-      watch: false,                     // never restart on file change in production
+      watch: false,
       max_memory_restart: '1500M',
       exp_backoff_restart_delay: 200,
       min_uptime: '30s',
       max_restarts: 10,
       restart_delay: 2000,
 
-      // ---- clean shutdown so the WAL checkpoint completes ----
+      // ---- clean shutdown so WAL checkpoint completes ----
       kill_timeout: 10000,
       shutdown_with_message: false,
       wait_ready: false,
 
       // ---- logs ----
-      time: true,                       // timestamp every log line
+      time: true,
       merge_logs: true,
-      error_file: '/root/powerx-logs/error.log',
-      out_file: '/root/powerx-logs/out.log',
+      error_file: '/root/skyline-logs/error.log',
+      out_file: '/root/skyline-logs/out.log',
 
       env: {
         NODE_ENV: 'production',
+        PORT: 4000
       },
     },
   ],

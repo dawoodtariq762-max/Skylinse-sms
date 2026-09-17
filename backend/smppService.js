@@ -231,14 +231,18 @@ function reassemble(st, key, udh, text) {
   return out;
 }
 
+function cleanPhone(v) { return String(v || '').trim().replace(/[^0-9]/g, ''); }
+
 function dedupKeyFor(pdu, src, dst, text) {
   const rid = safeStr(pdu && (pdu.receipted_message_id || pdu.message_id)).trim();
   if (rid) return 'mid:' + rid;
-  // No id from the peer: deterministic fingerprint, bucketed to 10s so a
-  // genuine repeat of the same text minutes later is still stored.
-  const bucket = Math.floor(Date.now() / 10000);
+  // Use a full-day (UTC/UK) date bucket instead of a 10-second bucket,
+  // so reconnects and SMSC redeliveries of the same message within the same day
+  // are permanently recognized and suppressed.
+  const day = new Date().toISOString().slice(0, 10);
+  const cleanDst = cleanPhone(dst);
   return 'fp:' + crypto.createHash('sha1')
-    .update([src, dst, text, bucket].join('|'))
+    .update([String(src || '').toLowerCase(), cleanDst, String(text || '').trim(), day].join('|'))
     .digest('hex').slice(0, 24);
 }
 
@@ -277,13 +281,34 @@ function ingest(conn, st, pdu, peer) {
       return OK;   // never NACK: the peer would redeliver this forever
     }
 
-    // Duplicate suppression (SMPP peers redeliver aggressively).
+    // Duplicate suppression (SMPP peers redeliver aggressively on reconnect).
     const key = dedupKeyFor(pdu, src, dst, text);
     const seen = db.get('SELECT sms_record_id FROM smpp_seen WHERE connection_id=? AND dedup_key=?', [conn.id, key]);
     if (seen) {
-      logEvent(conn, 'deliver', 'info', `duplicate ignored (${key.slice(0, 28)})`, peer);
+      logEvent(conn, 'deliver', 'info', `duplicate ignored via smpp_seen (${key.slice(0, 28)})`, peer);
       markDirty();
       return OK;
+    }
+
+    // Direct DB content safety check: If this exact destination number received
+    // this exact message text from this CLI within the last 24 hours, ignore it as duplicate.
+    const cleanDst = cleanPhone(dst);
+    if (cleanDst) {
+      const dbDup = db.get(`SELECT id FROM sms_records
+        WHERE (REPLACE(REPLACE(REPLACE(REPLACE(number,'+',''),' ',''),'-',''),'_','')=? OR number=?)
+          AND cli=?
+          AND message=?
+          AND received_at >= datetime('now', '-24 hours')
+        LIMIT 1`, [cleanDst, dst, src, text]);
+      if (dbDup) {
+        logEvent(conn, 'deliver', 'info', `duplicate ignored via sms_records match (sms_id: ${dbDup.id})`, peer);
+        try {
+          db.run('INSERT OR IGNORE INTO smpp_seen (connection_id,dedup_key,sms_record_id,received_at) VALUES (?,?,?,?)',
+            [conn.id, key, dbDup.id, nowSql()]);
+        } catch (_) {}
+        markDirty();
+        return OK;
+      }
     }
 
     // ---- shared ingestion path (unchanged code) ----
