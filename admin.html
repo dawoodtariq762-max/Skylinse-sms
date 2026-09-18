@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=sky-1" />
+<link rel="stylesheet" href="/assets/cdr-report.css" />
 <title>SKYLINE SMS — Admin Panel</title>
 <style id="route-auth-hide">html{visibility:hidden}
 
@@ -933,6 +934,7 @@
 
 
 <script src="/api.js?v=20260914-agent-manager-allocation-final"></script>
+<script src="/assets/cdr-report.js"></script>
 <script>
 /* auth guard — admin only */
 if(window.API){ API.guard('admin'); }
@@ -1493,33 +1495,9 @@ function renderSmsReport(){
    click = usi value ka filter (drill). Chip se hatane par wapas poori list.
    Rollback: purana tick+select design git history me hai. */
 function buildSmsDetail(){
-  document.getElementById('page-smsDetail').innerHTML=`
-  <div class="page-head"><div><h2>SMS Detailed Report</h2><div class="breadcrumb"><b>CDR Stats</b> › Detailed Report</div></div></div>
-  <div class="toolbar">
-    <div class="filter-row">
-      <label><input type="checkbox" id="sdUseDate" checked style="width:auto" onchange="renderSmsDetail()"> Date</label>
-      <input type="date" id="sdDateFrom" title="From date" onchange="renderSmsDetail();populateSmsDetailFilterLists()" /> <span class="muted" style="align-self:center">to</span> <input type="date" id="sdDateTo" title="To date" onchange="renderSmsDetail();populateSmsDetailFilterLists()" />
-      <label><input type="checkbox" id="sdUseTime" style="width:auto" onchange="toggleDetailFilters()"> Time</label>
-      <input type="time" id="sdTimeFrom" title="From time (UK)" disabled onchange="renderSmsDetail()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="sdTimeTo" title="To time (UK)" disabled onchange="renderSmsDetail()"/>
-      <select id="sdRange" onchange="renderSmsDetail()"><option value="">All Ranges</option></select>
-      <select id="sdProvider" onchange="renderSmsDetail()"><option value="">All Providers</option></select>
-      <select id="sdCli" onchange="renderSmsDetail()"><option value="">All CLIs</option></select>
-      <input type="text" id="sdNumber" placeholder="Filter Number" style="min-width:130px;max-width:160px" oninput="clearTimeout(window.__sdNT);window.__sdNT=setTimeout(renderSmsDetail,400)"/>
-      <select id="sdUser" onchange="renderSmsDetail()"><option value="">All Managers</option></select>
-      <button class="btn btn-red" onclick="renderSmsDetail()">Apply Filter</button>
-      <button type="button" class="gx-btn"  onclick="sdReset()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-    </div>
-    <div class="hint">Filters are combinable. The report uses AND logic across all selected filters.</div>
-  </div>
-  <div class="table-wrap" style="padding:16px 18px;margin-top:0"><div class="table-controls"><div class="tc-left"><label>Show Records:</label>
-    <select id="sdLen" onchange="renderSmsDetail()"><option>10</option><option selected>25</option><option>50</option><option>100</option><option>500</option><option>1000</option><option>10000</option><option value="All">All</option></select>${expBtns()}</div>
-    <div class="tc-right"><label>Search:</label><input type="text" id="sdSearch" oninput="renderSmsDetail()" placeholder="Search..."/></div></div></div>
-  <div class="table-wrap"><div class="tscroll"><table>
-    <thead id="sdHead"></thead><tbody id="sdBody"></tbody></table></div>
-    <div class="table-foot"><div class="info" id="sdInfo"></div><div class="info" id="sdPayoutInfo"></div></div></div>`;
-  var _f=document.getElementById('sdDateFrom'),_t=document.getElementById('sdDateTo');if(_f)_f.value='';if(_t)_t.value='';
-  populateSmsDetailFilterLists();
-  renderSmsDetail();
+  if (window.initCdrReport) {
+    return initCdrReport({ role: 'admin', containerId: 'page-smsDetail' });
+  }
 }
 function toggleDetailFilters(){
   const tOn=document.getElementById('sdUseTime')?.checked;
@@ -2719,7 +2697,7 @@ async function loadAdminPageData(page){
     if(page==='allocation'){ await ensureAdminRates(); await ensureAdminManagers(); return loadNumberSummary(); }
     if(page==='rates') return loadRates();
     if(page==='smsReport'){ if(!document.getElementById('srBody')) buildSmsReport(); return renderSmsReport(); }
-    if(page==='smsDetail'){ if(!document.getElementById('sdBody')) buildSmsDetail(); /* BUGFIX: smsRecords was never loaded here, so renderSmsDetail() always filtered an empty array and every filter (including Date) appeared to do nothing. */ await ensureAdminSms(); await fillSmsDetailLiteFilters(); return renderSmsDetail(); }
+    if(page==='smsDetail'){ if(!document.getElementById('sdBody') || !window.__cdrInstance) return buildSmsDetail(); return window.__cdrInstance.render(); }
     if(['clientStats','agentStats','managerStats'].includes(page)){ const k=page.replace('Stats',''); if(!document.getElementById(k+'SBody')) buildEntityStats(k); await ensureAdminManagers(); return renderEntityStats(k); }
     if(['rangeStats','numberStats'].includes(page)){ const k=page.replace('Stats',''); if(!document.getElementById(k+'SBody')) buildDrillStats(k); await ensureAdminManagers(); return renderDrillStats(k); }
     if(page==='test'){ await ensureAdminRates(); await loadTestNumbers(); return renderTest(); }
@@ -2780,6 +2758,7 @@ async function renderSmsReport(){
   setServerFoot(srInfo,state,renderSmsReport);
 }
 async function renderSmsDetail(){
+  if(window.__cdrInstance) return window.__cdrInstance.render();
   if(!document.getElementById('sdBody')) return;
   const _sdF=(document.getElementById('sdDateFrom')?.value)||'';
   const _sdT=(document.getElementById('sdDateTo')?.value)||'';

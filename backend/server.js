@@ -364,6 +364,30 @@ function ukLocalDateToUtcSql(dateStr, plusDays=0){
   return fmtUtcSql(utc);
 }
 
+function parseReportDateTimeToUtc(str, isEnd = false) {
+  if (!str) return '';
+  const s = String(str).trim();
+  const dtMatch = s.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (dtMatch) {
+    const d = dtMatch[1];
+    const hh = parseInt(dtMatch[2], 10);
+    const mm = parseInt(dtMatch[3], 10);
+    const ss = dtMatch[4] ? parseInt(dtMatch[4], 10) : (isEnd ? 59 : 0);
+    const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const base = Date.UTC(+m[1], +m[2]-1, +m[3], hh, mm, ss);
+    let off = ukOffsetMinutes(new Date(base));
+    let utc = base - off * 60000;
+    const off2 = ukOffsetMinutes(new Date(utc));
+    if (off2 !== off) utc = base - off2 * 60000;
+    return fmtUtcSql(utc);
+  }
+  const dMatch = s.match(/^(\d{4}-\d{2}-\d{2})$/);
+  if (dMatch) {
+    return ukLocalDateToUtcSql(s, isEnd ? 1 : 0);
+  }
+  return '';
+}
+
 // Clean URL routes (must be before static so /admin.html can redirect to /admin)
 const FRONTEND_ROOT = path.join(__dirname, '..');
 function sendFrontendPage(res, file) { res.sendFile(path.join(FRONTEND_ROOT, file)); }
@@ -2648,18 +2672,134 @@ app.post('/api/numbers/smart-divide', authRequired, async (req, res) => {
 
 
 /* ============ SMS RECORDS / CDR STATS ============ */
+const CDR_DIMENSIONS = {
+  hour: {
+    key: 'hour',
+    title: 'HOUR',
+    expr: "strftime('%Y-%m-%d %H:00', datetime(s.received_at, (CASE WHEN strftime('%m', s.received_at) BETWEEN '04' AND '10' THEN '+1 hour' ELSE '+0 hour' END)))",
+    alias: 'hour'
+  },
+  day: {
+    key: 'day',
+    title: 'DAY',
+    expr: "strftime('%Y-%m-%d', datetime(s.received_at, (CASE WHEN strftime('%m', s.received_at) BETWEEN '04' AND '10' THEN '+1 hour' ELSE '+0 hour' END)))",
+    alias: 'day'
+  },
+  month: {
+    key: 'month',
+    title: 'MONTH',
+    expr: "strftime('%Y-%m', datetime(s.received_at, (CASE WHEN strftime('%m', s.received_at) BETWEEN '04' AND '10' THEN '+1 hour' ELSE '+0 hour' END)))",
+    alias: 'month'
+  },
+  range: {
+    key: 'range',
+    title: 'RANGE',
+    expr: "COALESCE(r.name, '—')",
+    alias: 'range_name'
+  },
+  number: {
+    key: 'number',
+    title: 'NUMBER',
+    expr: "COALESCE(s.number, '—')",
+    alias: 'number'
+  },
+  cli: {
+    key: 'cli',
+    title: 'CLI',
+    expr: "COALESCE(s.cli, '—')",
+    alias: 'cli'
+  },
+  client: {
+    key: 'client',
+    title: 'CLIENT',
+    expr: "COALESCE(cu.username, '—')",
+    alias: 'client_name'
+  },
+  currency: {
+    key: 'currency',
+    title: 'CURRENCY',
+    expr: "COALESCE(NULLIF(r.currency,''), 'USD')",
+    alias: 'currency'
+  },
+  status: {
+    key: 'status',
+    title: 'STATUS',
+    expr: "'Delivered'",
+    alias: 'status'
+  },
+  provider: {
+    key: 'provider',
+    title: 'PROVIDER',
+    expr: "COALESCE(r.provider, '—')",
+    alias: 'provider'
+  },
+  manager: {
+    key: 'manager',
+    title: 'MANAGER',
+    expr: "COALESCE(mu.username, '—')",
+    alias: 'manager_name'
+  },
+  agent: {
+    key: 'agent',
+    title: 'AGENT',
+    expr: "COALESCE(au.username, '—')",
+    alias: 'agent_name'
+  }
+};
+
 function buildSmsPagedQuery(user, q = {}) {
   const scope = smsScopeWhere(user, 's');
   const where = [scope.where, 'COALESCE(s.is_test,0)=0'];
   const params = [...scope.params];
-  if (q.from) { const start = ukLocalDateToUtcSql(String(q.from), 0); if (start) { where.push('s.received_at >= ?'); params.push(start); } }
-  if (q.to) { const end = ukLocalDateToUtcSql(String(q.to), 1); if (end) { where.push('s.received_at < ?'); params.push(end); } }
-  if (q.range) { where.push('r.name=?'); params.push(String(q.range)); }
+  if (q.from) {
+    const start = parseReportDateTimeToUtc(String(q.from), false);
+    if (start) { where.push('s.received_at >= ?'); params.push(start); }
+  }
+  if (q.to) {
+    const end = parseReportDateTimeToUtc(String(q.to), true);
+    if (end) {
+      if (String(q.to).includes(':')) {
+        where.push('s.received_at <= ?');
+        params.push(end);
+      } else {
+        where.push('s.received_at < ?');
+        params.push(end);
+      }
+    }
+  }
+  if (q.range) {
+    const rVal = String(q.range).trim();
+    if (/^\d+$/.test(rVal)) {
+      where.push('(r.name = ? OR s.range_id = ?)');
+      params.push(rVal, +rVal);
+    } else {
+      where.push('(r.name = ? COLLATE NOCASE OR LOWER(r.name) = LOWER(?))');
+      params.push(rVal, rVal);
+    }
+  }
   if (q.range_id) { where.push('s.range_id=?'); params.push(+q.range_id); }
-  if (q.number) { where.push('s.number=?'); params.push(String(q.number)); }
-  if (q.cli) { where.push('s.cli=?'); params.push(String(q.cli)); }
+  if (q.number) {
+    const nVal = String(q.number).trim();
+    const cleanDigits = nVal.replace(/\D+/g, '');
+    if (cleanDigits.length >= 6) {
+      where.push("(s.number = ? OR REPLACE(s.number,'+','') = ? OR s.number LIKE ?)");
+      params.push(nVal, cleanDigits, `%${cleanDigits}%`);
+    } else {
+      where.push("(s.number = ? OR REPLACE(s.number,'+','') = ?)");
+      params.push(nVal, cleanDigits);
+    }
+  }
+  if (q.cli) {
+    const cVal = String(q.cli).trim();
+    where.push('(s.cli = ? COLLATE NOCASE OR LOWER(s.cli) = LOWER(?))');
+    params.push(cVal, cVal);
+  }
   /* Provider = ranges.provider (real existing relationship). Non-client only. */
-  if (q.provider && user && user.role !== 'client') { where.push("COALESCE(r.provider,'')=?"); params.push(String(q.provider)); }
+  if (q.provider && user && user.role !== 'client') {
+    const pVal = String(q.provider).trim();
+    where.push("(COALESCE(r.provider,'') = ? COLLATE NOCASE OR LOWER(COALESCE(r.provider,'')) = LOWER(?))");
+    params.push(pVal, pVal);
+  }
   /* P14: Time-of-day window in UK wall-clock, applied per day of the from..to range
      (DST-safe: each day converts with its own UK offset). Default day = UK today. */
   if (q.tfrom || q.tto) {
@@ -2693,9 +2833,36 @@ function buildSmsPagedQuery(user, q = {}) {
     }
   }
   if (user && user.role !== 'client') {
-    if (q.manager) { where.push('mu.username=?'); params.push(String(q.manager)); }
-    if (q.agent) { where.push('au.username=?'); params.push(String(q.agent)); }
-    if (q.client) { where.push('cu.username=?'); params.push(String(q.client)); }
+    if (q.manager && user.role === 'admin') {
+      const mVal = String(q.manager).trim();
+      if (/^\d+$/.test(mVal)) {
+        where.push('(mu.username = ? COLLATE NOCASE OR s.manager_id = ?)');
+        params.push(mVal, +mVal);
+      } else {
+        where.push('mu.username = ? COLLATE NOCASE');
+        params.push(mVal);
+      }
+    }
+    if (q.agent && ['admin', 'manager'].includes(user.role)) {
+      const aVal = String(q.agent).trim();
+      if (/^\d+$/.test(aVal)) {
+        where.push('(au.username = ? COLLATE NOCASE OR s.agent_id = ?)');
+        params.push(aVal, +aVal);
+      } else {
+        where.push('au.username = ? COLLATE NOCASE');
+        params.push(aVal);
+      }
+    }
+    if (q.client) {
+      const cVal = String(q.client).trim();
+      if (/^\d+$/.test(cVal)) {
+        where.push('(cu.username = ? COLLATE NOCASE OR s.client_id = ?)');
+        params.push(cVal, +cVal);
+      } else {
+        where.push('cu.username = ? COLLATE NOCASE');
+        params.push(cVal);
+      }
+    }
   }
   if (q.search) {
     const term = String(q.search).trim();
@@ -2741,6 +2908,8 @@ function smsPagedOrderSql(q){
 }
 app.get('/api/sms/paged', authRequired, (req, res, next) => {
   const q = req.query || {};
+  const rawGroupBy0 = String(q.group_by || q.groupBy || '').trim();
+  if (rawGroupBy0) return next();
   const limitRaw0 = String(q.limit || '25');
   const isAllReq = limitRaw0.toLowerCase() === 'all';
   const numericReq = parseInt(limitRaw0, 10) || 0;
@@ -2773,11 +2942,89 @@ app.get('/api/sms/paged', authRequired, (req, res, next) => {
 app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200, () => {
   const q = req.query || {};
   const built = buildSmsPagedQuery(req.user, q);
+  const limitRaw = String(q.limit || '25');
+  const smsRoleCap = rolePageMax(req.user.role);
+
+  const rawGroupBy = String(q.group_by || q.groupBy || '').trim();
+  if (rawGroupBy) {
+    const allowedDimsForRole = {
+      admin: ['hour', 'day', 'month', 'range', 'number', 'cli', 'client', 'agent', 'manager', 'provider', 'currency', 'status'],
+      manager: ['hour', 'day', 'month', 'range', 'number', 'cli', 'client', 'agent', 'currency', 'status'],
+      agent: ['hour', 'day', 'month', 'range', 'number', 'cli', 'client', 'currency', 'status'],
+      client: ['hour', 'day', 'month', 'range', 'number', 'cli', 'currency', 'status']
+    };
+    const allowedDims = allowedDimsForRole[req.user.role] || allowedDimsForRole.client;
+    const reqDims = rawGroupBy.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const activeDims = reqDims.filter(d => allowedDims.includes(d) && CDR_DIMENSIONS[d]);
+    if (activeDims.length > 0) {
+      const selectParts = activeDims.map(d => `${CDR_DIMENSIONS[d].expr} AS ${CDR_DIMENSIONS[d].alias}`);
+      if (!activeDims.includes('currency')) {
+        selectParts.push("COALESCE(NULLIF(r.currency,''), 'USD') AS currency");
+      }
+      selectParts.push('COUNT(*) AS sms');
+      selectParts.push("COALESCE(SUM(CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL)),0) AS my_payout");
+      selectParts.push("COALESCE(SUM(CAST(COALESCE(NULLIF(n.payout,''),'0') AS REAL)),0) AS client_payout");
+
+      const groupParts = activeDims.map(d => CDR_DIMENSIONS[d].expr);
+      if (!activeDims.includes('currency')) {
+        groupParts.push("COALESCE(NULLIF(r.currency,''), 'USD')");
+      }
+      const groupBySql = `GROUP BY ${groupParts.join(', ')}`;
+
+      let orderSql = 'sms DESC';
+      if (q.sort) {
+        const dir = String(q.dir || 'desc').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+        if (q.sort === 'sms') orderSql = `sms ${dir}`;
+        else if (q.sort === 'my_payout' || q.sort === 'payout') orderSql = `CAST(my_payout AS REAL) ${dir}`;
+        else if (q.sort === 'client_payout') orderSql = `CAST(client_payout AS REAL) ${dir}`;
+        else if (q.sort === 'currency') orderSql = `currency ${dir}`;
+        else {
+          const dim = activeDims.find(d => d === q.sort || CDR_DIMENSIONS[d]?.alias === q.sort);
+          if (dim) orderSql = `${CDR_DIMENSIONS[dim].alias} ${dir}`;
+        }
+      }
+
+      const totalRow = db.get(`SELECT COUNT(*) AS c FROM (SELECT 1 ${built.baseSql} ${groupBySql})`, built.params);
+      const total = +(totalRow?.c || 0);
+
+      const totalsRow = db.get(`SELECT COUNT(*) AS total_sms,
+          COALESCE(SUM(CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL)),0) AS total_my_payout,
+          COALESCE(SUM(CAST(COALESCE(NULLIF(n.payout,''),'0') AS REAL)),0) AS total_client_payout
+        ${built.baseSql}`, built.params) || {};
+
+      const limit = limitRaw.toLowerCase() === 'all' ? Math.max(1, Math.min(total || 1, ROLE_ALL_MAX[req.user.role] || smsRoleCap)) : Math.max(1, Math.min(parseInt(limitRaw || '25', 10) || 25, smsRoleCap));
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const page = Math.min(Math.max(1, parseInt(q.page || '1', 10) || 1), totalPages);
+      const offset = (page - 1) * limit;
+
+      const rows = db.all(`SELECT ${selectParts.join(', ')}
+        ${built.baseSql}
+        ${groupBySql}
+        ORDER BY ${orderSql}
+        LIMIT ? OFFSET ?`, [...built.params, limit, offset]);
+
+      return {
+        grouped: true,
+        dimensions: activeDims,
+        rows: rows.map(r => ({
+          ...r,
+          my_payout: normalizeDecimalString(r.my_payout || 0) || '0.00',
+          client_payout: normalizeDecimalString(r.client_payout || 0) || '0.00'
+        })),
+        total,
+        totalSms: totalsRow.total_sms || 0,
+        totalPayment: normalizeDecimalString(totalsRow.total_my_payout || 0) || '0.00',
+        totalClientPayout: normalizeDecimalString(totalsRow.total_client_payout || 0) || '0.00',
+        currency: rows[0]?.currency || 'USD',
+        page,
+        limit,
+        totalPages
+      };
+    }
+  }
+
   const total = +(db.get(`SELECT COUNT(*) c ${built.baseSql}`, built.params)?.c || 0);
   const totalPayment = normalizeDecimalString(db.get(`SELECT COALESCE(SUM(CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL)),0) p ${built.baseSql}`, built.params)?.p || '0') || '0';
-  const limitRaw = String(q.limit || '25');
-  /* P11: role-based ceiling (was: numeric<=1000, all<=10000 for every role) */
-  const smsRoleCap = rolePageMax(req.user.role);
   const limit = limitRaw.toLowerCase() === 'all' ? Math.max(1, Math.min(total || 1, ROLE_ALL_MAX[req.user.role] || smsRoleCap)) : Math.max(1, Math.min(parseInt(limitRaw || '25', 10) || 25, smsRoleCap));
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const page = Math.min(Math.max(1, parseInt(q.page || '1', 10) || 1), totalPages);

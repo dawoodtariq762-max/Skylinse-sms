@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=sky-1" />
+<link rel="stylesheet" href="/assets/cdr-report.css" />
 <title>SKYLINE SMS — Agent Panel</title>
 <style id="route-auth-hide">html{visibility:hidden}
 
@@ -706,6 +707,7 @@
 
 <div class="modal-overlay" id="walletHelpModal"><div class="modal" style="max-width:720px"><div class="modal-head"><h3>How to copy Binance USDT (TRC20) wallet</h3><button class="modal-close" onclick="closeModal('walletHelpModal')">×</button></div><div class="modal-body"><div class="hint" style="margin-bottom:12px"><b>Warning:</b> Using the wrong network or wallet address is the user's responsibility.</div><div class="card"><b>Step 1</b><div class="hint">Open Binance → Wallet → Spot/Funding → Deposit.</div><div style="border:1px solid #ddd6fe;border-radius:12px;padding:12px;margin-top:8px;background:#faf5ff">Example Screenshot: Deposit → Select USDT</div></div><div class="card"><b>Step 2</b><div class="hint">Choose coin: USDT. Choose network: TRC20 / Tron.</div><div style="border:1px solid #ddd6fe;border-radius:12px;padding:12px;margin-top:8px;background:#faf5ff">Example Screenshot: Network TRC20 selected</div></div><div class="card"><b>Step 3</b><div class="hint">Copy the address starting with T and paste it here.</div><div style="border:1px solid #ddd6fe;border-radius:12px;padding:12px;margin-top:8px;background:#faf5ff">Example: Txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</div></div></div></div></div>
 <script src="/api.js?v=20260914-agent-manager-allocation-final"></script>
+<script src="/assets/cdr-report.js"></script>
 <script>
 if(window.API){ API.guard('agent'); }
 /* NAV */
@@ -903,33 +905,9 @@ function renderSmsReport(){const len=document.getElementById('srLen').value,q=(d
 
 /* ===== CDR: DETAILED (advanced filters) ===== */
 function buildSmsDetail(){
-  document.getElementById('page-smsDetail').innerHTML=`
-  <div class="page-head"><div><h2>SMS Detailed Report</h2><div class="breadcrumb"><b>CDR Stats</b> › Detailed</div></div></div>
-  <div class="toolbar">
-    <div class="filter-row">
-      <label><input type="checkbox" id="sdUseDate" checked style="width:auto" onchange="renderSmsDetail()"> Date</label>
-      <input type="date" id="sdDateFrom" title="From date" onchange="renderSmsDetail();populateSmsDetailFilterLists()" /> <span class="muted" style="align-self:center">to</span> <input type="date" id="sdDateTo" title="To date" onchange="renderSmsDetail();populateSmsDetailFilterLists()" />
-      <label><input type="checkbox" id="sdUseTime" style="width:auto" onchange="toggleDetailFilters()"> Time</label>
-      <input type="time" id="sdTimeFrom" title="From time (UK)" disabled onchange="renderSmsDetail()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="sdTimeTo" title="To time (UK)" disabled onchange="renderSmsDetail()"/>
-      <select id="sdRange" onchange="renderSmsDetail()"><option value="">All Ranges</option></select>
-      <select id="sdCli" onchange="renderSmsDetail()"><option value="">All CLIs</option></select>
-      <input type="text" id="sdNumber" placeholder="Filter Number" style="min-width:130px;max-width:160px" oninput="clearTimeout(window.__sdNT);window.__sdNT=setTimeout(renderSmsDetail,400)"/>
-      <select id="sdUser" onchange="renderSmsDetail()"><option value="">All Clients</option></select>
-      <button class="btn btn-blue" onclick="renderSmsDetail()">Apply Filter</button>
-      <button type="button" class="gx-btn"  onclick="sdReset()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-    </div>
-    <div class="hint">Filters are combinable. The report uses AND logic across all selected filters.</div>
-  </div>
-  <div class="table-wrap" style="padding:15px 17px;margin-top:0"><div class="table-controls">
-    <div class="tc-left"><label>Show Records:</label>
-      <select id="sdLen" onchange="renderSmsDetail()"><option>10</option><option selected>25</option><option>50</option><option>100</option><option>500</option><option>1000</option><option>10000</option><option value="All">All</option></select>${eb()}</div>
-    <div class="tc-right"><label>Search:</label><input type="text" id="sdSearch" oninput="renderSmsDetail()" placeholder="Search..."/></div></div></div>
-  <div class="table-wrap"><div class="tscroll"><table><thead id="sdHead"></thead><tbody id="sdBody"></tbody></table></div>
-    <div class="table-foot"><div class="info" id="sdInfo"></div><div class="info" id="sdPayoutInfo"></div><div class="pagination"></div></div></div>`;
-  var _f3=document.getElementById('sdDateFrom'),_t3=document.getElementById('sdDateTo');
-  if(_f3)_f3.value='';if(_t3)_t3.value='';
-  populateSmsDetailFilterLists();
-  renderSmsDetail();
+  if (window.initCdrReport) {
+    return initCdrReport({ role: 'agent', containerId: 'page-smsDetail' });
+  }
 }
 function toggleDetailFilters(){
   const _t=document.getElementById('sdUseTime')?.checked;
@@ -1254,7 +1232,7 @@ async function loadAgentPageData(page){
     if(page==='bulkAlloc'){ await Promise.allSettled([loadClients(), loadNumberSummaryForBulk()]); return; }
     if(page==='clients'){ buildClients(); return loadClients(); }
     if(page==='smsReport'){ if(!document.getElementById('srBody')) buildSmsReport(); return loadSms(); }
-    if(page==='smsDetail'){ if(!document.getElementById('sdBody')) buildSmsDetail(); return loadSms(); }
+    if(page==='smsDetail'){ if(!document.getElementById('sdBody') || !window.__cdrInstance) return buildSmsDetail(); return window.__cdrInstance.render(); }
     if(page==='clientStats'){ if(!document.getElementById('csBody')) buildClientStats(); return loadSms(); }
     if(['rangeStats','numberStats'].includes(page)){ const k=page.replace('Stats',''); if(!document.getElementById(k+'Body')) buildDrill(k); return loadSms(); }
     if(page==='payment') return loadAgentPayment();
@@ -1284,7 +1262,7 @@ async function renderSmsReport(){if(!document.getElementById('srBody'))return;gx
   const state=agtPager('agtSmsReportServer');const _sst=(window.__srSort=window.__srSort||{k:'',d:''});const sig=agtSig({len,search,from,to,tfrom,tto,rangeVal,numberVal,sk:_sst.k,sd:_sst.d});if(state.signature!==sig){state.page=1;state.signature=sig;}
   const params=new URLSearchParams({page:String(state.page),limit:len,search,sort:(_sst.k||'date'),dir:(_sst.k?_sst.d:'desc')});
   if(from)params.set('from',from); if(to)params.set('to',to); if(tfrom)params.set('tfrom',tfrom); if(tto)params.set('tto',tto); if(rangeVal)params.set('range',rangeVal); if(numberVal)params.set('number',numberVal);let data={rows:[],total:0,page:1,limit:25,totalPages:1};try{data=await API.get('/sms/paged?'+params.toString())}catch(e){}state.page=data.page||1;state.totalPages=data.totalPages||1;const rows=data.rows||[];srBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-cli">${r.client_name||'—'}</span></td><td>${r.range_name||'—'}</td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;srInfo.textContent=`Showing ${shownSrv(data.page,data.limit,rows.length,data.total)} of ${data.total||0} records`;const pag=srInfo.closest('.table-foot')?.querySelector('.pagination');if(pag&&window.drawServerPagination)drawServerPagination(pag,state,renderSmsReport);}
-async function renderSmsDetail(){if(!document.getElementById('sdBody'))return;
+async function renderSmsDetail(){if(window.__cdrInstance) return window.__cdrInstance.render();if(!document.getElementById('sdBody'))return;
   const _sdF=(document.getElementById('sdDateFrom')?.value)||'',_sdT=(document.getElementById('sdDateTo')?.value)||'';let dateFrom=_sdF,dateTo=_sdT;if(document.getElementById('sdUseDate')?.checked){if(!dateFrom&&!dateTo){dateFrom=todayStr();dateTo=todayStr();}else if(dateFrom&&!dateTo){dateTo='2099-12-31';}else if(!dateFrom&&dateTo){dateFrom='1970-01-01';}if(dateFrom>dateTo){const _s=dateFrom;dateFrom=dateTo;dateTo=_s;}}else{dateFrom='';dateTo='';}
   const tfVal=sdUseTime?.checked?(document.getElementById('sdTimeFrom')?.value||''):'',ttVal=sdUseTime?.checked?(document.getElementById('sdTimeTo')?.value||''):'';
   const rangeVal=document.getElementById('sdRange')?.value||'';
