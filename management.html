@@ -864,6 +864,13 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
             <tbody id="smLogBody"></tbody>
           </table></div></div>
         </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-head"><div><h3>Inbound SMPP Message Journal &amp; Sequence Tracking</h3><div class="sub">Structured tracking of sequence numbers, session IDs, deduplication keys and database links.</div></div><div class="head-actions"><button class="btn btn-blue" onclick="loadSmppInbound()">Refresh Journal</button></div></div>
+          <div class="table-wrap"><div class="tscroll"><table>
+            <thead><tr><th>Received Time</th><th>Session ID</th><th>Seq #</th><th>Source (CLI)</th><th>Destination</th><th>Provider Msg ID</th><th>Status</th><th>DB Record</th></tr></thead>
+            <tbody id="smInboundBody"></tbody>
+          </table></div></div>
+        </div>
       </section>
 
       <!-- ========== SYSTEM MASTER: SMS CLI LIMIT ========== -->
@@ -2878,9 +2885,30 @@ async function loadSmpp(){
     }).join('');
     document.getElementById('smInfo').textContent=`${smppData.length} connection(s) · ${up} connected`;
     loadSmppLogs();
+    loadSmppInbound();
   }catch(e){
     body.innerHTML=`<tr><td colspan="9" class="muted" style="text-align:center;padding:18px">Could not load SMPP connections: ${smEsc(e.message||e)}</td></tr>`;
   }
+}
+
+async function loadSmppInbound(){
+  const b=document.getElementById('smInboundBody');
+  if(!b) return;
+  try{
+    const res=await API.get('/smpp/inbound?limit=50');
+    const rows=(res&&res.items)?res.items:[];
+    if(!rows.length){ b.innerHTML='<tr><td colspan="8" class="muted" style="text-align:center;padding:14px">No inbound SMPP messages tracked yet.</td></tr>'; return; }
+    b.innerHTML=rows.map(r=>`<tr>
+      <td class="muted">${smEsc(String(r.received_at||r.created_at||'').slice(0,19))}</td>
+      <td class="mono" style="font-size:12px">${smEsc(r.session_id||'—')}</td>
+      <td class="mono font-bold">${smEsc(r.sequence_number||'0')}</td>
+      <td><span class="tag tag-cli">${smEsc(r.source_addr||'—')}</span></td>
+      <td class="mono">${smEsc(r.destination_addr||'—')}</td>
+      <td class="mono muted">${smEsc(r.provider_message_id||'—')}</td>
+      <td><span class="tag ${r.status==='processed'?'tag-agt':'tag-mgr'}">${smEsc(r.status||'processed')}</span></td>
+      <td class="mono">${r.sms_record_id?`#${r.sms_record_id}`:'—'}</td>
+    </tr>`).join('');
+  }catch(e){ b.innerHTML=`<tr><td colspan="8" class="muted" style="text-align:center;padding:14px">${smEsc(e.message||e)}</td></tr>`; }
 }
 
 async function loadSmppLogs(){

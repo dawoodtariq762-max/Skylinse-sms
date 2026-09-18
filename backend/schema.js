@@ -554,6 +554,13 @@ function createTables() {
   )`);
   db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_smpp_seen_unique ON smpp_seen(connection_id, dedup_key)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_smpp_seen_created ON smpp_seen(created_at)`);
+  ensureColumn('smpp_seen', 'session_id', "TEXT DEFAULT ''");
+  ensureColumn('smpp_seen', 'sequence_number', "INTEGER DEFAULT 0");
+  ensureColumn('smpp_seen', 'source_addr', "TEXT DEFAULT ''");
+  ensureColumn('smpp_seen', 'destination_addr', "TEXT DEFAULT ''");
+  ensureColumn('smpp_seen', 'provider_message_id', "TEXT DEFAULT ''");
+  ensureColumn('smpp_seen', 'status', "TEXT DEFAULT 'processed'");
+  db.run(`CREATE INDEX IF NOT EXISTS idx_smpp_seen_seq ON smpp_seen(connection_id, session_id, sequence_number)`);
 
   // Event log: bind/unbind/error/reconnect/received/sent. Kept small by the service.
   db.run(`CREATE TABLE IF NOT EXISTS smpp_logs (

@@ -753,6 +753,16 @@ app.get('/api/smpp/logs', authRequired, requireRole('admin'), (req, res) => {
   res.json(rows);
 });
 
+// SMPP sequence and inbound message tracking journal
+app.get('/api/smpp/inbound', authRequired, requireRole('admin'), (req, res) => {
+  const cid = req.query.connection_id ? +req.query.connection_id : null;
+  const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+  const rows = cid
+    ? db.all('SELECT * FROM smpp_seen WHERE connection_id=? ORDER BY id DESC LIMIT ?', [cid, limit])
+    : db.all('SELECT * FROM smpp_seen ORDER BY id DESC LIMIT ?', [limit]);
+  res.json({ ok: true, items: rows });
+});
+
 // Outbound send (submit_sm). Queued first, so nothing is lost if the link is down.
 app.post('/api/smpp/connections/:id/send', authRequired, requireRole('admin'), (req, res) => {
   const id = +req.params.id;
