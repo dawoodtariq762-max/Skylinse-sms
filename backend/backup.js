@@ -1,5 +1,5 @@
 /**
- * Backup service for Power X SMS.
+ * Backup service for Skyline SMS.
  * - Uses sql.js export buffer from db.js for consistent snapshots.
  * - Writes backups atomically to a dedicated folder.
  * - Retains backups for a configurable number of days.

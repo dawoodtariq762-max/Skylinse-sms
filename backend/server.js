@@ -1,5 +1,5 @@
 /**
- * Power X SMS — Backend API
+ * Skyline SMS — Backend API
  * Node.js + Express + SQLite (sql.js). MySQL-ready SQL.
  */
 const express = require('express');
@@ -1315,25 +1315,44 @@ app.get('/api/ranges', authRequired, (req, res) => cachedJson(req, res, 5000, ()
   const includeDeleted = String(req.query.include_deleted || '').toLowerCase() === '1' || String(req.query.include_deleted || '').toLowerCase() === 'true';
   const includeTests = String(req.query.include_tests || '').toLowerCase() === '1' || String(req.query.include_tests || '').toLowerCase() === 'true';
   const where = includeDeleted ? '1=1' : "COALESCE(r.deleted_at,'')=''";
+  let rows;
   if (!includeTests) {
-    return db.all(`SELECT r.id,r.name,r.prefix,r.currency,r.rate_1_1,r.rate_7_1,r.rate_7_7,r.rate_30_45,r.memo,r.payment_type,r.created_at,r.deleted_at,r.country,r.provider,r.currency_rate,r.cli_limit,r.range_start,r.range_end,r.status,'' AS test_number,'' AS test_numbers
+    rows = db.all(`SELECT r.id,r.name,r.prefix,r.currency,r.rate_1_1,r.rate_7_1,r.rate_7_7,r.rate_30_45,r.memo,r.payment_type,r.created_at,r.deleted_at,r.country,r.provider,r.provider_rate,r.currency_rate,r.cli_limit,r.range_start,r.range_end,r.status,'' AS test_number,'' AS test_numbers
       FROM ranges r WHERE ${where} ORDER BY r.name COLLATE NOCASE ASC, r.id ASC`);
+  } else {
+    rows = db.all(`SELECT r.*,
+      COALESCE((SELECT GROUP_CONCAT(test_number, ', ') FROM range_test_numbers t WHERE t.range_id=r.id AND t.active=1), r.test_number, '') AS test_numbers
+      FROM ranges r WHERE ${where} ORDER BY r.name COLLATE NOCASE ASC, r.id ASC`);
+    rows.forEach(r => { if (r.test_numbers) r.test_number = r.test_numbers; });
   }
-  const rows = db.all(`SELECT r.*,
-    COALESCE((SELECT GROUP_CONCAT(test_number, ', ') FROM range_test_numbers t WHERE t.range_id=r.id AND t.active=1), r.test_number, '') AS test_numbers
-    FROM ranges r WHERE ${where} ORDER BY r.name COLLATE NOCASE ASC, r.id ASC`);
-  rows.forEach(r => { if (r.test_numbers) r.test_number = r.test_numbers; });
+  if (req.user && req.user.role !== 'admin') {
+    rows.forEach(r => { delete r.provider_rate; });
+  }
   return rows;
 }));
+/* Area 4: Inventory selectors (Bulk Allocation, SMS Range Allocation, Number Selection)
+   only show currently allocated ranges for Manager/Agent/Client (0 numbers = range hidden). */
+app.get('/api/ranges/allocated', authRequired, (req, res) => cachedJson(req, res, 5000, () => {
+  const scope = numberScope(req.user, 'n');
+  const rows = db.all(`SELECT r.id, r.name, r.prefix, r.country, r.currency,
+      COUNT(n.id) AS allocated_count
+    FROM ranges r
+    JOIN numbers n ON n.range_id = r.id AND ${scope.where}
+    WHERE COALESCE(r.deleted_at,'') = ''
+    GROUP BY r.id, r.name
+    HAVING allocated_count > 0
+    ORDER BY r.name COLLATE NOCASE ASC`, scope.params);
+  return rows.map(r => ({ id: r.id, name: r.name, prefix: r.prefix, country: r.country, currency: r.currency, count: +(r.allocated_count || 0) }));
+}, 'numbers_ver'));
 // only admin can set rates / create ranges
 app.post('/api/ranges', authRequired, requireRole('admin'), (req, res) => {
   const b = req.body || {};
   if (!b.name) return res.status(400).json({ error: 'Range name required' });
-  const ins = db.run(`INSERT INTO ranges (name,prefix,test_number,currency,rate_1_1,rate_7_1,rate_7_7,rate_30_45,memo,payment_type,country,provider,currency_rate,cli_limit,range_start,range_end,status)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  const ins = db.run(`INSERT INTO ranges (name,prefix,test_number,currency,rate_1_1,rate_7_1,rate_7_7,rate_30_45,memo,payment_type,country,provider,currency_rate,cli_limit,range_start,range_end,status,provider_rate)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [b.name, b.prefix || '', '', b.currency || 'USD',
      b.rate_1_1 || 'NA', b.rate_7_1 || 'NA', b.rate_7_7 || 'NA', b.rate_30_45 || 'NA', b.memo || '', normalizePaymentType(b.payment_type || b.payterm || 'weekly'),
-     b.country || '', b.provider || '', b.currency_rate || '', b.cli_limit || '', b.range_start || '', b.range_end || '', b.status || 'Active']);
+     b.country || '', b.provider || '', b.currency_rate || '', b.cli_limit || '', b.range_start || '', b.range_end || '', b.status || 'Active', String(b.provider_rate !== undefined ? b.provider_rate : '0')]);
   const newRange = db.get('SELECT id FROM ranges WHERE name=? ORDER BY id DESC LIMIT 1', [b.name]);
   syncRangeTestNumbers(newRange ? newRange.id : ins.lastInsertRowid, b.test_numbers || b.test_number || '');
   logAction(req,'create_range','ranges',b.name);
@@ -1564,10 +1583,28 @@ app.post('/api/ranges/import', authRequired, requireRole('admin'), (req,res)=>{
 });
 app.put('/api/ranges/:id', authRequired, requireRole('admin'), (req, res) => {
   const b = req.body || {};
-  db.run(`UPDATE ranges SET name=?,prefix=?,currency=?,rate_1_1=?,rate_7_1=?,rate_7_7=?,rate_30_45=?,memo=?,payment_type=?,country=?,provider=?,currency_rate=?,cli_limit=?,range_start=?,range_end=?,status=? WHERE id=?`,
-    [b.name, b.prefix || '', b.currency || 'USD',
-     b.rate_1_1 || 'NA', b.rate_7_1 || 'NA', b.rate_7_7 || 'NA', b.rate_30_45 || 'NA', b.memo || '', normalizePaymentType(b.payment_type || 'weekly'),
-     b.country || '', b.provider || '', b.currency_rate || '', b.cli_limit || '', b.range_start || '', b.range_end || '', b.status || 'Active', +req.params.id]);
+  const old = db.get('SELECT * FROM ranges WHERE id=?', [+req.params.id]);
+  if (!old) return res.status(404).json({ error: 'Range not found' });
+  const provRate = b.provider_rate !== undefined ? String(b.provider_rate) : (old.provider_rate || '0');
+  db.run(`UPDATE ranges SET name=?,prefix=?,currency=?,rate_1_1=?,rate_7_1=?,rate_7_7=?,rate_30_45=?,memo=?,payment_type=?,country=?,provider=?,currency_rate=?,cli_limit=?,range_start=?,range_end=?,status=?,provider_rate=? WHERE id=?`,
+    [b.name !== undefined ? b.name : old.name,
+     b.prefix !== undefined ? b.prefix : (old.prefix || ''),
+     b.currency !== undefined ? b.currency : (old.currency || 'USD'),
+     b.rate_1_1 !== undefined ? b.rate_1_1 : (old.rate_1_1 || 'NA'),
+     b.rate_7_1 !== undefined ? b.rate_7_1 : (old.rate_7_1 || 'NA'),
+     b.rate_7_7 !== undefined ? b.rate_7_7 : (old.rate_7_7 || 'NA'),
+     b.rate_30_45 !== undefined ? b.rate_30_45 : (old.rate_30_45 || 'NA'),
+     b.memo !== undefined ? b.memo : (old.memo || ''),
+     normalizePaymentType((b.payment_type || b.payterm) !== undefined ? (b.payment_type || b.payterm) : (old.payment_type || 'weekly')),
+     b.country !== undefined ? b.country : (old.country || ''),
+     b.provider !== undefined ? b.provider : (old.provider || ''),
+     b.currency_rate !== undefined ? b.currency_rate : (old.currency_rate || ''),
+     b.cli_limit !== undefined ? b.cli_limit : (old.cli_limit || ''),
+     b.range_start !== undefined ? b.range_start : (old.range_start || ''),
+     b.range_end !== undefined ? b.range_end : (old.range_end || ''),
+     b.status !== undefined ? b.status : (old.status || 'Active'),
+     provRate,
+     +req.params.id]);
   syncRangeTestNumbers(+req.params.id, b.test_numbers || b.test_number || '');
   logAction(req,'update_range','ranges',{id:+req.params.id});
   try { require('./assistant').refreshRanges(); } catch (e) { console.warn('[ASSISTANT] refresh failed:', e.message); }
@@ -2621,8 +2658,8 @@ function buildSmsPagedQuery(user, q = {}) {
   if (q.range_id) { where.push('s.range_id=?'); params.push(+q.range_id); }
   if (q.number) { where.push('s.number=?'); params.push(String(q.number)); }
   if (q.cli) { where.push('s.cli=?'); params.push(String(q.cli)); }
-  /* P14: Provider = ranges.provider (real existing relationship). Admin-only UI exposure. */
-  if (q.provider) { where.push("COALESCE(r.provider,'')=?"); params.push(String(q.provider)); }
+  /* Provider = ranges.provider (real existing relationship). Non-client only. */
+  if (q.provider && user && user.role !== 'client') { where.push("COALESCE(r.provider,'')=?"); params.push(String(q.provider)); }
   /* P14: Time-of-day window in UK wall-clock, applied per day of the from..to range
      (DST-safe: each day converts with its own UK offset). Default day = UK today. */
   if (q.tfrom || q.tto) {
@@ -2655,9 +2692,11 @@ function buildSmsPagedQuery(user, q = {}) {
       if (windows.length) { where.push('(' + windows.join(' OR ') + ')'); params.push(...wparams); }
     }
   }
-  if (q.manager) { where.push('mu.username=?'); params.push(String(q.manager)); }
-  if (q.agent) { where.push('au.username=?'); params.push(String(q.agent)); }
-  if (q.client) { where.push('cu.username=?'); params.push(String(q.client)); }
+  if (user && user.role !== 'client') {
+    if (q.manager) { where.push('mu.username=?'); params.push(String(q.manager)); }
+    if (q.agent) { where.push('au.username=?'); params.push(String(q.agent)); }
+    if (q.client) { where.push('cu.username=?'); params.push(String(q.client)); }
+  }
   if (q.search) {
     const term = String(q.search).trim();
     // PHASE-3 FIX: columns are wrapped in LOWER() and case_sensitive_like=ON
@@ -3137,7 +3176,27 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
       active_agents_today = db.get(`SELECT COUNT(DISTINCT s.agent_id) c FROM sms_records s WHERE s.agent_id IN (SELECT id FROM users WHERE role='agent' AND parent_id=?) AND ${ukDayOffsetSql('s.received_at', 0)} AND COALESCE(s.is_test,0)=0`, [u.id])?.c || 0;
     }
   } catch(e) {}
-  return { sms_today: today, otp_today: today, successful_otp_today: successToday, failed_otp_today: failedToday, failed_sms_today: failedToday, total_sms: totalSms, failed_total: failedTotal, sms_yesterday: yesterday, sms_week: d7, sms_7d: d7, sms_month: month, payout_week: payoutWeek, payout_7d: payout7, payout_month: payoutMonth, managers, agents, clients, numbers, active_agents_today, daily7, recent, sms_year: smsYear, over_limit_today, over_limit_week, sms_by_country };
+  /* ===== AREA 3: Real Provider Cost calculation (Admin only, respecting rate-limit / zero-rate OTP rules) ===== */
+  let real_provider_cost_today = '0', real_provider_cost_week = '0', real_provider_cost_month = '0', real_provider_cost_total = '0';
+  if (u.role === 'admin') {
+    const calcCost = (extraWhere = '', params = []) => {
+      const sql = `SELECT COALESCE(SUM(
+        CAST(COALESCE(NULLIF(r.provider_rate,''),'0') AS REAL)
+      ), 0) AS cost
+      FROM sms_records s
+      JOIN ranges r ON r.id = s.range_id
+      WHERE COALESCE(s.is_test, 0) = 0
+        AND CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) > 0
+        ${extraWhere}`;
+      const res = db.get(sql, params);
+      return normalizeDecimalString(res?.cost || 0) || '0';
+    };
+    real_provider_cost_today = calcCost(` AND ${ukDayOffsetSql('s.received_at', 0)}`);
+    real_provider_cost_week = calcCost(` AND s.received_at >= ?`, [ukTodayDateStr(-dowMon) + ' 00:00:00']);
+    real_provider_cost_month = calcCost(` AND s.received_at >= ?`, [monthStart + ' 00:00:00']);
+    real_provider_cost_total = calcCost('');
+  }
+  return { sms_today: today, otp_today: today, successful_otp_today: successToday, failed_otp_today: failedToday, failed_sms_today: failedToday, total_sms: totalSms, failed_total: failedTotal, sms_yesterday: yesterday, sms_week: d7, sms_7d: d7, sms_month: month, payout_week: payoutWeek, payout_7d: payout7, payout_month: payoutMonth, managers, agents, clients, numbers, active_agents_today, daily7, recent, sms_year: smsYear, over_limit_today, over_limit_week, sms_by_country, real_provider_cost_today, real_provider_cost_week, real_provider_cost_month, real_provider_cost_total };
 }, 'numbers_ver'));
 
 

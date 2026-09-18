@@ -1,5 +1,5 @@
 SKYLINE SMS — CURRENT RANGE & RATE INFORMATION
-Auto-generated: 2026-09-17 13:00 UTC
+Auto-generated: 2026-09-18 04:49 UTC
 ========================================================
 
 Range      : PK-Jazz-Direct
@@ -22,6 +22,24 @@ Country    : United Kingdom
 Provider   : Skyline Telecom Europe
 Payment    : weekly
 Rates      : Daily(1/1)=0.038 | Weekly(7/1)=0.035 | Weekly(7/7)=0.032 | Monthly(30/45)=0.030
+--------------------------------------------------------
+Range      : UK_Alpha
+Prefix     : 4471
+Provider   : CarrierAlpha
+Payment    : weekly
+Rates      : Daily(1/1)=0.08 | Weekly(7/1)=0.08 | Weekly(7/7)=0.08 | Monthly(30/45)=0.08
+--------------------------------------------------------
+Range      : UK_Beta
+Prefix     : 4472
+Provider   : CarrierBeta
+Payment    : weekly
+Rates      : Daily(1/1)=0.10 | Weekly(7/1)=0.10 | Weekly(7/7)=0.10 | Monthly(30/45)=0.10
+--------------------------------------------------------
+Range      : UK_Unallocated
+Prefix     : 4473
+Provider   : CarrierAlpha
+Payment    : weekly
+Rates      : Daily(1/1)=0.09 | Weekly(7/1)=0.09 | Weekly(7/7)=0.09 | Monthly(30/45)=0.09
 --------------------------------------------------------
 Range      : US-Tier1-T-Mobile
 Prefix     : 1202

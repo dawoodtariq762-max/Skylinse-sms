@@ -1,5 +1,5 @@
 /* =========================================================================
- * GALAXY SMS — AI ASSISTANT (P13) — AGENT-PANEL assistant
+ * SKYLINE SMS — AI ASSISTANT (P13) — AGENT-PANEL assistant
  * -------------------------------------------------------------------------
  * P13 changes (owner feedback):
  *  - Widget + message API: SIRF AGENT panel (admin/manager/client denied).

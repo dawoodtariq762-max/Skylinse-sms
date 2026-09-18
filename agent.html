@@ -904,80 +904,99 @@ function renderSmsReport(){const len=document.getElementById('srLen').value,q=(d
 /* ===== CDR: DETAILED (advanced filters) ===== */
 function buildSmsDetail(){
   document.getElementById('page-smsDetail').innerHTML=`
-  <style>.gx-facet-row{cursor:pointer}.gx-facet-row:hover{background:rgba(99,102,241,.10)}.gx-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(99,102,241,.15);color:#a5b4fc;margin:2px 6px 2px 0}.gx-chip .x{cursor:pointer;font-weight:800;color:#f87c8a}</style>
   <div class="page-head"><div><h2>SMS Detailed Report</h2><div class="breadcrumb"><b>CDR Stats</b> › Detailed</div></div></div>
   <div class="toolbar">
-    <div class="filter-row"><label><input type="checkbox" id="sdUseDate" checked style="width:auto" onchange="renderSmsDetail()"> Date</label><input type="date" id="sdDateFrom" title="From date" onchange="renderSmsDetail()" /> <span class="muted" style="align-self:center">to</span> <input type="date" id="sdDateTo" title="To date" onchange="renderSmsDetail()" />
-    <label><input type="checkbox" id="sdUseTime" style="width:auto" onchange="toggleDetailFilters()"> Time</label><input type="time" id="sdTimeFrom" title="From time (UK)" disabled onchange="renderSmsDetail()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="sdTimeTo" title="To time (UK)" disabled onchange="renderSmsDetail()"/>
-    <label><input type="checkbox" id="sdUseCli" style="width:auto" onchange="toggleDetailFilters()"> CLI</label>
-    <label><input type="checkbox" id="sdUseNumber" style="width:auto" onchange="toggleDetailFilters()"> Number-wise</label>
-    <label><input type="checkbox" id="sdUseRange" style="width:auto" onchange="toggleDetailFilters()"> Range</label>
-    <label><input type="checkbox" id="sdUseUser" style="width:auto" onchange="toggleDetailFilters()"> Client</label>
-    <button class="btn btn-blue" onclick="renderSmsDetail()">Apply Filter</button><button type="button" class="gx-btn"  onclick="sdReset()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button></div>
-    <div class="hint">Tick karne par results me us dimension ki values (current data se, SMS count + payout) list hoti hain — value par click karo to sirf usi ke results. Filters combinable (AND).</div>
-    <div id="sdChips" style="display:flex;flex-wrap:wrap;align-items:center"></div>
+    <div class="filter-row">
+      <label><input type="checkbox" id="sdUseDate" checked style="width:auto" onchange="renderSmsDetail()"> Date</label>
+      <input type="date" id="sdDateFrom" title="From date" onchange="renderSmsDetail();populateSmsDetailFilterLists()" /> <span class="muted" style="align-self:center">to</span> <input type="date" id="sdDateTo" title="To date" onchange="renderSmsDetail();populateSmsDetailFilterLists()" />
+      <label><input type="checkbox" id="sdUseTime" style="width:auto" onchange="toggleDetailFilters()"> Time</label>
+      <input type="time" id="sdTimeFrom" title="From time (UK)" disabled onchange="renderSmsDetail()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="sdTimeTo" title="To time (UK)" disabled onchange="renderSmsDetail()"/>
+      <select id="sdRange" onchange="renderSmsDetail()"><option value="">All Ranges</option></select>
+      <select id="sdCli" onchange="renderSmsDetail()"><option value="">All CLIs</option></select>
+      <input type="text" id="sdNumber" placeholder="Filter Number" style="min-width:130px;max-width:160px" oninput="clearTimeout(window.__sdNT);window.__sdNT=setTimeout(renderSmsDetail,400)"/>
+      <select id="sdUser" onchange="renderSmsDetail()"><option value="">All Clients</option></select>
+      <button class="btn btn-blue" onclick="renderSmsDetail()">Apply Filter</button>
+      <button type="button" class="gx-btn"  onclick="sdReset()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+    </div>
+    <div class="hint">Filters are combinable. The report uses AND logic across all selected filters.</div>
   </div>
   <div class="table-wrap" style="padding:15px 17px;margin-top:0"><div class="table-controls">
-    <div class="tc-left"><label>Show Records:</label><select id="sdLen" onchange="renderSmsDetail()"><option>10</option><option selected>25</option><option>50</option><option>100</option><option>500</option><option>1000</option><option>10000</option><option value="All">All</option></select>${eb()}</div>
+    <div class="tc-left"><label>Show Records:</label>
+      <select id="sdLen" onchange="renderSmsDetail()"><option>10</option><option selected>25</option><option>50</option><option>100</option><option>500</option><option>1000</option><option>10000</option><option value="All">All</option></select>${eb()}</div>
     <div class="tc-right"><label>Search:</label><input type="text" id="sdSearch" oninput="renderSmsDetail()" placeholder="Search..."/></div></div></div>
   <div class="table-wrap"><div class="tscroll"><table><thead id="sdHead"></thead><tbody id="sdBody"></tbody></table></div>
-    <div class="table-foot"><div class="info" id="sdInfo"></div><div class="info" id="sdPayoutInfo"></div><div class="pagination"></div></div></div>`;var _f3=document.getElementById('sdDateFrom'),_t3=document.getElementById('sdDateTo');if(_f3)_f3.value='';if(_t3)_t3.value='';renderSmsDetail();}
-/* P19 facet state (agent): dims = cli, number, range, client */
-function sdActiveTicks(){ const m=[]; if(typeof sdUseCli!=='undefined'&&sdUseCli&&sdUseCli.checked)m.push('cli'); if(typeof sdUseNumber!=='undefined'&&sdUseNumber&&sdUseNumber.checked)m.push('number'); if(typeof sdUseRange!=='undefined'&&sdUseRange&&sdUseRange.checked)m.push('range'); if(typeof sdUseUser!=='undefined'&&sdUseUser&&sdUseUser.checked)m.push('client'); return m; }
-function sdSelParams(exclude){ const sel=(window.__sdSel=window.__sdSel||{cli:'',number:'',range:'',client:''}); const out={}; for(const k of ['cli','number','range','client']){ if(k!==exclude&&sel[k]) out[k]=sel[k]; } return out; }
-function sdPick(dim,val){ const sel=(window.__sdSel=window.__sdSel||{cli:'',number:'',range:'',client:''}); sel[dim]=val; window.__sdDrill=dim; renderSmsDetail(); }
-function sdUnpick(dim){ const sel=(window.__sdSel=window.__sdSel||{cli:'',number:'',range:'',client:''}); sel[dim]=''; if(window.__sdDrill===dim)window.__sdDrill=''; renderSmsDetail(); }
-function sdChipsHtml(){ const sel=window.__sdSel||{}; const lbl={cli:'CLI',number:'Number',range:'Range',client:'Client'}; const out=[]; for(const k of ['cli','number','range','client']){ if(sel[k]){ const v=String(sel[k]).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); out.push(`<span class="gx-chip">${lbl[k]}: <b>${v}</b> <span class="x" onclick="sdUnpick('${k}')" title="Remove filter">&#10005;</span></span>`); } } return out.join(''); }
-function toggleDetailFilters(){
-  /* P19: selects gone — facet design. Checkbox sirf Time gate karta hai; tick change drill reset. */
-  const _t=document.getElementById('sdUseTime').checked;document.getElementById('sdTimeFrom').disabled=!_t;document.getElementById('sdTimeTo').disabled=!_t;
-  window.__sdDrill='';
+    <div class="table-foot"><div class="info" id="sdInfo"></div><div class="info" id="sdPayoutInfo"></div><div class="pagination"></div></div></div>`;
+  var _f3=document.getElementById('sdDateFrom'),_t3=document.getElementById('sdDateTo');
+  if(_f3)_f3.value='';if(_t3)_t3.value='';
+  populateSmsDetailFilterLists();
   renderSmsDetail();
 }
-function sdReset(){window.__sdSort={k:'',d:''};window.__sdSumSort={k:'',d:''};window.__sdDrill='';window.__sdSel={cli:'',number:'',range:'',client:''};gxResetSortHeads('sdSort_');['sms','payment'].forEach(x=>{const el=document.getElementById('sdSum_'+x);if(el)el.textContent='\u21C5';});sdUseDate.checked=true;var _f2=document.getElementById('sdDateFrom'),_t2=document.getElementById('sdDateTo');if(_f2){_f2.value='';_f2.dataset.gxAuto='';}if(_t2){_t2.value='';_t2.dataset.gxAuto='';}sdUseRange.checked=false;sdUseNumber.checked=false;sdUseUser.checked=false;sdUseCli.checked=false;sdUseTime.checked=false;var _tf2=document.getElementById('sdTimeFrom'),_tt2=document.getElementById('sdTimeTo');if(_tf2)_tf2.value='';if(_tt2)_tt2.value='';sdSearch.value='';toggleDetailFilters();}
-function groupRows(rows,key,label){const map={};rows.forEach(r=>{const k=r[key]||'—';if(!map[k])map[k]={name:k,sms:0,pay:'0'};map[k].sms++;map[k].pay=decAdd(map[k].pay,r.payout_amount||r.payout_rate||0);});const arr=Object.values(map);return {head:`<tr><th>${label}</th><th>Total OTPs</th><th>Total Payout</th></tr>`,rows:arr.map(x=>`<tr><td><span class="tag tag-cli">${x.name}</span></td><td class="cell-money">${x.sms}</td><td class="cell-money">${money(x.pay)}</td></tr>`)};}
-function inSmsDateRange(receivedAt){
-  var d = ukDateOf(receivedAt || '');
-  if (!d) return false;
-  var fromEl = document.getElementById('sdDateFrom');
-  var toEl   = document.getElementById('sdDateTo');
-  var from = fromEl && fromEl.value ? fromEl.value : '';
-  var to   = toEl   && toEl.value   ? toEl.value   : '';
-  if (!from && !to) return d === todayStr();
-  if (from && to && from > to) { var t = from; from = to; to = t; }
-  if (from && d < from) return false;
-  if (to   && d > to)   return false;
-  return true;
+function toggleDetailFilters(){
+  const _t=document.getElementById('sdUseTime')?.checked;
+  const tf=document.getElementById('sdTimeFrom'), tt=document.getElementById('sdTimeTo');
+  if(tf) tf.disabled=!_t;
+  if(tt) tt.disabled=!_t;
+  const dOn=document.getElementById('sdUseDate')?.checked;
+  const df=document.getElementById('sdDateFrom'), dt=document.getElementById('sdDateTo');
+  if(df) df.disabled=!dOn;
+  if(dt) dt.disabled=!dOn;
+  renderSmsDetail();
 }
-async function renderSmsDetail_legacy_dead_P19(){/* P19: DEAD legacy copy — kabhi call na karein. Live = async renderSmsDetail neeche. */return;
-  const _sdF=(document.getElementById('sdDateFrom')?.value)||'',_sdT=(document.getElementById('sdDateTo')?.value)||'';
-  let dateFrom=_sdF,dateTo=_sdT;
-  if(!dateFrom&&!dateTo){ dateFrom=todayStr(); dateTo=todayStr(); }
-  else if(dateFrom&&!dateTo){ dateTo='2099-12-31'; }
-  else if(!dateFrom&&dateTo){ dateFrom='1970-01-01'; }
-  if(dateFrom>dateTo){ const _s=dateFrom; dateFrom=dateTo; dateTo=_s; }
-  const dateVal=dateFrom,rangeVal=sdRange?.value||'',userVal=sdUser?.value||'',cliVal=sdCli?.value||'',tfVal=sdUseTime?.checked?(document.getElementById('sdTimeFrom')?.value||''):'',ttVal=sdUseTime?.checked?(document.getElementById('sdTimeTo')?.value||''):'',search=(sdSearch?.value||'').trim(),len=sdLen?.value||'25';
-  const by=sdUseNumber?.checked?'number':(sdUseRange?.checked?'range':(sdUseUser?.checked?'client':''));
-  if(by){
-    const params=new URLSearchParams({from:dateFrom,to:dateTo}); if(rangeVal)params.set('range',rangeVal); if(userVal)params.set('client',userVal); if(search)params.set('search',search);
-    if(cliVal)params.set('cli',cliVal); if(tfVal)params.set('tfrom',tfVal); if(ttVal)params.set('tto',ttVal);
-    let data={rows:[]}; try{data=await API.get('/stats-summary/'+by+'?'+params.toString())}catch(e){}
-    sdHead.innerHTML=`<tr><th>${by}</th><th>Total OTPs</th><th>Total Payout</th></tr>`;
-    sdBody.innerHTML=(data.rows||[]).map(x=>`<tr><td><span class="tag tag-blue">${x.key||'—'}</span></td><td class="cell-money">${x.sms||0}</td><td class="cell-money">${money(x.payment||'0')}</td></tr>`).join('')||`<tr><td colspan="3" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
-    sdInfo.textContent=`Showing ${(data.rows||[]).length} summary rows`; sdPayoutInfo.textContent=`Filtered total payout: ${money(data.totalPayment||'0')}`; return;
-  }
-  const state=agtPager('agtSmsDetailServer');const sig=agtSig({dateVal,rangeVal,userVal,cliVal,tfVal,ttVal,search,len});if(state.signature!==sig){state.page=1;state.signature=sig;}
-  const params=new URLSearchParams({page:String(state.page),limit:len,from:dateFrom,to:dateTo,sort:'date',dir:'desc'});
-  if(rangeVal)params.set('range',rangeVal); if(userVal)params.set('client',userVal); if(search)params.set('search',search);
-  if(cliVal)params.set('cli',cliVal); if(tfVal)params.set('tfrom',tfVal); if(ttVal)params.set('tto',ttVal);
-  let data={rows:[],total:0,page:1,limit:25,totalPages:1,totalPayment:'0'}; try{data=await API.get('/sms/paged?'+params.toString())}catch(e){}
-  state.page=data.page||1; state.totalPages=data.totalPages||1;
-  sdHead.innerHTML='<tr><th>Date</th><th>Client</th><th>Range</th><th>Number</th><th>CLI</th><th>Payout Rate</th><th>Message</th></tr>';
-  const rows=data.rows||[];
-  sdBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-cli">${r.client_name||'—'}</span></td><td><b>${r.range_name||'—'}</b></td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
-  sdInfo.textContent=`Showing ${shownSrv(data.page,data.limit,rows.length,data.total)} of ${data.total||0} rows`;
-  sdPayoutInfo.textContent=`Filtered total payout: ${money(data.totalPayment||'0')}`;
-  const p=sdInfo?.closest('.table-foot')?.querySelector('.pagination'); if(p&&window.drawServerPagination)drawServerPagination(p,state,renderSmsDetail);
+function sdReset(){
+  window.__sdSort={k:'',d:''};
+  gxResetSortHeads('sdSort_');
+  if(document.getElementById('sdUseDate')) document.getElementById('sdUseDate').checked=true;
+  var _f2=document.getElementById('sdDateFrom'),_t2=document.getElementById('sdDateTo');
+  if(_f2){_f2.value='';_f2.dataset.gxAuto='';}
+  if(_t2){_t2.value='';_t2.dataset.gxAuto='';}
+  if(document.getElementById('sdUseTime')) document.getElementById('sdUseTime').checked=false;
+  var _tf2=document.getElementById('sdTimeFrom'),_tt2=document.getElementById('sdTimeTo');
+  if(_tf2)_tf2.value='';
+  if(_tt2)_tt2.value='';
+  ['sdRange','sdCli','sdNumber','sdUser','sdSearch'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value='';
+  });
+  toggleDetailFilters();
+  renderSmsDetail();
+}
+function sdListArgs(){
+  const g=(id)=>{const e=document.getElementById(id);return (e&&e.value)?String(e.value).trim():'';};
+  const o={from:g('sdDateFrom'),to:g('sdDateTo'),range:g('sdRange'),number:g('sdNumber'),search:g('sdSearch'),client:g('sdUser')};
+  Object.keys(o).forEach(k=>{if(!o[k])delete o[k];});
+  return o;
+}
+async function populateSmsDetailFilterLists(){
+  try{
+    const rSel=document.getElementById('sdRange');
+    if(rSel){
+      const cur=rSel.value;
+      const rj=await API.get('/ranges/allocated').catch(()=>[]);
+      const arr=Array.isArray(rj)?rj:(rj.ranges||[]);
+      const names=[...new Set(arr.map(x=>x.name).filter(Boolean))].sort();
+      rSel.innerHTML='<option value="">All Ranges</option>'+names.map(n=>`<option value="${String(n).replace(/"/g,'&quot;')}">${String(n).replace(/</g,'&lt;')}</option>`).join('');
+      if(cur) rSel.value=cur;
+    }
+    const cSel=document.getElementById('sdCli');
+    if(cSel){
+      const cur=cSel.value;
+      const rj=await API.smsClis(sdListArgs()).catch(()=>({items:[]}));
+      const items=rj.items||rj.clis||[];
+      cSel.innerHTML='<option value="">All CLIs</option>'+items.map(x=>{
+        const c=typeof x==='string'?x:x.cli;
+        const cnt=typeof x==='object'&&x.count!=null?` (${x.count})`:'';
+        return `<option value="${String(c).replace(/"/g,'&quot;')}">${String(c).replace(/</g,'&lt;')}${cnt}</option>`;
+      }).join('');
+      if(cur) cSel.value=cur;
+    }
+    const uSel=document.getElementById('sdUser');
+    if(uSel){
+      const cur=uSel.value;
+      const cls=(myClients||[]);
+      uSel.innerHTML='<option value="">All Clients</option>'+cls.map(c=>`<option value="${String(c).replace(/"/g,'&quot;')}">${String(c).replace(/</g,'&lt;')}</option>`).join('');
+      if(cur) uSel.value=cur;
+    }
+  }catch(e){console.warn('populateSmsDetailFilterLists error', e);}
 }
 
 /* CLIENT STATS */
@@ -1195,8 +1214,9 @@ function pxPickRate(r){
   return 'NA';
 }
 function rebuildBa(){baData=(rateCard||[]).map(r=>{const nums=(numData||[]).filter(n=>n.range===r.range);const alloc=nums.filter(n=>n.client).length;return{id:r.id,range:r.range,total:nums.length,alloc,avail:nums.length-alloc,rate:pxPickRate(r)};});}
-async function loadRateCard(){ try{const ranges=await API.get('/ranges'); rateCard=ranges.map(r=>({id:r.id,range:r.name,cur:r.currency,r1:r.rate_1_1,r2:r.rate_7_1,r3:r.rate_7_7,r4:r.rate_30_45,test_number:r.test_number})); rangeNames=rateCard.map(r=>r.range) }catch(e){ rateCard=[]; rangeNames=[]; testNumbers=[]; } renderRateCard(); fillSel('numRange',rangeNames); }
-async function loadNumbers(){ return renderNumbers(); }
+async function loadRateCard(){ try{const ranges=await API.get('/ranges'); rateCard=ranges.map(r=>({id:r.id,range:r.name,cur:r.currency,r1:r.rate_1_1,r2:r.rate_7_1,r3:r.rate_7_7,r4:r.rate_30_45,test_number:r.test_number})); }catch(e){ rateCard=[]; } renderRateCard(); }
+async function loadAllocatedRanges(){ try{ const allocated=await API.get('/ranges/allocated').catch(()=>[]); rangeNames=(allocated||[]).map(r=>r.name); }catch(e){ rangeNames=[]; } fillSel('numRange',rangeNames); }
+async function loadNumbers(){ await loadAllocatedRanges(); return renderNumbers(); }
 async function loadClients(){ try{ clientsData=await API.get('/users/client'); }catch(e){ clientsData=[]; } refreshClients(); refreshClientSelects(); renderClients(); }
 async function loadSms(){ try{ smsRecords=await API.get('/sms'); }catch(e){ smsRecords=[]; } cdr=(smsRecords||[]).map(smsToCdr); recentTests=(smsRecords||[]).slice(0,50).map(r=>({date:(r.received_at||'').slice(0,19),range:r.range_name||'—',num:r.number||'',cli:r.cli||'',msg:r.message||''})); refreshClients(); const byCli={};smsRecords.forEach(r=>{const c=r.client_name||'—';byCli[c]=(byCli[c]||0)+1;});const b=document.getElementById('clSumBody');if(b)b.innerHTML=Object.keys(byCli).map(c=>`<tr><td><span class="tag tag-cli">${c}</span></td><td class="cell-money">${byCli[c]}</td><td class="cell-money" style="color:#86efac">$ ${sumPay((smsRecords||[]).filter(r=>r.client_name===c))}</td></tr>`).join('')||`<tr><td colspan="3" class="muted" style="text-align:center;padding:16px">No records found</td></tr>`; if(document.getElementById('srBody'))renderSmsReport();if(document.getElementById('sdBody'))renderSmsDetail();if(document.getElementById('csBody'))renderClientStats();['range','number'].forEach(k=>{if(document.getElementById(k+'Body')){renderDrill(k);}});}
 function baRow(i){const q=parseInt(document.getElementById('bq'+i).value),c=document.getElementById('bc'+i).value;if(!q||!c){alert('Select client and quantity.');return;}const row=baData[i],cl=(clientsData||[]).find(x=>x.username===c);if(!row||!cl)return;API.post('/numbers/smart-divide',{range_ids:[row.id],target_ids:[cl.id],qty:q,payterm:(document.getElementById('baPayterm')?.value||'weekly_7_1')}).then(res=>{alert(`✅ ${res.total||0} numbers allocated.`);loadNumberSummaryForBulk();renderNumbers();}).catch(e=>alert('❌ '+e.message));}
@@ -1265,34 +1285,28 @@ async function renderSmsReport(){if(!document.getElementById('srBody'))return;gx
   const params=new URLSearchParams({page:String(state.page),limit:len,search,sort:(_sst.k||'date'),dir:(_sst.k?_sst.d:'desc')});
   if(from)params.set('from',from); if(to)params.set('to',to); if(tfrom)params.set('tfrom',tfrom); if(tto)params.set('tto',tto); if(rangeVal)params.set('range',rangeVal); if(numberVal)params.set('number',numberVal);let data={rows:[],total:0,page:1,limit:25,totalPages:1};try{data=await API.get('/sms/paged?'+params.toString())}catch(e){}state.page=data.page||1;state.totalPages=data.totalPages||1;const rows=data.rows||[];srBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-cli">${r.client_name||'—'}</span></td><td>${r.range_name||'—'}</td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;srInfo.textContent=`Showing ${shownSrv(data.page,data.limit,rows.length,data.total)} of ${data.total||0} records`;const pag=srInfo.closest('.table-foot')?.querySelector('.pagination');if(pag&&window.drawServerPagination)drawServerPagination(pag,state,renderSmsReport);}
 async function renderSmsDetail(){if(!document.getElementById('sdBody'))return;
-  const chips=document.getElementById('sdChips'); if(chips) chips.innerHTML=sdChipsHtml();
-  const _sdF=(document.getElementById('sdDateFrom')?.value)||'',_sdT=(document.getElementById('sdDateTo')?.value)||'';let dateFrom=_sdF,dateTo=_sdT;if(!dateFrom&&!dateTo){dateFrom=todayStr();dateTo=todayStr();}else if(dateFrom&&!dateTo){dateTo='2099-12-31';}else if(!dateFrom&&dateTo){dateFrom='1970-01-01';}if(dateFrom>dateTo){const _s=dateFrom;dateFrom=dateTo;dateTo=_s;}
-  const tfVal=sdUseTime?.checked?(document.getElementById('sdTimeFrom')?.value||''):'',ttVal=sdUseTime?.checked?(document.getElementById('sdTimeTo')?.value||''):'',search=(sdSearch?.value||'').trim(),len=sdLen?.value||'25';
-  /* P19 FACET: tick+no-drill => dim values list (stats-summary, server-scoped); drill/no-tick => detail rows.
-     P19: Time window (tfrom/tto) ab agent me bhi manager/admin jaisa kaam karta hai (pehle checkbox vestigial tha). */
-  const ticks=sdActiveTicks(); const drill=window.__sdDrill||'';
-  const dimLabel={cli:'CLI',number:'Number',range:'Range',client:'Client'};
-  if(!drill && ticks.length){
-    const by=ticks[0]; /* priority: cli > number > range > client */
-    const fp=sdSelParams(by);
-    const params=new URLSearchParams({from:dateFrom,to:dateTo});
-    if(tfVal)params.set('tfrom',tfVal); if(ttVal)params.set('tto',ttVal);
-    if(search)params.set('search',search);
-    for(const k of Object.keys(fp)) params.set(k,fp[k]);
-    const _su=(window.__sdSumSort=window.__sdSumSort||{k:'',d:''});if(_su.k){params.set('sort',_su.k);params.set('dir',_su.d);}
-    let data={rows:[]};try{data=await API.get('/stats-summary/'+by+'?'+params.toString())}catch(e){}
-    sdHead.innerHTML=`<tr><th>${dimLabel[by]||by}</th><th class="sortable" onclick="gxSdSumSort('sms')">Total OTPs <span class="sort" id="sdSum_sms">${gxArr(_su,'sms')}</span></th><th class="sortable" onclick="gxSdSumSort('payment')">Total Payout <span class="sort" id="sdSum_payment">${gxArr(_su,'payment')}</span></th></tr>`;
-    sdBody.innerHTML=(data.rows||[]).map(x=>{const raw=String(x.key||'\u2014');const v=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');const mono=(by==='cli'||by==='number')?' mono':'';return `<tr class="gx-facet-row" onclick="sdPick('${by}','${v}')" title="Click to show only this ${dimLabel[by]||by}"><td><span class="tag tag-blue${mono}">${v}</span></td><td class="cell-money">${x.sms||0}</td><td class="cell-money">${money(x.payment||'0')}</td></tr>`;}).join('')||`<tr><td colspan="3" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
-    sdInfo.textContent=`Showing ${(data.rows||[]).length} ${dimLabel[by]||by} values — click a row to filter`;sdPayoutInfo.textContent=`Filtered total payout: ${money(data.totalPayment||'0')}`;return;}
+  const _sdF=(document.getElementById('sdDateFrom')?.value)||'',_sdT=(document.getElementById('sdDateTo')?.value)||'';let dateFrom=_sdF,dateTo=_sdT;if(document.getElementById('sdUseDate')?.checked){if(!dateFrom&&!dateTo){dateFrom=todayStr();dateTo=todayStr();}else if(dateFrom&&!dateTo){dateTo='2099-12-31';}else if(!dateFrom&&dateTo){dateFrom='1970-01-01';}if(dateFrom>dateTo){const _s=dateFrom;dateFrom=dateTo;dateTo=_s;}}else{dateFrom='';dateTo='';}
+  const tfVal=sdUseTime?.checked?(document.getElementById('sdTimeFrom')?.value||''):'',ttVal=sdUseTime?.checked?(document.getElementById('sdTimeTo')?.value||''):'';
+  const rangeVal=document.getElementById('sdRange')?.value||'';
+  const cliVal=document.getElementById('sdCli')?.value||'';
+  const numberVal=(document.getElementById('sdNumber')?.value||'').trim();
+  const clientVal=document.getElementById('sdUser')?.value||'';
+  const search=(sdSearch?.value||'').trim(),len=sdLen?.value||'25';
+
   const state=agtPager('agtSmsDetailServer');const _sdst=(window.__sdSort=window.__sdSort||{k:'',d:''});
-  const fp=sdSelParams('');
-  const sig=agtSig({dateVal:dateFrom,rangeVal:fp.range||'',userVal:fp.client||'',cliVal:fp.cli||'',numberVal:fp.number||'',search,len,sk:_sdst.k,sd:_sdst.d,drill});if(state.signature!==sig){state.page=1;state.signature=sig;}
-  const params=new URLSearchParams({page:String(state.page),limit:len,from:dateFrom,to:dateTo,sort:(_sdst.k||'date'),dir:(_sdst.k?_sdst.d:'desc')});
-  for(const k of Object.keys(fp)) params.set(k,fp[k]);
-  if(tfVal)params.set('tfrom',tfVal); if(ttVal)params.set('tto',ttVal); if(search)params.set('search',search);
+  const sig=agtSig({dateVal:dateFrom,dateTo,rangeVal,userVal:clientVal,cliVal,numberVal,tfVal,ttVal,search,len,sk:_sdst.k,sd:_sdst.d});if(state.signature!==sig){state.page=1;state.signature=sig;}
+  const params=new URLSearchParams({page:String(state.page),limit:len,sort:(_sdst.k||'date'),dir:(_sdst.k?_sdst.d:'desc')});
+  if(dateFrom)params.set('from',dateFrom); if(dateTo)params.set('to',dateTo);
+  if(tfVal)params.set('tfrom',tfVal); if(ttVal)params.set('tto',ttVal);
+  if(rangeVal)params.set('range',rangeVal);
+  if(cliVal)params.set('cli',cliVal);
+  if(numberVal)params.set('number',numberVal);
+  if(clientVal)params.set('client',clientVal);
+  if(search)params.set('search',search);
+
   let data={rows:[],total:0,page:1,limit:25,totalPages:1,totalPayment:'0'};try{data=await API.get('/sms/paged?'+params.toString())}catch(e){}
   state.page=data.page||1;state.totalPages=data.totalPages||1;
-  sdHead.innerHTML=`<tr><th>Date</th><th>Client</th><th class="sortable" onclick="gxSdSort('range')">Range <span class="sort">${gxArr(_sdst,'range')}</span></th><th class="sortable" onclick="gxSdSort('number')">Number <span class="sort">${gxArr(_sdst,'number')}</span></th><th class="sortable" onclick="gxSdSort('cli')">CLI <span class="sort">${gxArr(_sdst,'cli')}</span></th><th class="sortable" onclick="gxSdSort('payout')">Payout Rate <span class="sort">${gxArr(_sdst,'payout')}</span></th><th>Message</th></tr>`;
+  sdHead.innerHTML=`<tr><th>Date</th><th>Client</th><th class="sortable" onclick="gxSdSort('range')">Range <span class="sort" id="sdSort_range">${gxArr(_sdst,'range')}</span></th><th class="sortable" onclick="gxSdSort('number')">Number <span class="sort" id="sdSort_number">${gxArr(_sdst,'number')}</span></th><th class="sortable" onclick="gxSdSort('cli')">CLI <span class="sort" id="sdSort_cli">${gxArr(_sdst,'cli')}</span></th><th class="sortable" onclick="gxSdSort('payout')">Payout Rate <span class="sort" id="sdSort_payout">${gxArr(_sdst,'payout')}</span></th><th>SMS (Message Body)</th></tr>`;
   const rows=data.rows||[];
   sdBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-cli">${r.client_name||'—'}</span></td><td><b>${r.range_name||'—'}</b></td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
   sdInfo.textContent=`Showing ${shownSrv(data.page,data.limit,rows.length,data.total)} of ${data.total||0} rows`;sdPayoutInfo.textContent=`Filtered total payout: ${money(data.totalPayment||'0')}`;const pag=sdInfo.closest('.table-foot')?.querySelector('.pagination');if(pag&&window.drawServerPagination)drawServerPagination(pag,state,renderSmsDetail);}
@@ -1323,7 +1337,7 @@ async function loadNumberSummaryForBulk(){
     const rows=await API.get('/numbers/summary');
     baData=(rows||[]).map(r=>({id:r.range_id,range:r.range_name,total:r.total||0,alloc:r.allocated||0,avail:r.available||0,rate:r.rate||'0',r1:r.rate_1_1,r2:r.rate_7_1,r3:r.rate_7_7,r4:r.rate_30_45,payment_type:r.payment_type}));
   }catch(e){baData=[];}
-  fillSel('baRange',baData.map(r=>r.range));
+  fillSel('baRange',baData.filter(r=>(r.avail>0||r.total>0)).map(r=>r.range));
   renderBulk();
 }
 
@@ -1357,7 +1371,7 @@ async function renderDrill(kind){
 /* FAST PRIORITY INIT */
 loadProfile();loadDashboard();
 buildSmsReport();buildSmsDetail();
-setTimeout(async()=>{try{await Promise.allSettled([loadRateCard(),loadClients()]);await Promise.allSettled([renderNumbers(),renderSmsReport()]);}catch(e){console.warn('agent critical preload failed',e)}},50);
+setTimeout(async()=>{try{await Promise.allSettled([loadRateCard(),loadAllocatedRanges(),loadClients()]);await Promise.allSettled([renderNumbers(),renderSmsReport()]);}catch(e){console.warn('agent critical preload failed',e)}},50);
 
 </script>
 

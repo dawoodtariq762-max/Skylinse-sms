@@ -1,5 +1,5 @@
 /**
- * Power X SMS — Background Provider Sync Service
+ * Skyline SMS — Background Provider Sync Service
  * ---------------------------------------------------------------------------
  * Architecture
  *

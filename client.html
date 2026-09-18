@@ -498,7 +498,6 @@
           <label>Time</label><input type="time" id="stTFrom" onchange="renderStats()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="stTTo" onchange="renderStats()"/>
           <select class="sel-lg" id="stRange" onchange="renderStats()"><option value="">All Ranges</option></select>
           <select class="sel-lg" id="stCli" onchange="renderStats()"><option value="">All CLIs</option></select>
-          <input type="text" id="stNumber" list="stNumDl" placeholder="Number: 92300…" style="min-width:150px" oninput="clearTimeout(window.__stNT);window.__stNT=setTimeout(renderStats,450)"/>
           <button class="btn btn-rose" onclick="renderStats()">Apply</button>
           <button type="button" class="gx-btn"  onclick="stResetFilters()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
         </div>
@@ -946,10 +945,7 @@ function copyOtp(btn, text){
     btn.style.borderColor = '';
   }, 1400);
 }
-async function loadRanges(){try{const ranges=await API.get('/ranges');rangeNames=ranges.map(r=>r.name);}catch(e){rangeNames=[];testNumbers=[];}fillSel('numRange',rangeNames);fillSel('stRange',rangeNames);fillSel('testRange',rangeNames);
-  try{ let dl=document.getElementById('stNumDl'); if(!dl){ dl=document.createElement('datalist'); dl.id='stNumDl'; const inp=document.getElementById('stNumber'); if(inp&&inp.parentNode) inp.parentNode.appendChild(dl); }
-    const rj=await API.smsNumbers({from:(document.getElementById('stFrom')?.value)||'',to:(document.getElementById('stTo')?.value)||''});
-    dl.innerHTML=(rj.items||[]).map(x=>`<option value="${String(x.number).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${x.count!=null?x.count+' OTPs':''}</option>`).join(''); }catch(e){}
+async function loadRanges(){try{const ranges=await API.get('/ranges/allocated');rangeNames=(ranges||[]).map(r=>r.name);}catch(e){rangeNames=[];testNumbers=[];}fillSel('numRange',rangeNames);fillSel('stRange',rangeNames);fillSel('testRange',rangeNames);
   try{ const cs=document.getElementById('stCli'); if(cs){ const _f=(document.getElementById('stFrom')?.value)||'', _t=(document.getElementById('stTo')?.value)||''; const rj=await API.smsClis(_f,_t); const items=(rj.items&&rj.items.length)?rj.items:(rj.clis||[]).map(c=>({cli:c})); cs.innerHTML='<option value="">All CLIs</option>'+items.map(x=>`<option value="${String(x.cli).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}">${String(x.cli).replace(/&/g,'&amp;').replace(/</g,'&lt;')}${x.count!=null?' ('+x.count+')':''}</option>`).join(''); } }catch(e){}
 }
 async function loadStats(){ try{ const sms=await API.get('/sms'); stats=sms.map(r=>{const msg=r.message||'';return {range:r.range_name||'',number:r.number,cli:r.cli||'',msg,date:(r.received_at||'').slice(0,19),otp:r.otp_code||extractOTP(msg)}}); recentTests=sms.slice(0,50).map(r=>({date:(r.received_at||'').slice(0,19),range:r.range_name||'',num:r.number||'',cli:r.cli||''})); }catch(e){ stats=[]; recentTests=[]; } renderStats();loadDashboard(); }
@@ -992,13 +988,13 @@ async function renderStats(){if(!document.getElementById('statsBody'))return;
   if(t&&!t.value){t.value=uk;t.dataset.gxAuto='1';} else if(t&&t.dataset.gxAuto==='1'&&t.value!==uk){t.value=uk;}
   if(!document.__gxAutoDateHook){ document.__gxAutoDateHook=1; document.addEventListener('change',e=>{ if(e.target&&e.target.matches&&e.target.matches('input[type=date]')) e.target.dataset.gxAuto='0'; }); }
   const rf=stRange.value||'',cf=stCli.value||'',len=stLen.value||'25',q=(stSearch.value||'').trim();
-  const tfrom=(document.getElementById('stTFrom')?.value)||'',tto=(document.getElementById('stTTo')?.value)||'',numF=(document.getElementById('stNumber')?.value||'').trim();
+  const tfrom=(document.getElementById('stTFrom')?.value)||'',tto=(document.getElementById('stTTo')?.value)||'';
   const from=f?.value||'',to=t?.value||'';
-  const sig=cliStatsSig({rf,cf,len,q,from,to,tfrom,tto,numF});if(cliStatsPager.signature!==sig){cliStatsPager.page=1;cliStatsPager.signature=sig;}
+  const sig=cliStatsSig({rf,cf,len,q,from,to,tfrom,tto});if(cliStatsPager.signature!==sig){cliStatsPager.page=1;cliStatsPager.signature=sig;}
   const params=new URLSearchParams({page:String(cliStatsPager.page),limit:len,sort:'date',dir:'desc'});if(rf)params.set('range',rf);if(cf)params.set('cli',cf);if(q)params.set('search',q);
-  if(from)params.set('from',from); if(to)params.set('to',to); if(tfrom)params.set('tfrom',tfrom); if(tto)params.set('tto',tto); if(numF)params.set('number',numF);
+  if(from)params.set('from',from); if(to)params.set('to',to); if(tfrom)params.set('tfrom',tfrom); if(tto)params.set('tto',tto);
   let data={rows:[],total:0,page:1,limit:25,totalPages:1};try{data=await API.get('/sms/paged?'+params.toString())}catch(e){console.warn(e)}cliStatsPager.page=data.page||1;cliStatsPager.totalPages=data.totalPages||1;const rows=(data.rows||[]).map(r=>{const msg=r.message||'';return {range:r.range_name||'',number:r.number||'',cli:r.cli||'',msg,date:(r.received_at||'').slice(0,19),otp:r.otp_code||extractOTP(msg)}});stats=rows;statsBody.innerHTML=rows.map(r=>`<tr><td class="muted">${r.date}</td><td>${r.range}</td><td class="mono">${r.number}</td><td class="mono">${r.cli}</td><td>${r.otp?`<span class="otp-code">${r.otp}</span>`:'<span class="otp-empty">—</span>'}</td><td>${r.otp?`<button type="button" class="gx-btn gx-blue" onclick="copyText('${r.otp}')" data-tip="Copy OTP" title="Copy OTP" aria-label="Copy OTP"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>`:'—'}</td><td class="msg-body">${r.msg}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;statsInfo.textContent=`Showing ${data.total===0?0:Math.min(data.total,((data.page||1)-1)*Number(data.limit||25)+rows.length)} of ${data.total||0} records (UK: ${from||'…'} → ${to||'…'})`;const pag=statsInfo.closest('.table-foot')?.querySelector('.pagination');if(pag&&window.drawServerPagination)drawServerPagination(pag,cliStatsPager,renderStats);}
-function stResetFilters(){ ['stTFrom','stTTo','stNumber'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); ['stRange','stCli'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); ['stFrom','stTo'].forEach(id=>{const e=document.getElementById(id); if(e){e.value='';e.dataset.gxAuto='';}}); renderStats(); }
+function stResetFilters(){ ['stTFrom','stTTo'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); ['stRange','stCli'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); ['stFrom','stTo'].forEach(id=>{const e=document.getElementById(id); if(e){e.value='';e.dataset.gxAuto='';}}); renderStats(); }
 async function loadStats(){ await renderStats(); renderNumbers(); }
 
 /* FAST PRIORITY INIT */

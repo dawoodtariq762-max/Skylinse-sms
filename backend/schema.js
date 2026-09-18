@@ -254,7 +254,6 @@ function createTables() {
   if (!db.get('SELECT id FROM assistant_knowledge LIMIT 1')) {
     const insKb = (c,q,a,e,so) => db.run('INSERT INTO assistant_knowledge (category,question,answer,enabled,sort_order) VALUES (?,?,?,?,?)',[c,q,a,e,so]);
     insKb('general', 'What is Skyline SMS?', 'Skyline SMS ek modern carrier SMS management platform hai — panels, numbers, allocation, traffic aur rates manage karne ke liye.', 1, 1);
-    insKb('general', 'What is Galaxy SMS?', 'Skyline SMS (formerly Galaxy SMS) ek SMS management platform hai — panels, numbers, allocation, traffic aur rates manage karne ke liye.', 1, 1);
     insKb('general', 'How can I get numbers?', 'Numbers page se ranges select kar ke allocate karein, ya mujhe likhen "I need numbers" — main guided allocation karwa dunga.', 1, 2);
     insKb('payment', 'When are payments made?', 'Payments aap ke payment cycle ke mutabiq process hote hain. Exact schedule Admin panel ke payment settings me configured hai.', 0, 1);
     insKb('payment', 'What does weekly mean?', 'Weekly cycle har Tuesday se shuru hone wale 7-din ke cycle par payments calculate hoti hain.', 0, 2);
@@ -360,6 +359,7 @@ function createTables() {
   // GALAXY: Range/Rate Management fields (additive, all optional)
   ensureColumn('ranges', 'country', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'provider', "TEXT DEFAULT ''");
+  ensureColumn('ranges', 'provider_rate', "TEXT DEFAULT '0'");
   ensureColumn('ranges', 'currency_rate', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'cli_limit', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'range_start', "TEXT DEFAULT ''");

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T13:00:06.229Z",
+  "generated_at": "2026-09-18T04:49:38.687Z",
   "ranges": [
     {
       "id": 4,
@@ -38,6 +38,45 @@
       "rate_7_1": "0.035",
       "rate_7_7": "0.032",
       "rate_30_45": "0.030",
+      "status": "Active"
+    },
+    {
+      "id": 5,
+      "name": "UK_Alpha",
+      "prefix": "4471",
+      "country": "",
+      "provider": "CarrierAlpha",
+      "payment_type": "weekly",
+      "rate_1_1": "0.08",
+      "rate_7_1": "0.08",
+      "rate_7_7": "0.08",
+      "rate_30_45": "0.08",
+      "status": "Active"
+    },
+    {
+      "id": 6,
+      "name": "UK_Beta",
+      "prefix": "4472",
+      "country": "",
+      "provider": "CarrierBeta",
+      "payment_type": "weekly",
+      "rate_1_1": "0.10",
+      "rate_7_1": "0.10",
+      "rate_7_7": "0.10",
+      "rate_30_45": "0.10",
+      "status": "Active"
+    },
+    {
+      "id": 7,
+      "name": "UK_Unallocated",
+      "prefix": "4473",
+      "country": "",
+      "provider": "CarrierAlpha",
+      "payment_type": "weekly",
+      "rate_1_1": "0.09",
+      "rate_7_1": "0.09",
+      "rate_7_7": "0.09",
+      "rate_30_45": "0.09",
       "status": "Active"
     },
     {

@@ -1,5 +1,5 @@
 /**
- * PM2 process configuration — Power X SMS
+ * PM2 process configuration — Skyline SMS
  * =============================================================================
  * Start:    pm2 start ecosystem.config.js
  * Reload:   pm2 restart powerx --update-env
