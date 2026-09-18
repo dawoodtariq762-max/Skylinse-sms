@@ -74,27 +74,71 @@ function safeStr(v) {
 /**
  * short_message arrives in several shapes depending on the peer and the
  * data_coding used: a plain string, a Buffer, or the library's decoded
- * { message, udh } object. Normalise all of them to text.
+ * { message, udh } object. Normalise all of them to text, with full support
+ * for message_payload TLV when short_message is empty.
  */
 function pduText(pdu) {
-  const sm = pdu && pdu.short_message;
-  if (sm === null || sm === undefined || sm === '') {
-    // Some peers put long text in message_payload instead.
-    return safeStr(pdu && pdu.message_payload);
+  if (!pdu) return '';
+
+  let sm = pdu.short_message;
+  let text = '';
+
+  if (typeof sm === 'string' && sm.length > 0) {
+    text = sm;
+  } else if (Buffer.isBuffer(sm) && sm.length > 0) {
+    text = sm.toString('utf8');
+  } else if (sm && typeof sm === 'object') {
+    if (typeof sm.message === 'string' && sm.message.length > 0) {
+      text = sm.message;
+    } else if (Buffer.isBuffer(sm.message) && sm.message.length > 0) {
+      text = sm.message.toString('utf8');
+    }
   }
-  if (typeof sm === 'string') return sm;
-  if (Buffer.isBuffer(sm)) return sm.toString('utf8');
-  if (typeof sm === 'object') {
-    if (typeof sm.message === 'string') return sm.message;
-    if (Buffer.isBuffer(sm.message)) return sm.message.toString('utf8');
+
+  // Fallback to message_payload TLV (used by SMSCs when payload exceeds short_message or by default)
+  if (!text && pdu.message_payload) {
+    const mp = pdu.message_payload;
+    if (typeof mp === 'string' && mp.length > 0) {
+      text = mp;
+    } else if (Buffer.isBuffer(mp) && mp.length > 0) {
+      text = mp.toString('utf8');
+    } else if (mp && typeof mp === 'object') {
+      if (typeof mp.message === 'string' && mp.message.length > 0) {
+        text = mp.message;
+      } else if (Buffer.isBuffer(mp.message) && mp.message.length > 0) {
+        text = mp.message.toString('utf8');
+      }
+    }
   }
-  return safeStr(sm);
+
+  return text || safeStr(sm);
 }
 
 /** UDH of a concatenated message, when the library exposes it. */
 function pduUdh(pdu) {
   const sm = pdu && pdu.short_message;
   if (sm && typeof sm === 'object' && Array.isArray(sm.udh)) return sm.udh;
+  return null;
+}
+
+/** Extract concatenation / multipart information from either SAR TLVs or UDH. */
+function extractSarInfo(pdu) {
+  if (pdu && pdu.sar_total_segments && pdu.sar_total_segments > 1) {
+    const ref = Number(pdu.sar_msg_ref_num || 0);
+    const total = Number(pdu.sar_total_segments || 0);
+    const seq = Number(pdu.sar_segment_seqnum || 0);
+    if (total >= 2 && seq >= 1) return { ref, total, seq };
+  }
+  const udh = pduUdh(pdu);
+  if (udh && udh.length) {
+    for (const el of udh) {
+      const id = Number(el.id);
+      const data = el.value;
+      if (!Buffer.isBuffer(data)) continue;
+      if (id === 0x00 && data.length >= 3) return { ref: data[0], total: data[1], seq: data[2] };
+      if (id === 0x08 && data.length >= 4) return { ref: data.readUInt16BE(0), total: data[2], seq: data[3] };
+    }
+  }
   return null;
 }
 
@@ -195,28 +239,20 @@ function stateOf(id) {
  * ------------------------------------------------------------------ */
 
 /**
- * Reassemble a concatenated (multipart) SMS.
+ * Reassemble a concatenated (multipart) SMS using SAR TLVs or UDH.
  * Returns the full text once the last part arrives, otherwise null.
  */
-function reassemble(st, key, udh, text) {
-  // UDH 0x00 = 8-bit reference, 0x08 = 16-bit reference
-  let ref = null, total = 0, seq = 0;
-  for (const el of udh || []) {
-    const id = Number(el.id);
-    const data = el.value;
-    if (!Buffer.isBuffer(data)) continue;
-    if (id === 0x00 && data.length >= 3) { ref = data[0]; total = data[1]; seq = data[2]; break; }
-    if (id === 0x08 && data.length >= 4) { ref = data.readUInt16BE(0); total = data[2]; seq = data[3]; break; }
-  }
-  if (ref === null || total < 2) return text;   // not concatenated
+function reassemble(st, key, pdu, text) {
+  const sar = extractSarInfo(pdu);
+  if (!sar || sar.total < 2) return text;   // not concatenated
 
-  const bucket = `${key}:${ref}:${total}`;
+  const bucket = `${key}:${sar.ref}:${sar.total}`;
   let entry = st.parts.get(bucket);
   if (!entry) {
-    entry = { total, parts: new Map(), at: Date.now() };
+    entry = { total: sar.total, parts: new Map(), at: Date.now() };
     st.parts.set(bucket, entry);
   }
-  entry.parts.set(seq, text);
+  entry.parts.set(sar.seq, text);
 
   // Drop stale half-assembled messages so the map cannot grow unbounded.
   if (st.parts.size > 500) {
@@ -224,10 +260,10 @@ function reassemble(st, key, udh, text) {
     for (const [k, v] of st.parts) if (v.at < cutoff) st.parts.delete(k);
   }
 
-  if (entry.parts.size < total) return null;    // still waiting
+  if (entry.parts.size < sar.total) return null;    // still waiting
   st.parts.delete(bucket);
   let out = '';
-  for (let i = 1; i <= total; i++) out += (entry.parts.get(i) || '');
+  for (let i = 1; i <= sar.total; i++) out += (entry.parts.get(i) || '');
   return out;
 }
 
@@ -236,13 +272,14 @@ function cleanPhone(v) { return String(v || '').trim().replace(/[^0-9]/g, ''); }
 function dedupKeyFor(pdu, src, dst, text) {
   const rid = safeStr(pdu && (pdu.receipted_message_id || pdu.message_id)).trim();
   if (rid) return 'mid:' + rid;
-  // Use a full-day (UTC/UK) date bucket instead of a 10-second bucket,
-  // so reconnects and SMSC redeliveries of the same message within the same day
-  // are permanently recognized and suppressed.
-  const day = new Date().toISOString().slice(0, 10);
+  // Deterministic fingerprint bucketed to 5 seconds:
+  // Catches immediate wire-level retransmits (identical packet within 5s),
+  // while ensuring legitimate user OTP resends (even with identical text)
+  // are received and displayed without being dropped.
+  const bucket = Math.floor(Date.now() / 5000);
   const cleanDst = cleanPhone(dst);
   return 'fp:' + crypto.createHash('sha1')
-    .update([String(src || '').toLowerCase(), cleanDst, String(text || '').trim(), day].join('|'))
+    .update([String(src || '').toLowerCase(), cleanDst, String(text || '').trim(), bucket].join('|'))
     .digest('hex').slice(0, 24);
 }
 
@@ -268,12 +305,10 @@ function ingest(conn, st, pdu, peer) {
     const dst = safeStr(pdu.destination_addr).trim();
     let text = pduText(pdu);
 
-    const udh = pduUdh(pdu);
-    if (udh && udh.length) {
-      const assembled = reassemble(st, `${src}|${dst}`, udh, text);
-      if (assembled === null) return OK;      // wait for remaining parts
-      text = assembled;
-    }
+    // Reassemble multipart SMS (supports UDH or SAR TLVs)
+    const assembled = reassemble(st, `${src}|${dst}`, pdu, text);
+    if (assembled === null) return OK;      // wait for remaining parts
+    text = assembled;
 
     if (!dst) {
       logEvent(conn, 'deliver', 'warn', 'missing destination_addr', peer);
@@ -281,34 +316,13 @@ function ingest(conn, st, pdu, peer) {
       return OK;   // never NACK: the peer would redeliver this forever
     }
 
-    // Duplicate suppression (SMPP peers redeliver aggressively on reconnect).
+    // Duplicate suppression (catches immediate wire-level retransmits).
     const key = dedupKeyFor(pdu, src, dst, text);
     const seen = db.get('SELECT sms_record_id FROM smpp_seen WHERE connection_id=? AND dedup_key=?', [conn.id, key]);
     if (seen) {
       logEvent(conn, 'deliver', 'info', `duplicate ignored via smpp_seen (${key.slice(0, 28)})`, peer);
       markDirty();
       return OK;
-    }
-
-    // Direct DB content safety check: If this exact destination number received
-    // this exact message text from this CLI within the last 24 hours, ignore it as duplicate.
-    const cleanDst = cleanPhone(dst);
-    if (cleanDst) {
-      const dbDup = db.get(`SELECT id FROM sms_records
-        WHERE (REPLACE(REPLACE(REPLACE(REPLACE(number,'+',''),' ',''),'-',''),'_','')=? OR number=?)
-          AND cli=?
-          AND message=?
-          AND received_at >= datetime('now', '-24 hours')
-        LIMIT 1`, [cleanDst, dst, src, text]);
-      if (dbDup) {
-        logEvent(conn, 'deliver', 'info', `duplicate ignored via sms_records match (sms_id: ${dbDup.id})`, peer);
-        try {
-          db.run('INSERT OR IGNORE INTO smpp_seen (connection_id,dedup_key,sms_record_id,received_at) VALUES (?,?,?,?)',
-            [conn.id, key, dbDup.id, nowSql()]);
-        } catch (_) {}
-        markDirty();
-        return OK;
-      }
     }
 
     // ---- shared ingestion path (unchanged code) ----
@@ -585,7 +599,7 @@ function startEnquireLink(conn, session) {
       st.attempt++;
       teardownClient(st);
       scheduleReconnect(conn);
-    }, Math.min(secs * 1000, 20000));
+    }, Math.max(secs * 1000, 30000));
     if (t.unref) t.unref();
 
     try {
