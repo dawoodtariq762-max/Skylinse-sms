@@ -384,3 +384,112 @@
   font-weight: 800;
   color: #f87c8a;
 }
+
+/* ============================================================================
+   RESPONSIVE (Mobile & Tablet) FOR CDR REPORT / SMS DETAILED REPORT
+   ========================================================================== */
+@media (max-width: 900px) {
+  .cdr-toolbar {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .cdr-filter-row {
+    gap: 10px;
+  }
+  .cdr-card-head {
+    padding: 14px 16px;
+  }
+  .cdr-foot {
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cdr-field {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 120px;
+  }
+  .cdr-field-fixed {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .cdr-field-fixed button {
+    flex: 1 1 auto;
+    min-width: 90px;
+    height: 38px;
+    padding: 8px 12px;
+  }
+  .cdr-group-row {
+    gap: 8px 12px;
+  }
+  .cdr-card-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .cdr-controls-left, .cdr-controls-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .cdr-search-inline {
+    flex: 1 1 100%;
+  }
+  .cdr-search-inline input {
+    flex: 1 1 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .cdr-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    text-align: center;
+  }
+  .cdr-foot-summary {
+    justify-content: center;
+    gap: 14px;
+    font-size: 12px;
+  }
+  .cdr-pagination {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .cdr-toolbar {
+    padding: 12px;
+    gap: 10px;
+  }
+  .cdr-filter-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .cdr-field {
+    width: 100%;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .cdr-btn-export, .cdr-btn-show, .cdr-btn-reset {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .cdr-group-label {
+    width: 100%;
+  }
+  .cdr-card-head {
+    padding: 12px;
+  }
+  .cdr-title {
+    font-size: 13px;
+  }
+  .cdr-btn-tool {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}

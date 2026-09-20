@@ -825,6 +825,143 @@ app.post('/api/admin/backfill-stats', authRequired, requireRole('admin'), async 
   res.json(await backfillSmsStats(req.user));
 });
 
+// Scan for wire-level duplicate SMS caused by provider SMPP retry / reconnect
+function findDuplicateSms(checkAll = false, windowSec = 180) {
+  const whereClause = checkAll ? '1=1' : "date(received_at) >= date('now', '-2 days')";
+  const rows = db.all(`
+    SELECT id, number_id, number, range_id, cli, message, otp_code, client_id, agent_id, manager_id, payout_amount, received_at, source
+    FROM sms_records
+    WHERE ${whereClause}
+    ORDER BY received_at ASC, id ASC
+  `);
+
+  const seenMap = new Map();
+  const duplicateRows = [];
+  const duplicateIds = [];
+  const duplicateDetails = [];
+
+  for (const row of rows) {
+    const normNumber = cleanPhone(row.number);
+    const normCli = String(row.cli || '').toLowerCase().trim();
+    const normMsg = String(row.message || '').trim();
+    const rowTime = new Date(row.received_at || 0).getTime();
+    const key = `${normNumber}|${normCli}|${normMsg}`;
+
+    if (seenMap.has(key)) {
+      const prev = seenMap.get(key);
+      const prevTime = new Date(prev.received_at || 0).getTime();
+      const timeDiffSec = Math.abs((rowTime - prevTime) / 1000);
+
+      const isDuplicate = (windowSec === 0)
+        ? (String(prev.received_at || '').slice(0, 10) === String(row.received_at || '').slice(0, 10))
+        : (timeDiffSec <= windowSec);
+
+      if (isDuplicate) {
+        duplicateIds.push(row.id);
+        duplicateRows.push(row);
+        if (duplicateDetails.length < 20) {
+          duplicateDetails.push({
+            orig_id: prev.id,
+            dup_id: row.id,
+            number: row.number,
+            cli: row.cli,
+            message: (row.message || '').slice(0, 50),
+            orig_time: prev.received_at,
+            dup_time: row.received_at,
+            diff_seconds: Math.round(timeDiffSec)
+          });
+        }
+        continue;
+      }
+    }
+    seenMap.set(key, row);
+  }
+
+  return {
+    scanned: rows.length,
+    unique: rows.length - duplicateIds.length,
+    duplicate_count: duplicateIds.length,
+    duplicate_ids: duplicateIds,
+    duplicate_rows: duplicateRows,
+    sample: duplicateDetails
+  };
+}
+
+app.get('/api/admin/duplicate-sms-preview', authRequired, requireRole('admin'), (req, res) => {
+  const checkAll = truthy(req.query.all);
+  const win = Math.max(0, parseInt(req.query.window, 10) || 180);
+  const result = findDuplicateSms(checkAll, win);
+  res.json({
+    ok: true,
+    scanned: result.scanned,
+    unique: result.unique,
+    duplicate_count: result.duplicate_count,
+    sample: result.sample,
+    window_seconds: win,
+    scope: checkAll ? 'all' : 'recent'
+  });
+});
+
+app.post('/api/admin/clean-duplicate-sms', authRequired, requireRole('admin'), (req, res) => {
+  const checkAll = truthy(req.body.all);
+  const win = Math.max(0, parseInt(req.body.window, 10) || 180);
+  const result = findDuplicateSms(checkAll, win);
+
+  if (result.duplicate_count === 0) {
+    return res.json({ ok: true, deleted_sms: 0, deleted_ledger: 0, message: 'No duplicate SMS found' });
+  }
+
+  const ids = result.duplicate_ids;
+  let deletedSms = 0;
+  let deletedLedger = 0;
+
+  try {
+    db.execNoSave('BEGIN TRANSACTION');
+    db.execNoSave('DROP TABLE IF EXISTS tmp_del_dup_ids');
+    db.execNoSave('CREATE TEMP TABLE tmp_del_dup_ids (id INTEGER PRIMARY KEY)');
+    for (const id of ids) db.runNoSave('INSERT OR IGNORE INTO tmp_del_dup_ids (id) VALUES (?)', [id]);
+
+    // 1. Decrement daily stats cleanly
+    decrementSmsDailyStats('id IN (SELECT id FROM tmp_del_dup_ids)');
+
+    // 2. Delete from payment ledger
+    const delLedger = db.runNoSave('DELETE FROM payment_ledger WHERE sms_record_id IN (SELECT id FROM tmp_del_dup_ids)');
+    deletedLedger = delLedger.changes || 0;
+
+    // 3. Delete from smpp_seen
+    db.runNoSave('DELETE FROM smpp_seen WHERE sms_record_id IN (SELECT id FROM tmp_del_dup_ids)');
+
+    // 4. Delete from sms_records
+    const delSms = db.runNoSave('DELETE FROM sms_records WHERE id IN (SELECT id FROM tmp_del_dup_ids)');
+    deletedSms = delSms.changes || 0;
+
+    // 5. Adjust smpp_connections total_received
+    const smppDups = result.duplicate_rows.filter(r => String(r.source || '').toLowerCase() === 'smpp').length;
+    if (smppDups > 0) {
+      db.runNoSave('UPDATE smpp_connections SET total_received = MAX(0, total_received - ?)', [smppDups]);
+    }
+
+    db.execNoSave('DROP TABLE IF EXISTS tmp_del_dup_ids');
+    db.execNoSave('COMMIT');
+    db.save && db.save();
+
+    clearApiReadCache();
+    logAction(req, 'clean_duplicate_sms', 'sms_records', { deleted_sms: deletedSms, deleted_ledger: deletedLedger, window: win });
+
+    res.json({
+      ok: true,
+      deleted_sms: deletedSms,
+      deleted_ledger: deletedLedger,
+      remaining_duplicates: 0,
+      message: `Successfully removed ${deletedSms} duplicate SMS records and synchronized ledger & stats.`
+    });
+  } catch (err) {
+    try { db.execNoSave('ROLLBACK'); } catch (_) {}
+    console.error('[CLEAN_DUPLICATES] failed:', err.message);
+    res.status(500).json({ error: 'Failed to clean duplicates: ' + err.message });
+  }
+});
+
 /* =========================================================================
  * PHASE-1 Step 7: retention (chunked, event-loop friendly; env-controlled)
  *   HISTORY_RETENTION_DAYS    number_history   (default 90)

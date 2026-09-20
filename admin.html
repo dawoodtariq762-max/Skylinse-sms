@@ -328,6 +328,14 @@
   table{font-family:Inter,Roboto,"Segoe UI",Arial,sans-serif!important;font-size:13.5px!important} thead th{font-size:11.5px!important;letter-spacing:.25px!important}.table-controls label,.tc-right label,.tc-left label{font-size:12.5px!important}
   .btn{min-height:38px!important;padding:9px 15px!important;font-size:12.5px!important}.btn-sm{min-height:32px!important;padding:6px 11px!important}
   @media(max-width:900px){.sidebar{width:260px!important}.main{margin-left:0!important}.content{padding:20px 14px!important}}
+  @media(max-width:640px){
+    .topbar,.tb1{height:52px!important;padding-left:12px!important;padding-right:12px!important}
+    .tb-date,.clock{display:none!important}
+    .tb-right{gap:4px!important}
+    .tb-btn{width:34px!important;height:34px!important}
+    .avatar{width:32px!important;height:32px!important}
+    .content{padding:14px 10px!important}
+  }
 
 
 
@@ -1432,22 +1440,53 @@ function buildSmsReport(){
   document.getElementById('page-smsReport').innerHTML=`
   <div class="page-head"><div><h2>SMS Report</h2><div class="breadcrumb"><b>CDR Stats</b> › SMS Report</div></div></div>
   <div class="toolbar"><div class="filter-row">
-    <label>From</label><input type="date" id="srFrom" onchange="renderSmsReport();populateSmsReportFilterLists()"/>
-    <label>To</label><input type="date" id="srTo" onchange="renderSmsReport();populateSmsReportFilterLists()"/>
-    <label>Time</label><input type="time" id="srTFrom" onchange="renderSmsReport()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="srTTo" onchange="renderSmsReport()"/>
-    <label>Range</label><select id="srRange" onchange="renderSmsReport()"><option value="">All Ranges</option></select>
-    <label>Number</label><input type="text" id="srNumber" list="srNumDl" placeholder="92300…" style="min-width:150px" oninput="clearTimeout(window.__srNT);window.__srNT=setTimeout(renderSmsReport,450)"/>
-    <label>Manager</label><select id="srManager" onchange="renderSmsReport()"><option value="">All Managers</option></select>
-    <button type="button" class="gx-btn gx-blue"  onclick="renderSmsReport()" data-tip="Apply filters" title="Apply" aria-label="Apply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></button>
-    <button type="button" class="gx-btn"  onclick="srFrom.value=todayStr();srTo.value=todayStr();renderSmsReport()" data-tip="Today" title="Today" aria-label="Today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
-    <button type="button" class="gx-btn"  onclick="srResetFilters()" data-tip="Reset filters" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+    <div class="filter-item"><label>From</label><input type="date" id="srFrom" onchange="renderSmsReport();populateSmsReportFilterLists()"/></div>
+    <div class="filter-item"><label>To</label><input type="date" id="srTo" onchange="renderSmsReport();populateSmsReportFilterLists()"/></div>
+    <div class="filter-item"><label>Time</label><div class="filter-time-group"><input type="time" id="srTFrom" onchange="renderSmsReport()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="srTTo" onchange="renderSmsReport()"/></div></div>
+    <div class="filter-item"><label>Range</label><select id="srRange" onchange="renderSmsReport()"><option value="">All Ranges</option></select></div>
+    <div class="filter-item"><label>CLI</label><select id="srCli" onchange="renderSmsReport()"><option value="">All CLIs</option></select></div>
+    <div class="filter-item"><label>Number</label><input type="text" id="srNumber" list="srNumDl" placeholder="Search Number…" oninput="clearTimeout(window.__srNT);window.__srNT=setTimeout(renderSmsReport,450)"/></div>
+    <div class="filter-item"><label>Manager</label><select id="srManager" onchange="renderSmsReport()"><option value="">All Managers</option></select></div>
+    <div class="filter-btn-group">
+      <button type="button" class="gx-btn gx-blue"  onclick="renderSmsReport()" data-tip="Apply filters" title="Apply" aria-label="Apply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></button>
+      <button type="button" class="gx-btn"  onclick="srFrom.value=todayStr();srTo.value=todayStr();renderSmsReport()" data-tip="Today" title="Today" aria-label="Today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+      <button type="button" class="gx-btn"  onclick="srResetFilters()" data-tip="Reset filters" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+    </div>
   </div></div>
-  <div class="table-wrap" style="padding:16px 18px;margin-top:0"><div class="table-controls"><div class="tc-left"><label>Show Records:</label>
-    <select id="srLen" onchange="renderSmsReport()"><option>10</option><option selected>25</option><option>50</option><option value="All">All</option></select>${expBtns()}</div>
-    <div class="tc-right"><label>Search:</label><input type="text" id="srSearch" oninput="renderSmsReport()" placeholder="Search..."/></div></div></div>
-  <div class="table-wrap"><div class="tscroll"><table>
-    <thead><tr><th>Date</th><th>Manager</th><th class="sortable" onclick="gxSrSort('range')">Range <span class="sort" id="srSort_range">\u21C5</span></th><th class="sortable" onclick="gxSrSort('number')">Number <span class="sort" id="srSort_number">\u21C5</span></th><th class="sortable" onclick="gxSrSort('cli')">CLI <span class="sort" id="srSort_cli">\u21C5</span></th><th class="sortable" onclick="gxSrSort('payout')">Payout Rate <span class="sort" id="srSort_payout">\u21C5</span></th><th>SMS (Message Body)</th></tr></thead><tbody id="srBody"></tbody></table></div>
-    <div class="table-foot"><div class="info" id="srInfo"></div><div class="info" id="srPayoutInfo"></div></div></div>`;
+  <div class="table-wrap">
+    <div class="table-controls">
+      <div class="tc-left">
+        <label>Show Records:</label>
+        <select id="srLen" onchange="renderSmsReport()"><option>10</option><option selected>25</option><option>50</option><option value="All">All</option></select>
+        ${expBtns()}
+      </div>
+      <div class="tc-right">
+        <label>Search:</label>
+        <input type="text" id="srSearch" oninput="renderSmsReport()" placeholder="Search..."/>
+      </div>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Manager</th>
+            <th class="sortable" onclick="gxSrSort('range')">Range <span class="sort" id="srSort_range">\u21C5</span></th>
+            <th class="sortable" onclick="gxSrSort('number')">Number <span class="sort" id="srSort_number">\u21C5</span></th>
+            <th class="sortable" onclick="gxSrSort('cli')">CLI <span class="sort" id="srSort_cli">\u21C5</span></th>
+            <th class="sortable" onclick="gxSrSort('payout')">Payout Rate <span class="sort" id="srSort_payout">\u21C5</span></th>
+            <th>SMS (Message Body)</th>
+          </tr>
+        </thead>
+        <tbody id="srBody"></tbody>
+      </table>
+    </div>
+    <div class="table-foot">
+      <div class="info" id="srInfo"></div>
+      <div class="info" id="srPayoutInfo"></div>
+      <div class="pagination"></div>
+    </div>
+  </div>`;
   setDefaultDates('srFrom','srTo');
   populateSmsReportFilterLists();
   renderSmsReport();
@@ -1455,18 +1494,29 @@ function buildSmsReport(){
 /* P14: report filter lists (Range/Manager from loaded data, CLI from role-scoped API) */
 async function populateSmsReportFilterLists(){
   try{
-    const rs=document.getElementById('srRange'), ms=document.getElementById('srManager');
+    const rs=document.getElementById('srRange'), ms=document.getElementById('srManager'), cs=document.getElementById('srCli');
     if(rs && rs.options.length<=1){ let names=(typeof rangeNames!=='undefined'&&rangeNames.length)?rangeNames.slice():[]; if(!names.length){ try{ const rj=await API.get('/ranges'); const arr=Array.isArray(rj)?rj:(rj.ranges||[]); names=arr.map(x=>x.name).filter(Boolean);}catch(e){} } rs.innerHTML='<option value="">All Ranges</option>'+names.map(n=>`<option>${String(n).replace(/</g,'&lt;')}</option>`).join(''); }
     if(ms && ms.options.length<=1){ const ms2=(typeof usersData!=='undefined'&&(usersData.manager||[]).length)?usersData.manager.map(x=>x.username||x.name).filter(Boolean):[]; ms.innerHTML='<option value="">All Managers</option>'+ms2.map(n=>`<option>${String(n).replace(/</g,'&lt;')}</option>`).join(''); }
-    /* P19: SMS Report (SMS Support) se CLI filter hata diya — CLI filtering ab sirf SMS Detailed Report me.
-       Rollback: srCli select + API.smsClis(srListArgs()) wala block yahan wapas aa sakta hai. */
+    if(cs){
+      const kv=cs.value;
+      const rj=await API.smsClis(srListArgs());
+      cs.innerHTML=gxOptList(rj.items);
+      if(kv){
+        cs.value=kv;
+        if(cs.value!==kv){
+          const opt=document.createElement('option');
+          opt.value=kv; opt.textContent=kv;
+          cs.appendChild(opt); cs.value=kv;
+        }
+      }
+    }
     /* P18: Number input par click => available numbers (current dataset, counts) */
     let dl=document.getElementById('srNumDl');
     if(!dl){ dl=document.createElement('datalist'); dl.id='srNumDl'; const inp=document.getElementById('srNumber'); if(inp&&inp.parentNode) inp.parentNode.appendChild(dl); }
     if(dl){ const rn=await API.smsNumbers(srListArgs()); dl.innerHTML=(rn.items||[]).map(x=>`<option value="${String(x.number).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${x.count!=null?x.count+' OTPs':''}</option>`).join(''); }
   }catch(e){}
 }
-function srResetFilters(){window.__srSort={k:'',d:''};gxResetSortHeads('srSort_'); ['srTFrom','srTTo','srNumber'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); ['srRange','srManager'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); renderSmsReport(); }
+function srResetFilters(){window.__srSort={k:'',d:''};gxResetSortHeads('srSort_'); ['srTFrom','srTTo','srNumber'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); ['srRange','srCli','srManager'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); renderSmsReport(); }
 async function loadSmsRecords(){
   try{ smsRecords=await API.get('/sms'); }catch(e){ smsRecords=[]; }
   // manager summary from real data
@@ -1476,16 +1526,6 @@ async function loadSmsRecords(){
   if(sumBody) sumBody.innerHTML=Object.keys(byMgr).map(m=>
     `<tr><td><span class="tag tag-mgr">${m}</span></td><td><span class="tag tag-agt">—</span></td><td><span class="tag tag-cli">—</span></td><td class="cell-money">${byMgr[m].toLocaleString()}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:16px">No records found</td></tr>`;
   renderSmsReport();
-}
-function renderSmsReport(){
-  const len=document.getElementById('srLen').value,q=(document.getElementById('srSearch').value||'').toLowerCase();
-  let base=dateFiltered(smsRecords,'srFrom','srTo');
-  const byMgr={};base.forEach(r=>{const m=r.manager_name||'—';byMgr[m]=(byMgr[m]||0)+1;});const sumBody=document.getElementById('mgrSumBody');if(sumBody)sumBody.innerHTML=Object.keys(byMgr).map(m=>`<tr><td><span class="tag tag-mgr">${m}</span></td><td><span class="tag tag-agt">—</span></td><td><span class="tag tag-cli">—</span></td><td class="cell-money">${byMgr[m].toLocaleString()}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:16px">No records found</td></tr>`;
-  let filtered=base.filter(r=>[r.manager_name,r.range_name,r.number,r.cli,r.message,r.payout_rate].join(' ').toLowerCase().includes(q));
-  const pag=API.paginateRows('adminSmsReport',filtered,len,'srInfo',renderSmsReport);const total=pag.total;let rows=pag.rows;
-  document.getElementById('srBody').innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-mgr">${r.manager_name||'—'}</span></td><td>${r.range_name||'—'}</td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
-  document.getElementById('srInfo').textContent=`Showing ${rows.length} of ${total} records`;
-  const pi=document.getElementById('srPayoutInfo'); if(pi) pi.textContent=`Visible total payout: ${money(sumPay(rows))}`;
 }
 
 /* ---- SMS Detailed Report (combinable advanced filters) ----
@@ -2730,7 +2770,7 @@ function gxSortParams(st){ return st.k ? 'sort='+encodeURIComponent(st.k)+'&dir=
 function gxSrSort(col){ const st=(window.__srSort=window.__srSort||{k:'',d:''}); gxSortCycle(st,col,col==='payout'?'desc':'asc'); ['range','number','cli','payout'].forEach(x=>{const el=document.getElementById('srSort_'+x); if(el) el.textContent=gxArr(st,x);}); if(document.getElementById('srBody')) renderSmsReport(); }
 function gxSdSort(col){ const st=(window.__sdSort=window.__sdSort||{k:'',d:''}); gxSortCycle(st,col,col==='payout'?'desc':'asc'); ['range','number','cli','payout'].forEach(x=>{const el=document.getElementById('sdSort_'+x); if(el) el.textContent=gxArr(st,x);}); if(document.getElementById('sdBody')) renderSmsDetail(); }
 function gxSdSumSort(col){ const st=(window.__sdSumSort=window.__sdSumSort||{k:'',d:''}); gxSortCycle(st,col,'desc'); ['sms','payment'].forEach(x=>{const el=document.getElementById('sdSum_'+x); if(el) el.textContent=gxArr(st,x);}); if(document.getElementById('sdBody')) renderSmsDetail(); }
-function srListArgs(){ const g=(id)=>{const e=document.getElementById(id);return (e&&e.value)?String(e.value).trim():'';}; const o={from:g('srFrom'),to:g('srTo'),tfrom:g('srTFrom'),tto:g('srTTo'),range:g('srRange'),number:g('srNumber'),search:g('srSearch'),manager:g('srManager')}; Object.keys(o).forEach(k=>{if(!o[k])delete o[k];}); return o; }
+function srListArgs(){ const g=(id)=>{const e=document.getElementById(id);return (e&&e.value)?String(e.value).trim():'';}; const o={from:g('srFrom'),to:g('srTo'),tfrom:g('srTFrom'),tto:g('srTTo'),range:g('srRange'),cli:g('srCli'),number:g('srNumber'),search:g('srSearch'),manager:g('srManager')}; Object.keys(o).forEach(k=>{if(!o[k])delete o[k];}); return o; }
 function sdListArgs(){ const g=(id)=>{const e=document.getElementById(id);return (e&&e.value)?String(e.value).trim():'';}; const o={from:g('sdDateFrom'),to:g('sdDateTo'),range:g('sdRange'),number:g('sdNumber'),search:g('sdSearch'),manager:g('sdUser'),provider:g('sdProvider')}; Object.keys(o).forEach(k=>{if(!o[k])delete o[k];}); return o; }
 async function renderSmsReport(){
   if(!document.getElementById('srBody')) return;
@@ -2743,11 +2783,12 @@ async function renderSmsReport(){
   const to=document.getElementById('srTo')?.value||'';
   const tfrom=(document.getElementById('srTFrom')?.value)||''; const tto=(document.getElementById('srTTo')?.value)||'';
   const rangeVal=(document.getElementById('srRange')?.value)||'';
+  const cliVal=(document.getElementById('srCli')?.value)||'';
   const numberVal=(document.getElementById('srNumber')?.value||'').trim(); const mgrVal=(document.getElementById('srManager')?.value)||'';
   const _sst=(window.__srSort=window.__srSort||{k:'',d:''});
-  const sig=smsReportSignature({len,search,from,to,tfrom,tto,rangeVal,numberVal,mgrVal,sk:_sst.k,sd:_sst.d}); if(state.signature!==sig){state.page=1;state.signature=sig;}
+  const sig=smsReportSignature({len,search,from,to,tfrom,tto,rangeVal,cliVal,numberVal,mgrVal,sk:_sst.k,sd:_sst.d}); if(state.signature!==sig){state.page=1;state.signature=sig;}
   const params=new URLSearchParams({page:String(state.page||1),limit:len,sort:(_sst.k||'date'),dir:(_sst.k?_sst.d:'desc')}); if(from)params.set('from',from); if(to)params.set('to',to); if(search)params.set('search',search);
-  if(tfrom)params.set('tfrom',tfrom); if(tto)params.set('tto',tto); if(rangeVal)params.set('range',rangeVal); if(numberVal)params.set('number',numberVal); if(mgrVal)params.set('manager',mgrVal);
+  if(tfrom)params.set('tfrom',tfrom); if(tto)params.set('tto',tto); if(rangeVal)params.set('range',rangeVal); if(cliVal)params.set('cli',cliVal); if(numberVal)params.set('number',numberVal); if(mgrVal)params.set('manager',mgrVal);
   let data={rows:[],total:0,page:1,limit:25,totalPages:1,totalPayment:'0'};
   try{ data=await API.get('/sms/paged?'+params.toString()); }catch(e){ console.warn('sms report load failed',e); }
   state.page=data.page||1; state.totalPages=data.totalPages||1;

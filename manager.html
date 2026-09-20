@@ -421,6 +421,12 @@
   .appbar .appbar-top > .spacer,.appbar .appbar-top > .clock,.appbar .appbar-top > .tb-btn,.appbar .appbar-top > .who{display:none!important}
   .mgr-topbar{height:56px;margin-left:260px;width:calc(100% - 260px);background:#F8FAFC!important;border-bottom:1px solid #E2E8F0!important;display:flex;align-items:center;gap:14px;padding:0 22px;position:sticky;top:0;z-index:58}.mgr-topbar .tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}.mgr-topbar-menu{display:none;align-items:center;justify-content:center;width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:#64748B;font-size:22px;font-weight:900;cursor:pointer}.mgr-topbar-menu:hover{background:#FEF3C7;color:#92400E}.mgr-topbar .clock{background:transparent!important;border:0!important;color:#64748B!important;padding:0!important}
   @media(max-width:900px){.mgr-topbar{margin-left:0!important;width:100%!important;position:sticky!important;top:0!important;padding:0 12px!important}.mgr-topbar-menu{display:flex!important}body .content{padding:20px 14px!important}.mgr-topbar .who{display:none!important}}
+  @media(max-width:640px){
+    .mgr-topbar{height:52px!important;padding:0 10px!important}
+    .mgr-topbar .clock{display:none!important}
+    .mgr-topbar .tb-right{gap:4px!important}
+    body .content{padding:14px 10px!important}
+  }
 </style>
 
 
@@ -1080,19 +1086,29 @@ function renderClients(){const len=document.getElementById('clLen').value,q=(doc
 function buildSmsReport(){document.getElementById('page-smsReport').innerHTML=`
   <div class="page-head"><div><h2>SMS Report</h2><div class="breadcrumb"><b>CDR Stats</b> › SMS Report</div></div></div>
   <div class="toolbar"><div class="filter-row">
-    <label>From</label><input type="date" id="srFrom" onchange="renderSmsReport();gxPopSmsFilterLists()"/>
-    <label>To</label><input type="date" id="srTo" onchange="renderSmsReport();gxPopSmsFilterLists()"/>
-    <label>Time</label><input type="time" id="srTFrom" onchange="renderSmsReport()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="srTTo" onchange="renderSmsReport()"/>
-    <label>Range</label><select id="srRange" onchange="renderSmsReport()"><option value="">All Ranges</option></select>
-    <label>Number</label><input type="text" id="srNumber" list="srNumDl" placeholder="92300…" style="min-width:150px" oninput="clearTimeout(window.__srNT);window.__srNT=setTimeout(renderSmsReport,450)"/>
-    <button type="button" class="gx-btn"  onclick="srResetFilters()" data-tip="Reset filters" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+    <div class="filter-item"><label>From</label><input type="date" id="srFrom" onchange="renderSmsReport();gxPopSmsFilterLists()"/></div>
+    <div class="filter-item"><label>To</label><input type="date" id="srTo" onchange="renderSmsReport();gxPopSmsFilterLists()"/></div>
+    <div class="filter-item"><label>Time</label><div class="filter-time-group"><input type="time" id="srTFrom" onchange="renderSmsReport()"/> <span class="muted">–</span> <input type="time" id="srTTo" onchange="renderSmsReport()"/></div></div>
+    <div class="filter-item"><label>Range</label><select id="srRange" onchange="renderSmsReport()"><option value="">All Ranges</option></select></div>
+    <div class="filter-item"><label>CLI</label><select id="srCli" onchange="renderSmsReport()"><option value="">All CLIs</option></select></div>
+    <div class="filter-item"><label>Number</label><input type="text" id="srNumber" list="srNumDl" placeholder="Search Number…" oninput="clearTimeout(window.__srNT);window.__srNT=setTimeout(renderSmsReport,450)"/></div>
+    <div class="filter-btn-group">
+      <button type="button" class="gx-btn gx-blue" onclick="renderSmsReport()" data-tip="Apply filters" title="Apply" aria-label="Apply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></button>
+      <button type="button" class="gx-btn" onclick="srFrom.value=todayStr();srTo.value=todayStr();renderSmsReport()" data-tip="Today" title="Today" aria-label="Today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+      <button type="button" class="gx-btn" onclick="srResetFilters()" data-tip="Reset filters" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+    </div>
   </div></div>
-  <div class="table-wrap" style="padding:15px 17px;margin-top:0"><div class="table-controls">
-    <div class="tc-left"><label>Show Records:</label><select id="srLen" onchange="renderSmsReport()"><option>10</option><option selected>25</option><option value="All">All</option></select>${eb()}</div>
-    <div class="tc-right"><label>Search:</label><input type="text" id="srSearch" oninput="renderSmsReport()" placeholder="Search..."/></div></div></div>
-  <div class="table-wrap"><div class="tscroll"><table>
-    <thead><tr><th>Date</th><th>Agent</th><th class="sortable" onclick="gxSrSort('range')">Range <span class="sort" id="srSort_range">\u21C5</span></th><th class="sortable" onclick="gxSrSort('number')">Number <span class="sort" id="srSort_number">\u21C5</span></th><th class="sortable" onclick="gxSrSort('cli')">CLI <span class="sort" id="srSort_cli">\u21C5</span></th><th class="sortable" onclick="gxSrSort('payout')">Payout Rate <span class="sort" id="srSort_payout">\u21C5</span></th><th>SMS (Message Body)</th></tr></thead><tbody id="srBody"></tbody></table></div>
-    <div class="table-foot"><div class="info" id="srInfo"></div><div class="pagination"></div></div></div>`;
+  <div class="table-wrap">
+    <div class="table-controls">
+      <div class="tc-left"><label>Show Records:</label><select id="srLen" onchange="renderSmsReport()"><option>10</option><option selected>25</option><option value="All">All</option></select>${eb()}</div>
+      <div class="tc-right"><label>Search:</label><input type="text" id="srSearch" oninput="renderSmsReport()" placeholder="Search..."/></div>
+    </div>
+    <div class="tscroll"><table>
+      <thead><tr><th>Date</th><th>Agent</th><th class="sortable" onclick="gxSrSort('range')">Range <span class="sort" id="srSort_range">\u21C5</span></th><th class="sortable" onclick="gxSrSort('number')">Number <span class="sort" id="srSort_number">\u21C5</span></th><th class="sortable" onclick="gxSrSort('cli')">CLI <span class="sort" id="srSort_cli">\u21C5</span></th><th class="sortable" onclick="gxSrSort('payout')">Payout Rate <span class="sort" id="srSort_payout">\u21C5</span></th><th>SMS (Message Body)</th></tr></thead>
+      <tbody id="srBody"></tbody>
+    </table></div>
+    <div class="table-foot"><div class="info" id="srInfo"></div><div class="pagination"></div></div>
+  </div>`;
   setDefaultDates('srFrom','srTo'); gxPopSmsFilterLists(); renderSmsReport();}
 function setDefaultDates(fromId,toId){const uk=todayStr();const f=document.getElementById(fromId),t=document.getElementById(toId);
   if(f){ if(!f.value){f.value=uk;f.dataset.gxAuto='1';} else if(f.dataset.gxAuto==='1'&&f.value!==uk){f.value=uk;} }
@@ -1100,20 +1116,31 @@ function setDefaultDates(fromId,toId){const uk=todayStr();const f=document.getEl
   if(!document.__gxAutoDateHook){ document.__gxAutoDateHook=1; document.addEventListener('change',e=>{ if(e.target&&e.target.matches&&e.target.matches('input[type=date]')) e.target.dataset.gxAuto='0'; }); }
 }
 async function gxPopSmsFilterLists(){
-  /* P19: srCli/sdCli/sdRange filling removed — SMS Report me CLI filter nahi, SMS Detail
-     ab facet (click-to-filter) design hai (dropdowns nahi). srRange + number datalist qayam. */
   try{
-    const rs=document.getElementById('srRange');
+    const rs=document.getElementById('srRange'), cs=document.getElementById('srCli');
     let names=[];
     try{ const rj=await API.get('/ranges'); const arr=Array.isArray(rj)?rj:(rj.ranges||[]); names=arr.map(x=>x.name).filter(Boolean); }catch(e){}
     const opt=(arr,all)=>all+arr.map(n=>`<option>${String(n).replace(/</g,'&lt;')}</option>`).join('');
     if(rs&&rs.options.length<=1) rs.innerHTML=opt(names,'<option value="">All Ranges</option>');
+    if(cs){
+      const kv=cs.value;
+      const rj=await API.smsClis(srListArgs());
+      cs.innerHTML=gxOptList(rj.items);
+      if(kv){
+        cs.value=kv;
+        if(cs.value!==kv){
+          const opt=document.createElement('option');
+          opt.value=kv; opt.textContent=kv;
+          cs.appendChild(opt); cs.value=kv;
+        }
+      }
+    }
     let dl=document.getElementById('srNumDl');
     if(!dl){ dl=document.createElement('datalist'); dl.id='srNumDl'; const inp=document.getElementById('srNumber'); if(inp&&inp.parentNode) inp.parentNode.appendChild(dl); }
     if(dl){ try{ const rn=await API.smsNumbers(srListArgs()); dl.innerHTML=(rn.items||[]).map(x=>`<option value="${String(x.number).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${x.count!=null?x.count+' OTPs':''}</option>`).join(''); }catch(e){} }
   }catch(e){}
 }
-function srResetFilters(){window.__srSort={k:'',d:''};gxResetSortHeads('srSort_'); ['srTFrom','srTTo','srNumber'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); ['srRange'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); setDefaultDates('srFrom','srTo'); /* P17: reset = DEFAULT state (UK aaj), full-history nahi */ renderSmsReport(); }
+function srResetFilters(){window.__srSort={k:'',d:''};gxResetSortHeads('srSort_'); ['srTFrom','srTTo','srNumber'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); ['srRange','srCli'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';}); setDefaultDates('srFrom','srTo'); renderSmsReport(); }
 function eb(){return`<div class="exp-btns"><button type="button" class="gx-btn gx-blue"  data-tip="Copy" title="Copy" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button type="button" class="gx-btn gx-blue"  data-tip="Download CSV" title="Download CSV" aria-label="Download CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button type="button" class="gx-btn gx-green"  data-tip="Download Excel" title="Download Excel" aria-label="Download Excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>`;}
 async function loadSms(){ try{ smsRecords=await API.get('/sms'); }catch(e){ smsRecords=[]; }
   // agent summary from real data
@@ -1121,10 +1148,6 @@ async function loadSms(){ try{ smsRecords=await API.get('/sms'); }catch(e){ smsR
   const b=document.getElementById('agSumBody');
   if(b)b.innerHTML=Object.keys(byAgt).map(a=>`<tr><td><span class="tag tag-agt">${a}</span></td><td><span class="tag tag-cli">—</span></td><td class="cell-money">${byAgt[a]}</td><td class="cell-money" style="color:#6ee7b7">$ ${sumPay((smsRecords||[]).filter(r=>r.agent_name===a))}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:16px">No records found</td></tr>`;
   renderSmsReport();if(document.getElementById('sdBody'))renderSmsDetail();}
-function renderSmsReport(){const len=document.getElementById('srLen').value,q=(document.getElementById('srSearch').value||'').toLowerCase();
-  let rows=(smsRecords||[]).filter(r=>[r.agent_name,r.range_name,r.cli,r.message].join(' ').toLowerCase().includes(q));const pag=API.paginateRows('mgrSmsReport',rows,len,'srInfo',renderSmsReport);const t=pag.total;rows=pag.rows;
-  document.getElementById('srBody').innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-agt">${r.agent_name||'—'}</span></td><td>${r.range_name||'—'}</td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
-  document.getElementById('srInfo').textContent=`Showing ${rows.length} of ${t} records`;}
 
 /* ===== CDR: DETAILED (advanced filters) ===== */
 function buildSmsDetail(){
@@ -1617,17 +1640,17 @@ function gxOptList(items){ return '<option value="">All CLIs</option>' + (items|
 function gxSrSort(col){ const st=(window.__srSort=window.__srSort||{k:'',d:''}); gxSortCycle(st,col,col==='payout'?'desc':'asc'); ['range','number','cli','payout'].forEach(x=>{const el=document.getElementById('srSort_'+x); if(el) el.textContent=gxArr(st,x);}); if(document.getElementById('srBody')) renderSmsReport(); }
 function gxSdSort(col){ const st=(window.__sdSort=window.__sdSort||{k:'',d:''}); gxSortCycle(st,col,col==='payout'?'desc':'asc'); ['range','number','cli','payout'].forEach(x=>{const el=document.getElementById('sdSort_'+x); if(el) el.textContent=gxArr(st,x);}); if(document.getElementById('sdBody')) renderSmsDetail(); }
 function gxSdSumSort(col){ const st=(window.__sdSumSort=window.__sdSumSort||{k:'',d:''}); gxSortCycle(st,col,'desc'); ['sms','payment'].forEach(x=>{const el=document.getElementById('sdSum_'+x); if(el) el.textContent=gxArr(st,x);}); if(document.getElementById('sdBody')) renderSmsDetail(); }
-function srListArgs(){ const g=(id)=>{const e=document.getElementById(id);return (e&&e.value)?String(e.value).trim():'';}; const o={from:g('srFrom'),to:g('srTo'),tfrom:g('srTFrom'),tto:g('srTTo'),range:g('srRange'),number:g('srNumber'),search:g('srSearch')}; Object.keys(o).forEach(k=>{if(!o[k])delete o[k];}); return o; }
+function srListArgs(){ const g=(id)=>{const e=document.getElementById(id);return (e&&e.value)?String(e.value).trim():'';}; const o={from:g('srFrom'),to:g('srTo'),tfrom:g('srTFrom'),tto:g('srTTo'),range:g('srRange'),cli:g('srCli'),number:g('srNumber'),search:g('srSearch')}; Object.keys(o).forEach(k=>{if(!o[k])delete o[k];}); return o; }
 function sdListArgs(){ const g=(id)=>{const e=document.getElementById(id);return (e&&e.value)?String(e.value).trim():'';}; const o={from:g('sdDateFrom'),to:g('sdDateTo'),range:g('sdRange'),agent:g('sdUser'),search:g('sdSearch')}; Object.keys(o).forEach(k=>{if(!o[k])delete o[k];}); return o; }
 function srvFoot(info,state,fn){const p=info?.closest('.table-foot')?.querySelector('.pagination');if(p&&window.drawServerPagination)drawServerPagination(p,state,fn)}
 function mgrPager(key){window.__mgrPager=window.__mgrPager||{};if(!window.__mgrPager[key])window.__mgrPager[key]={page:1,totalPages:1,signature:''};return window.__mgrPager[key];}
 async function renderSmsReport(){if(!document.getElementById('srBody'))return;gxPopSmsFilterLists();const len=srLen.value||'25',search=(srSearch.value||'').trim();
   const from=(document.getElementById('srFrom')?.value)||'',to=(document.getElementById('srTo')?.value)||'';
   const tfrom=(document.getElementById('srTFrom')?.value)||'',tto=(document.getElementById('srTTo')?.value)||'';
-  const rangeVal=(document.getElementById('srRange')?.value)||'',numberVal=(document.getElementById('srNumber')?.value||'').trim();
-  const state=mgrPager('mgrSmsReportServer');const _sst=(window.__srSort=window.__srSort||{k:'',d:''});const sig=srvSig({len,search,from,to,tfrom,tto,rangeVal,numberVal,sk:_sst.k,sd:_sst.d});if(state.signature!==sig){state.page=1;state.signature=sig;}
+  const rangeVal=(document.getElementById('srRange')?.value)||'',cliVal=(document.getElementById('srCli')?.value)||'',numberVal=(document.getElementById('srNumber')?.value||'').trim();
+  const state=mgrPager('mgrSmsReportServer');const _sst=(window.__srSort=window.__srSort||{k:'',d:''});const sig=srvSig({len,search,from,to,tfrom,tto,rangeVal,cliVal,numberVal,sk:_sst.k,sd:_sst.d});if(state.signature!==sig){state.page=1;state.signature=sig;}
   const params=new URLSearchParams({page:String(state.page),limit:len,search,sort:(_sst.k||'date'),dir:(_sst.k?_sst.d:'desc')});
-  if(from)params.set('from',from); if(to)params.set('to',to); if(tfrom)params.set('tfrom',tfrom); if(tto)params.set('tto',tto); if(rangeVal)params.set('range',rangeVal); if(numberVal)params.set('number',numberVal);let data={rows:[],total:0,page:1,limit:25,totalPages:1};try{data=await API.get('/sms/paged?'+params.toString())}catch(e){console.warn(e)}state.page=data.page||1;state.totalPages=data.totalPages||1;const rows=data.rows||[];srBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-agt">${r.agent_name||'—'}</span></td><td>${r.range_name||'—'}</td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;srInfo.textContent=`Showing ${srvShown(data.page,data.limit,rows.length,data.total)} of ${data.total||0} records`;srvFoot(srInfo,state,renderSmsReport);}
+  if(from)params.set('from',from); if(to)params.set('to',to); if(tfrom)params.set('tfrom',tfrom); if(tto)params.set('tto',tto); if(rangeVal)params.set('range',rangeVal); if(cliVal)params.set('cli',cliVal); if(numberVal)params.set('number',numberVal);let data={rows:[],total:0,page:1,limit:25,totalPages:1};try{data=await API.get('/sms/paged?'+params.toString())}catch(e){console.warn(e)}state.page=data.page||1;state.totalPages=data.totalPages||1;const rows=data.rows||[];srBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-agt">${r.agent_name||'—'}</span></td><td>${r.range_name||'—'}</td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;srInfo.textContent=`Showing ${srvShown(data.page,data.limit,rows.length,data.total)} of ${data.total||0} records`;srvFoot(srInfo,state,renderSmsReport);}
 async function renderSmsDetail(){if(window.__cdrInstance) return window.__cdrInstance.render();if(!document.getElementById('sdBody'))return;
   const _sdF=(document.getElementById('sdDateFrom')?.value)||'',_sdT=(document.getElementById('sdDateTo')?.value)||'';let dateFrom=_sdF,dateTo=_sdT;if(document.getElementById('sdUseDate')?.checked){if(!dateFrom&&!dateTo){dateFrom=todayStr();dateTo=todayStr();}else if(dateFrom&&!dateTo){dateTo='2099-12-31';}else if(!dateFrom&&dateTo){dateFrom='1970-01-01';}if(dateFrom>dateTo){const _s=dateFrom;dateFrom=dateTo;dateTo=_s;}}else{dateFrom='';dateTo='';}
   const tfVal=sdUseTime?.checked?(document.getElementById('sdTimeFrom')?.value||''):'',ttVal=sdUseTime?.checked?(document.getElementById('sdTimeTo')?.value||''):'';
