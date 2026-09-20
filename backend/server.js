@@ -3255,12 +3255,17 @@ app.get('/api/sms/clis', authRequired, (req, res) => cachedJson(req, res, 30000,
      jo /api/sms/paged use karta hai). Default = UK aaj. Har CLI ka count bhi (drill-style summary). */
   const q = { ...(req.query || {}) };
   const dq = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
-  if (!dq(q.from)) delete q.from;
-  if (!dq(q.to)) delete q.to;
-  if (!q.from && !q.to) { q.from = ukTodayDateStr(0); q.to = q.from; }
-  else if (q.from && !q.to) q.to = q.from;
-  else if (!q.from && q.to) q.from = q.to;
-  if (q.from > q.to) { const t = q.from; q.from = q.to; q.to = t; }
+  if (q.all || q.all_dates === '1') {
+    delete q.from;
+    delete q.to;
+  } else {
+    if (!dq(q.from)) delete q.from;
+    if (!dq(q.to)) delete q.to;
+    if (!q.from && !q.to) { q.from = ukTodayDateStr(0); q.to = q.from; }
+    else if (q.from && !q.to) q.to = q.from;
+    else if (!q.from && q.to) q.from = q.to;
+    if (q.from > q.to) { const t = q.from; q.from = q.to; q.to = t; }
+  }
   const built = buildSmsPagedQuery(req.user, q);
   const rows = db.all(`SELECT s.cli AS cli, COUNT(*) AS c ${built.baseSql} AND s.cli IS NOT NULL AND TRIM(s.cli)<>'' GROUP BY s.cli ORDER BY s.cli LIMIT 300`, built.params);
   return { clis: rows.map(r => r.cli), items: rows.map(r => ({ cli: r.cli, count: r.c })), from: q.from, to: q.to };
@@ -3269,12 +3274,17 @@ app.get('/api/sms/numbers', authRequired, (req, res) => cachedJson(req, res, 300
   /* P18: Number filter list = current report dataset (same filters/scope as /api/sms/paged) */
   const q = { ...(req.query || {}) };
   const dq = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
-  if (!dq(q.from)) delete q.from;
-  if (!dq(q.to)) delete q.to;
-  if (!q.from && !q.to) { q.from = ukTodayDateStr(0); q.to = q.from; }
-  else if (q.from && !q.to) q.to = q.from;
-  else if (!q.from && q.to) q.from = q.to;
-  if (q.from > q.to) { const t = q.from; q.from = q.to; q.to = t; }
+  if (q.all || q.all_dates === '1') {
+    delete q.from;
+    delete q.to;
+  } else {
+    if (!dq(q.from)) delete q.from;
+    if (!dq(q.to)) delete q.to;
+    if (!q.from && !q.to) { q.from = ukTodayDateStr(0); q.to = q.from; }
+    else if (q.from && !q.to) q.to = q.from;
+    else if (!q.from && q.to) q.from = q.to;
+    if (q.from > q.to) { const t = q.from; q.from = q.to; q.to = t; }
+  }
   const built = buildSmsPagedQuery(req.user, q);
   const rows = db.all(`SELECT s.number AS number, COUNT(*) AS c ${built.baseSql} AND s.number IS NOT NULL AND TRIM(s.number)<>'' GROUP BY s.number ORDER BY s.number LIMIT 300`, built.params);
   return { numbers: rows.map(r => r.number), items: rows.map(r => ({ number: r.number, count: r.c })), from: q.from, to: q.to };

@@ -78,7 +78,8 @@ async function run() {
   if (!ready) fail('server_start', 'Server did not respond to /health in time');
   pass('server_start', 'Backend server listening');
 
-  const db = new Database(TEST_DB);
+  let db = new Database(TEST_DB);
+  const getDb = () => new Database(TEST_DB);
 
   // 2. Setup users: admin, manager, agent, client
   // Admin logs in (default created by seed)
@@ -95,7 +96,9 @@ async function run() {
     name: 'Test Manager'
   }, tokens.admin);
   assert.strictEqual(mgrRes.status, 200);
-  const mgrId = db.prepare("SELECT id FROM users WHERE username='mgr1'").get().id;
+  const mgrList = await request('GET', '/api/users/manager', null, tokens.admin);
+  const mgrId = (mgrList.data || []).find(u => u.username === 'mgr1')?.id;
+  assert(mgrId, 'Manager ID must exist');
   const mgrLogin = await request('POST', '/api/login', { username: 'mgr1', password: 'password123' });
   tokens.manager = mgrLogin.data.token;
   pass('setup_manager', `Manager created (id: ${mgrId})`);
@@ -109,7 +112,9 @@ async function run() {
     parent_id: mgrId
   }, tokens.admin);
   assert.strictEqual(agtRes.status, 200);
-  const agtId = db.prepare("SELECT id FROM users WHERE username='agt1'").get().id;
+  const agtList = await request('GET', '/api/users/agent', null, tokens.admin);
+  const agtId = (agtList.data || []).find(u => u.username === 'agt1')?.id;
+  assert(agtId, 'Agent ID must exist');
   const agtLogin = await request('POST', '/api/login', { username: 'agt1', password: 'password123' });
   tokens.agent = agtLogin.data.token;
   pass('setup_agent', `Agent created (id: ${agtId})`);
@@ -123,7 +128,9 @@ async function run() {
     parent_id: agtId
   }, tokens.admin);
   assert.strictEqual(cliRes.status, 200);
-  const clientId = db.prepare("SELECT id FROM users WHERE username='client1'").get().id;
+  const cliList = await request('GET', '/api/users/client', null, tokens.admin);
+  const clientId = (cliList.data || []).find(u => u.username === 'client1')?.id;
+  assert(clientId, 'Client ID must exist');
   const cliLogin = await request('POST', '/api/login', { username: 'client1', password: 'password123' });
   tokens.client = cliLogin.data.token;
   pass('setup_client', `Client created (id: ${clientId})`);
@@ -146,7 +153,9 @@ async function run() {
     provider_rate: '0.04'
   }, tokens.admin);
   assert.strictEqual(r1Res.status, 200);
-  const r1Id = db.prepare("SELECT id FROM ranges WHERE name='UK_Alpha'").get().id;
+  const r1List = await request('GET', '/api/ranges?_nocache=1', null, tokens.admin);
+  const r1Id = r1List.data.find(r => r.name === 'UK_Alpha')?.id;
+  assert(r1Id, 'UK_Alpha range must exist in DB');
   pass('area3_create_range_provider_rate', `Range created with provider_rate 0.04 (id: ${r1Id})`);
 
   // Create Range 2 with provider_rate 0.06 and provider "CarrierBeta"
@@ -162,7 +171,9 @@ async function run() {
     provider_rate: '0.06'
   }, tokens.admin);
   assert.strictEqual(r2Res.status, 200);
-  const r2Id = db.prepare("SELECT id FROM ranges WHERE name='UK_Beta'").get().id;
+  const r2List = await request('GET', '/api/ranges?_nocache=1', null, tokens.admin);
+  const r2Id = r2List.data.find(r => r.name === 'UK_Beta')?.id;
+  assert(r2Id, 'UK_Beta range must exist in DB');
   pass('area3_create_second_range', `Second range created with provider_rate 0.06 (id: ${r2Id})`);
 
   // Create Range 3 (Unallocated range, for Area 4 testing)
@@ -178,7 +189,9 @@ async function run() {
     provider_rate: '0.05'
   }, tokens.admin);
   assert.strictEqual(r3Res.status, 200);
-  const r3Id = db.prepare("SELECT id FROM ranges WHERE name='UK_Unallocated'").get().id;
+  const r3List = await request('GET', '/api/ranges?_nocache=1', null, tokens.admin);
+  const r3Id = r3List.data.find(r => r.name === 'UK_Unallocated')?.id;
+  assert(r3Id, 'UK_Unallocated range must exist in DB');
   pass('area3_create_unallocated_range', `Unallocated range created (id: ${r3Id})`);
 
   // Verify Admin sees provider_rate
@@ -223,6 +236,7 @@ async function run() {
   pass('area3_admin_update_provider_rate', 'Admin updated provider_rate to 0.045');
 
   // Insert numbers for R1 and R2
+  db = getDb();
   // R1: 2 numbers allocated to mgr1 -> agt1 -> client1
   const num1Id = db.prepare(`INSERT INTO numbers (number, range_id, manager_id, agent_id, client_id) VALUES (?, ?, ?, ?, ?)`).run('4471000001', r1Id, mgrId, agtId, clientId).lastInsertRowid;
   const num2Id = db.prepare(`INSERT INTO numbers (number, range_id, manager_id, agent_id, client_id) VALUES (?, ?, ?, ?, ?)`).run('4471000002', r1Id, mgrId, agtId, clientId).lastInsertRowid;

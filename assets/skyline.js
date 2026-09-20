@@ -274,13 +274,25 @@ Skyline.handleTableCopy = async function(btn){
   const wrap = btn.closest('.table-wrap') || btn.closest('.card') || document.querySelector('section.page.active .table-wrap');
   const table = wrap ? wrap.querySelector('table') : null;
   if(!table) return;
-  const ths = [...table.querySelectorAll('thead th')].map(th => (th.textContent || '').replace(/[\u21C5\u25B2\u25BC⇅]/g, '').trim()).filter(Boolean);
+  const rawThs = [...table.querySelectorAll('thead th')];
+  const colIndices = [];
+  const cleanThs = [];
+  rawThs.forEach((th, idx) => {
+    const txt = (th.textContent || '').replace(/[\u21C5\u25B2\u25BC⇅]/g, '').trim();
+    if(txt && !['copy', 'action', 'actions'].includes(txt.toLowerCase())){
+      colIndices.push(idx);
+      cleanThs.push(txt);
+    }
+  });
+  if(!cleanThs.length) return;
   const rows = [...table.querySelectorAll('tbody tr')].filter(tr => tr.children.length > 1 && !tr.querySelector('th'));
   if(!rows.length) return;
-  const lines = [];
-  lines.push(ths.join('\t'));
+  const lines = [cleanThs.join('\t')];
   rows.forEach(tr => {
-    const cells = [...tr.children].map(td => (td.innerText || td.textContent || '').trim().replace(/\s+/g, ' '));
+    const cells = colIndices.map(i => {
+      const td = tr.children[i];
+      return td ? (td.innerText || td.textContent || '').trim().replace(/\s+/g, ' ') : '';
+    });
     lines.push(cells.join('\t'));
   });
   await Skyline.copyTextToClipboard(lines.join('\n'), btn);

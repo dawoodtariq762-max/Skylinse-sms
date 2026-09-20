@@ -1090,9 +1090,15 @@ label {
     width: 100% !important;
     min-width: 0 !important;
   }
-  .filter-item input, .filter-item select {
+  .filter-item input:not([type="checkbox"]):not([type="radio"]), .filter-item select {
     width: 100% !important;
     box-sizing: border-box !important;
+  }
+  .filter-item input[type="checkbox"], .filter-item input[type="radio"] {
+    width: 16px !important;
+    height: 16px !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
   }
   .filter-btn-group {
     width: 100% !important;
@@ -1543,15 +1549,27 @@ label {
   align-items: center !important;
   justify-content: flex-start !important;
   flex-wrap: wrap !important;
-  gap: 6px !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.exp-divider {
+  display: inline-block !important;
+  width: 1px !important;
+  height: 20px !important;
+  background: #334155 !important;
+  margin: 0 8px !important;
+  flex-shrink: 0 !important;
 }
 
 .exp-btns .gx-btn,
 .exp-btns button,
 .exp-btns .btn,
 .cdr-btn-tool {
+  width: auto !important;
+  min-width: fit-content !important;
   height: 32px !important;
-  padding: 0 10px !important;
+  padding: 0 12px !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   font-family: inherit !important;
@@ -1559,7 +1577,7 @@ label {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 5px !important;
+  gap: 6px !important;
   background: #1e293b !important;
   border: 1px solid #334155 !important;
   color: #e2e8f0 !important;
@@ -1585,6 +1603,38 @@ label {
   height: 14px !important;
   stroke-width: 2 !important;
   flex-shrink: 0 !important;
+}
+
+/* Checkbox-style Filter Items */
+.filter-item {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease !important;
+}
+
+.filter-item.filter-active {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.25) !important;
+  opacity: 1 !important;
+}
+
+.filter-btn-group {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .exp-divider {
+    display: none !important;
+  }
 }
 
 /* Natural SMS Message Body wrapping - fixes one-word-per-line bug */

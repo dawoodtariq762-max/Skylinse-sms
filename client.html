@@ -505,42 +505,42 @@
       <div class="page-head"><div><h2>SMS Stats</h2><div class="breadcrumb"><b>My Panel</b> › Received SMS &amp; OTP</div></div></div>
       <div class="cdr-toolbar toolbar" style="margin-top:14px;">
         <div class="cdr-filter-row filter-row">
-          <div class="filter-item" id="boxClientDate" style="flex:2 1 240px;">
-            <label class="cdr-label">Date (From – To)</label>
+          <div class="filter-item" id="boxClientDate" style="flex:1.2 1 180px;min-width:170px;">
+            <label class="cdr-label" style="display:flex;align-items:center;justify-content:flex-start;gap:6px;cursor:pointer;margin:0;">
+              <input type="checkbox" class="cdr-gb-chk" id="stUseDate" value="date" checked onchange="toggleClientFilter('date')" style="margin:0;flex-shrink:0;">
+              <span style="margin:0;">Date (From – To)</span>
+            </label>
             <div class="cdr-dt-wrap">
-              <input type="date" id="stFrom" class="cdr-input" onchange="if(document.getElementById('stUseDate'))document.getElementById('stUseDate').checked=true;renderStats();loadRanges()"/>
+              <input type="date" id="stFrom" class="cdr-input" onchange="clientDateInputChanged()"/>
               <span class="muted" style="align-self:center">–</span>
-              <input type="date" id="stTo" class="cdr-input" onchange="if(document.getElementById('stUseDate'))document.getElementById('stUseDate').checked=true;renderStats();loadRanges()"/>
+              <input type="date" id="stTo" class="cdr-input" onchange="clientDateInputChanged()"/>
             </div>
           </div>
-          <div class="filter-item" id="boxClientRange" style="flex:1.5 1 180px;">
-            <label class="cdr-label">Range</label>
-            <select class="cdr-select" id="stRange" onchange="if(this.value && document.getElementById('stUseRange'))document.getElementById('stUseRange').checked=true;renderStats()"><option value="">All Ranges</option></select>
+          <div class="filter-item" id="boxClientRange" style="flex:1 1 120px;min-width:110px;">
+            <label class="cdr-label" style="display:flex;align-items:center;justify-content:flex-start;gap:6px;cursor:pointer;margin:0;">
+              <input type="checkbox" class="cdr-gb-chk" id="stUseRange" value="range" onchange="toggleClientFilter('range')" style="margin:0;flex-shrink:0;">
+              <span style="margin:0;">Range</span>
+            </label>
+            <select class="cdr-select" id="stRange" onchange="clientRangeChanged()"><option value="">All Ranges</option></select>
           </div>
-          <div class="filter-item" id="boxClientCli" style="flex:1.5 1 180px;">
-            <label class="cdr-label">CLI</label>
-            <select class="cdr-select" id="stCli" onchange="if(this.value && document.getElementById('stUseCli'))document.getElementById('stUseCli').checked=true;renderStats()"><option value="">All CLIs</option></select>
+          <div class="filter-item" id="boxClientNumber" style="flex:1.1 1 140px;min-width:130px;">
+            <label class="cdr-label" style="display:flex;align-items:center;justify-content:flex-start;gap:6px;cursor:pointer;margin:0;">
+              <input type="checkbox" class="cdr-gb-chk" id="stUseNumber" value="number" onchange="toggleClientFilter('number')" style="margin:0;flex-shrink:0;">
+              <span style="margin:0;">Number</span>
+            </label>
+            <input type="text" id="stNumber" class="cdr-input" list="stNumDl" placeholder="Search Number…" oninput="clientNumberChanged()"/><datalist id="stNumDl"></datalist>
           </div>
-        </div>
-
-        <div class="cdr-filter-row filter-row">
-          <div class="filter-item" id="boxClientNumber" style="flex:2 1 220px;">
-            <label class="cdr-label">Number</label>
-            <input type="text" id="stNumber" class="cdr-input" list="stNumDl" placeholder="Search Number…" oninput="if(this.value.trim() && document.getElementById('stUseNumber'))document.getElementById('stUseNumber').checked=true;clearTimeout(window.__stNT);window.__stNT=setTimeout(renderStats,400)"/><datalist id="stNumDl"></datalist>
+          <div class="filter-item" id="boxClientCli" style="flex:1 1 120px;min-width:110px;">
+            <label class="cdr-label" style="display:flex;align-items:center;justify-content:flex-start;gap:6px;cursor:pointer;margin:0;">
+              <input type="checkbox" class="cdr-gb-chk" id="stUseCli" value="cli" onchange="toggleClientFilter('cli')" style="margin:0;flex-shrink:0;">
+              <span style="margin:0;">CLI</span>
+            </label>
+            <select class="cdr-select" id="stCli" onchange="clientCliChanged()"><option value="">All CLIs</option></select>
           </div>
-
-          <div class="filter-btn-group" style="display:flex;gap:8px;align-self:flex-end;">
-            <button type="button" class="cdr-btn-show gx-btn gx-blue" onclick="renderStats()" title="Apply Filters">Show Report</button>
-            <button type="button" class="cdr-btn-reset gx-btn" onclick="stResetFilters()" title="Reset Filters">Reset</button>
+          <div class="filter-btn-group" style="display:flex;gap:8px;align-items:center;align-self:flex-end;margin-bottom:2px;flex-shrink:0;">
+            <button type="button" class="cdr-btn-show gx-btn gx-blue" onclick="renderStats()" title="Apply Filters" style="height:36px;padding:0 14px;white-space:nowrap;font-weight:700;min-width:96px;">Show Report</button>
+            <button type="button" class="cdr-btn-reset gx-btn" onclick="stResetFilters()" title="Reset Filters" style="height:36px;padding:0 12px;white-space:nowrap;min-width:64px;">Reset</button>
           </div>
-        </div>
-
-        <div class="cdr-group-row">
-          <span class="cdr-group-label">Filter:</span>
-          <label class="cdr-gb-item"><input type="checkbox" class="cdr-gb-chk" id="stUseNumber" value="number" onchange="toggleClientFilter('number')"> Number</label>
-          <label class="cdr-gb-item"><input type="checkbox" class="cdr-gb-chk" id="stUseRange" value="range" onchange="toggleClientFilter('range')"> Range</label>
-          <label class="cdr-gb-item"><input type="checkbox" class="cdr-gb-chk" id="stUseCli" value="cli" onchange="toggleClientFilter('cli')"> CLI</label>
-          <label class="cdr-gb-item"><input type="checkbox" class="cdr-gb-chk" id="stUseDate" value="date" checked onchange="toggleClientFilter('date')"> Date</label>
         </div>
 
         <!-- Compatibility aliases for test suites -->
@@ -554,8 +554,11 @@
       <div class="table-wrap">
         <div class="table-controls">
           <div class="tc-left">
-            <label>Show Records:</label>
-            <select id="stLen" onchange="renderStats()"><option>10</option><option selected>25</option><option>50</option><option value="All">All</option></select>
+            <div class="tc-page-len">
+              <label>Show Records:</label>
+              <select id="stLen" onchange="renderStats()"><option>10</option><option selected>25</option><option>50</option><option value="All">All</option></select>
+            </div>
+            <div class="exp-divider"></div>
             <div class="exp-btns">
               <button type="button" class="gx-btn gx-blue" data-tip="Copy" title="Copy" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span></button>
               <button type="button" class="gx-btn gx-blue" data-tip="Download TXT" title="Download TXT" aria-label="Download TXT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><span>TXT</span></button>
@@ -568,6 +571,10 @@
         <div class="tscroll"><table>
           <thead><tr><th>Date</th><th>Range</th><th>Number</th><th>CLI</th><th>OTP Code</th><th>Copy</th><th>Message</th></tr></thead>
           <tbody id="statsBody"></tbody>
+        </table></div>
+        <div class="table-foot"><div class="info" id="statsInfo"></div><div class="pagination"></div></div>
+      </div>
+    </section>
         </table></div>
         <div class="table-foot"><div class="info" id="statsInfo"></div><div class="pagination"></div></div>
       </div>
@@ -1007,18 +1014,58 @@ function copyOtp(btn, text){
   }, 1400);
 }
 async function loadRanges(){
-  try{const ranges=await API.get('/ranges/allocated');rangeNames=(ranges||[]).map(r=>r.name);}catch(e){rangeNames=[];testNumbers=[];}
-  fillSel('numRange',rangeNames);fillSel('stRange',rangeNames);fillSel('testRange',rangeNames);
-  try{ const cs=document.getElementById('stCli'); if(cs){ const _f=(document.getElementById('stFrom')?.value)||'', _t=(document.getElementById('stTo')?.value)||''; const rj=await API.smsClis(_f,_t); const items=(rj.items&&rj.items.length)?rj.items:(rj.clis||[]).map(c=>({cli:c})); cs.innerHTML='<option value="">All CLIs</option>'+items.map(x=>`<option value="${String(x.cli).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}">${String(x.cli).replace(/&/g,'&amp;').replace(/</g,'&lt;')}${x.count!=null?' ('+x.count+')':''}</option>`).join(''); } }catch(e){}
-  try{ const dl=document.getElementById('stNumDl'); if(dl){ const nd=await API.get('/numbers?limit=5000'); const nList=(nd.rows||nd||[]).map(r=>r.number).filter(Boolean); dl.innerHTML=[...new Set(nList)].map(n=>`<option value="${n}">`).join(''); } }catch(e){}
+  const curRange = document.getElementById('stRange')?.value || '';
+  const curCli = document.getElementById('stCli')?.value || '';
+  const curNum = document.getElementById('stNumber')?.value || '';
+
+  try{
+    const ranges = await API.get('/ranges/allocated');
+    rangeNames = (ranges || []).map(r => r.name);
+  }catch(e){
+    rangeNames = [];
+  }
+  fillSel('numRange', rangeNames);
+  fillSel('stRange', rangeNames);
+  fillSel('testRange', rangeNames);
+  if(curRange){
+    const rEl = document.getElementById('stRange');
+    if(rEl) rEl.value = curRange;
+  }
+
+  try{
+    const cs = document.getElementById('stCli');
+    if(cs){
+      const dtChk = document.getElementById('stUseDate');
+      const useDate = dtChk ? dtChk.checked : true;
+      const _f = useDate ? ((document.getElementById('stFrom')?.value) || '') : '';
+      const _t = useDate ? ((document.getElementById('stTo')?.value) || '') : '';
+      const queryObj = useDate ? { from: _f, to: _t } : { all_dates: '1' };
+      const rj = await API.smsClis(queryObj);
+      const items = (rj.items && rj.items.length) ? rj.items : (rj.clis || []).map(c => ({ cli: c }));
+      cs.innerHTML = '<option value="">All CLIs</option>' + items.map(x => `<option value="${String(x.cli).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}">${String(x.cli).replace(/&/g,'&amp;').replace(/</g,'&lt;')}${x.count!=null?' ('+x.count+')':''}</option>`).join('');
+      if(curCli) cs.value = curCli;
+    }
+  }catch(e){}
+
+  try{
+    const dl = document.getElementById('stNumDl');
+    if(dl){
+      const nd = await API.get('/numbers?limit=5000');
+      const nList = (nd.rows || nd || []).map(r => r.number).filter(Boolean);
+      dl.innerHTML = [...new Set(nList)].map(n => `<option value="${n}">`).join('');
+      if(curNum){
+        const nEl = document.getElementById('stNumber');
+        if(nEl) nEl.value = curNum;
+      }
+    }
+  }catch(e){}
 }
-async function loadStats(){ try{ const sms=await API.get('/sms'); stats=sms.map(r=>{const msg=r.message||'';return {range:r.range_name||'',number:r.number,cli:r.cli||'',msg,date:(r.received_at||'').slice(0,19),otp:r.otp_code||extractOTP(msg)}}); recentTests=sms.slice(0,50).map(r=>({date:(r.received_at||'').slice(0,19),range:r.range_name||'',num:r.number||'',cli:r.cli||''})); }catch(e){ stats=[]; recentTests=[]; } renderStats();loadDashboard(); }
 
 async function loadClientPageData(page){
   try{
     if(page==='dashboard') return loadDashboard();
     if(page==='numbers') return loadNumbers();
-    if(page==='stats'){ await loadRanges(); return renderStats(); }
+    if(page==='stats'){ await loadRanges(); updateClientFilterUI(); return renderStats(); }
     if(page==='test'){ await loadRanges(); await loadTestNumbers(); return renderTest(); }
   }catch(e){console.warn('loadClientPageData failed',page,e);}
 }
@@ -1045,6 +1092,45 @@ async function loadNumbers(){return renderNumbers();}
 /* SERVER-SIDE SMS STATS (performance + advanced checkbox filters) */
 let cliStatsPager={page:1,totalPages:1,signature:''};
 function cliStatsSig(o){try{return JSON.stringify(o)}catch(e){return String(Date.now())}}
+
+function clientDateInputChanged(){
+  const dtChk = document.getElementById('stUseDate');
+  if(dtChk) dtChk.checked = true;
+  updateClientFilterUI();
+  renderStats();
+  loadRanges();
+}
+
+function clientRangeChanged(){
+  const val = document.getElementById('stRange')?.value || '';
+  const rngChk = document.getElementById('stUseRange');
+  if(rngChk){
+    rngChk.checked = !!val;
+  }
+  updateClientFilterUI();
+  renderStats();
+}
+
+function clientNumberChanged(){
+  const val = (document.getElementById('stNumber')?.value || '').trim();
+  const numChk = document.getElementById('stUseNumber');
+  if(numChk){
+    numChk.checked = !!val;
+  }
+  updateClientFilterUI();
+  clearTimeout(window.__stNT);
+  window.__stNT = setTimeout(renderStats, 350);
+}
+
+function clientCliChanged(){
+  const val = document.getElementById('stCli')?.value || '';
+  const cliChk = document.getElementById('stUseCli');
+  if(cliChk){
+    cliChk.checked = !!val;
+  }
+  updateClientFilterUI();
+  renderStats();
+}
 
 function toggleClientFilter(dim){
   const numChk = document.getElementById('stUseNumber');
@@ -1073,21 +1159,35 @@ function updateClientFilterUI(){
   const dtFrom = document.getElementById('stFrom');
   const dtTo = document.getElementById('stTo');
 
-  if(numInput && numChk) numInput.disabled = !numChk.checked;
-  if(rngSelect && rngChk) rngSelect.disabled = !rngChk.checked;
-  if(cliSelect && cliChk) cliSelect.disabled = !cliChk.checked;
-  if(dtFrom && dtChk) dtFrom.disabled = !dtChk.checked;
-  if(dtTo && dtChk) dtTo.disabled = !dtChk.checked;
+  const isNum = numChk ? numChk.checked : false;
+  const isRng = rngChk ? rngChk.checked : false;
+  const isCli = cliChk ? cliChk.checked : false;
+  const isDt  = dtChk ? dtChk.checked : true;
+
+  if(dtFrom) dtFrom.disabled = !isDt;
+  if(dtTo) dtTo.disabled = !isDt;
 
   const boxNum = document.getElementById('boxClientNumber');
   const boxRng = document.getElementById('boxClientRange');
   const boxCli = document.getElementById('boxClientCli');
   const boxDt = document.getElementById('boxClientDate');
 
-  if(boxNum && numChk) boxNum.style.opacity = numChk.checked ? '1' : '0.55';
-  if(boxRng && rngChk) boxRng.style.opacity = rngChk.checked ? '1' : '0.55';
-  if(boxCli && cliChk) boxCli.style.opacity = cliChk.checked ? '1' : '0.55';
-  if(boxDt && dtChk) boxDt.style.opacity = dtChk.checked ? '1' : '0.55';
+  if(boxNum){
+    if(isNum) { boxNum.classList.add('filter-active'); boxNum.style.borderColor = '#38bdf8'; boxNum.style.opacity = '1'; }
+    else { boxNum.classList.remove('filter-active'); boxNum.style.borderColor = ''; boxNum.style.opacity = '0.7'; }
+  }
+  if(boxRng){
+    if(isRng) { boxRng.classList.add('filter-active'); boxRng.style.borderColor = '#38bdf8'; boxRng.style.opacity = '1'; }
+    else { boxRng.classList.remove('filter-active'); boxRng.style.borderColor = ''; boxRng.style.opacity = '0.7'; }
+  }
+  if(boxCli){
+    if(isCli) { boxCli.classList.add('filter-active'); boxCli.style.borderColor = '#38bdf8'; boxCli.style.opacity = '1'; }
+    else { boxCli.classList.remove('filter-active'); boxCli.style.borderColor = ''; boxCli.style.opacity = '0.7'; }
+  }
+  if(boxDt){
+    if(isDt) { boxDt.classList.add('filter-active'); boxDt.style.borderColor = '#38bdf8'; boxDt.style.opacity = '1'; }
+    else { boxDt.classList.remove('filter-active'); boxDt.style.borderColor = ''; boxDt.style.opacity = '0.7'; }
+  }
 }
 
 async function renderStats(){
@@ -1103,9 +1203,9 @@ async function renderStats(){
   const cliChk = document.getElementById('stUseCli') || document.getElementById('sdUseCli');
   const dtChk = document.getElementById('stUseDate') || document.getElementById('sdUseDate');
 
-  const useNumber = numChk ? numChk.checked : true;
-  const useRange = rngChk ? rngChk.checked : true;
-  const useCli = cliChk ? cliChk.checked : true;
+  const useNumber = numChk ? numChk.checked : false;
+  const useRange = rngChk ? rngChk.checked : false;
+  const useCli = cliChk ? cliChk.checked : false;
   const useDate = dtChk ? dtChk.checked : true;
 
   const rf = useRange ? (document.getElementById('stRange')?.value || '') : '';
@@ -1161,9 +1261,12 @@ async function renderStats(){
     <td class="msg-body">${r.msg}</td>
   </tr>`).join('') || `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
 
-  statsInfo.textContent = `Showing ${data.total === 0 ? 0 : Math.min(data.total, ((data.page || 1) - 1) * Number(data.limit || 25) + rows.length)} of ${data.total || 0} records${useDate ? ` (UK: ${from || '…'} → ${to || '…'})` : ' (All Dates)'}`;
-  const pag = statsInfo.closest('.table-foot')?.querySelector('.pagination');
-  if(pag && window.drawServerPagination) drawServerPagination(pag, cliStatsPager, renderStats);
+  const stInfoEl = document.getElementById('statsInfo');
+  if(stInfoEl){
+    stInfoEl.textContent = `Showing ${data.total === 0 ? 0 : Math.min(data.total, ((data.page || 1) - 1) * Number(data.limit || 25) + rows.length)} of ${data.total || 0} records${useDate ? ` (UK: ${from || '…'} → ${to || '…'})` : ' (All Dates)'}`;
+    const pag = stInfoEl.closest('.table-foot')?.querySelector('.pagination');
+    if(pag && window.drawServerPagination) drawServerPagination(pag, cliStatsPager, renderStats);
+  }
 }
 
 function stResetFilters(){
