@@ -399,6 +399,7 @@
       <div class="sb-section">SMS Module</div>
       <div class="nav-item" id="smsNumParent" onclick="toggleSub('smsNumSub','smsNumParent')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>SMS Module</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
       <div class="submenu" id="smsNumSub">
+        <div class="sub-item" data-page="rates"><span class="dot"></span> Rate Management</div>
         <div class="sub-item" data-page="allocation"><span class="dot"></span> Range Allocation</div>
         <div class="sub-item" data-page="numbers"><span class="dot"></span> SMS Numbers</div>
       </div>
@@ -512,6 +513,20 @@
           </div>
         </div>
 
+        <!-- Admin-Only Real Provider Payout Cards -->
+        <div class="sky-dash-top-grid sky-provider-cards" id="skyProviderGrid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:18px;">
+          <div class="sky-hero-card sky-card-pay" style="background:linear-gradient(135deg,rgba(30,27,75,0.92) 0%,rgba(49,46,129,0.95) 100%);border:1px solid rgba(129,140,248,0.38);">
+            <div class="sky-card-label"><span style="color:#a5b4fc;font-weight:750;letter-spacing:0.3px;">THIS WEEK REAL PROVIDER PAYOUT</span><span class="chip" style="background:rgba(99,102,241,0.25);color:#c7d2fe;font-size:10.5px;padding:2px 8px;border-radius:6px;font-weight:700;">Admin Only</span></div>
+            <div class="sky-card-val" id="dashHeroWeekProvPay" style="color:#e0e7ff;font-size:24px;">$ 0.00</div>
+            <div class="sky-card-sub" style="color:#c7d2fe;">Current week real route cost (eligible OTPs)</div>
+          </div>
+          <div class="sky-hero-card sky-card-pay" style="background:linear-gradient(135deg,rgba(6,78,59,0.92) 0%,rgba(6,95,70,0.95) 100%);border:1px solid rgba(52,211,153,0.38);">
+            <div class="sky-card-label"><span style="color:#6ee7b7;font-weight:750;letter-spacing:0.3px;">THIS MONTH REAL PROVIDER PAYOUT</span><span class="chip" style="background:rgba(16,185,129,0.25);color:#a7f3d0;font-size:10.5px;padding:2px 8px;border-radius:6px;font-weight:700;">Admin Only</span></div>
+            <div class="sky-card-val" id="dashHeroMonthProvPay" style="color:#ecfdf5;font-size:24px;">$ 0.00</div>
+            <div class="sky-card-sub" style="color:#a7f3d0;">Month to date real route cost (eligible OTPs)</div>
+          </div>
+        </div>
+
         <!-- Main Split: Left (Volume Chart) + Right (This Month SMS, Month Payout, Total Numbers, Active Agents, Clients) -->
         <div class="sky-dash-main">
           <!-- Left: Volume & Earnings Chart -->
@@ -576,15 +591,25 @@
               </div>
               <div class="ico-box"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
             </div>
-            <!-- 6. Real Provider Cost (Admin Real Route Cost) -->
+            <!-- 6. THIS WEEK REAL PROVIDER PAYOUT -->
             <div class="sky-side-item">
               <div class="info">
-                <div class="lbl" style="color:#f59e0b;">Real Provider Cost</div>
-                <div class="val" style="color:#fbbf24;" id="dashProviderCost">$ 0.00</div>
-                <div class="subtext">Real route cost (eligible OTPs)</div>
+                <div class="lbl" style="color:#a5b4fc;font-weight:700;">THIS WEEK REAL PROVIDER PAYOUT</div>
+                <div class="val" style="color:#e0e7ff;" id="dashWeekProvPay">$ 0.00</div>
+                <div class="subtext">Real route cost for current week</div>
+              </div>
+              <div class="ico-box" style="background:rgba(99,102,241,0.18);color:#a5b4fc;border:1px solid rgba(129,140,248,0.35);"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="18"/><path d="M17 10H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            </div>
+            <!-- 7. THIS MONTH REAL PROVIDER PAYOUT -->
+            <div class="sky-side-item">
+              <div class="info">
+                <div class="lbl" style="color:#f59e0b;font-weight:700;">THIS MONTH REAL PROVIDER PAYOUT</div>
+                <div class="val" style="color:#fbbf24;" id="dashMonthProvPay">$ 0.00</div>
+                <div class="subtext">Real route cost for current month</div>
               </div>
               <div class="ico-box" style="background:rgba(245,158,11,0.14);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="18"/><path d="M17 10H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
             </div>
+            <span id="dashProviderCost" style="display:none">$ 0.00</span>
           </div>
         </div>
 
@@ -646,6 +671,20 @@
           </table></div>
           <div class="table-foot"><div class="info" id="allocInfo"></div><div class="pagination"><button>‹</button><button class="active">1</button><button>2</button><button>›</button></div></div>
         </div>
+      </section>
+
+      <!-- ========== RATE MANAGEMENT ========== -->
+      <section class="page" id="page-rates">
+        <div class="page-head"><div><h2>Rate Management</h2><div class="breadcrumb"><b>Pricing</b> › Ranges &amp; Rates</div></div>
+          <div class="head-actions"><button type="button" class="btn btn-purple" onclick="openRateModal(-1)">+ Add Range</button></div></div>
+        <div class="table-wrap" style="padding:15px 17px;margin-top:0"><div class="table-controls">
+          <div class="tc-left"><label>Show Records:</label><select id="rateLen" onchange="renderRates()"><option>10</option><option selected>25</option><option>50</option><option value="All">All</option></select>
+          <div class="exp-btns"><button type="button" class="gx-btn gx-blue" data-tip="Copy" title="Copy" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button type="button" class="gx-btn gx-blue" data-tip="Download CSV" title="Download CSV" aria-label="Download CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button type="button" class="gx-btn gx-green" data-tip="Download Excel" title="Download Excel" aria-label="Download Excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
+          <div class="tc-right"><label>Search:</label><input type="text" id="rateSearch" oninput="renderRates()" placeholder="Search..."/></div></div></div>
+        <div class="table-wrap"><div class="tscroll"><table>
+          <thead><tr><th>Range Name</th><th>Prefix</th><th>Test Number</th><th>Currency</th><th>Rate 1/1</th><th>Rate 7/1</th><th>Rate 7/7</th><th>Rate 30/45</th><th>Provider Rate</th><th>Memo</th><th>Actions</th></tr></thead>
+          <tbody id="ratesBody"></tbody></table></div>
+          <div class="table-foot"><div class="info" id="ratesInfo"></div><div class="pagination"><button>‹</button><button class="active">1</button><button>2</button><button>›</button></div></div></div>
       </section>
 
       <!-- ========== SMS NUMBERS ========== -->
@@ -896,13 +935,21 @@
     <div class="form-group"><label>Range Name <span class="req">*</span></label><input type="text" id="rName" placeholder="e.g. Palestine Jawwal GO02" /></div>
     <div class="form-grid"><div class="form-group"><label>Prefix</label><input type="text" id="rPrefix" placeholder="Optional" /></div><div class="form-group"><label>Test Numbers (separate from SMS Numbers)</label><textarea id="rTest" placeholder="Enter 2-3 test numbers, comma or new line separated" style="width:100%;min-height:70px;border:1px solid var(--border2);border-radius:9px;padding:10px"></textarea><div class="hint">These numbers are for the Test Panel only and should not be imported as SMS Numbers.</div></div></div>
     <div class="form-group"><label>Currency</label><select id="rCur"><option>USD</option><option>EUR</option><option>PKR</option></select></div>
+    <div style="font-weight:700;margin:12px 0 6px;color:#38bdf8;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Selling / Customer Rates (Unchanged)</div>
     <div class="form-grid">
-      <div class="form-group"><label>Rate 1/1</label><input type="text" id="r1" placeholder="0.013 or NA" /></div>
-      <div class="form-group"><label>Rate 7/1</label><input type="text" id="r2" placeholder="0.013 or NA" /></div>
-      <div class="form-group"><label>Rate 7/7</label><input type="text" id="r3" placeholder="0.013 or NA" /></div>
-      <div class="form-group"><label>Rate 30/45</label><input type="text" id="r4" placeholder="0.013 or NA" /></div>
+      <div class="form-group"><label>Rate 1/1 (Daily)</label><input type="text" id="r1" placeholder="0.013 or NA" /></div>
+      <div class="form-group"><label>Rate 7/1 (Weekly)</label><input type="text" id="r2" placeholder="0.013 or NA" /></div>
+      <div class="form-group"><label>Rate 7/7 (Weekly)</label><input type="text" id="r3" placeholder="0.013 or NA" /></div>
+      <div class="form-group"><label>Rate 30/45 (Monthly)</label><input type="text" id="r4" placeholder="0.013 or NA" /></div>
     </div>
-    <div class="form-group"><label>Provider Rate (Real Route Cost) <span class="muted" style="font-weight:400;font-size:11.5px">(Internal Admin only)</span></label><input type="text" id="rProvRate" placeholder="e.g. 0.040" /></div>
+    <div style="font-weight:700;margin:12px 0 6px;color:#f59e0b;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Real Rate / Provider Rate (Admin Internal)</div>
+    <div class="form-group"><label>Real Rate / Provider Rate (Default Cost) <span class="muted" style="font-weight:400;font-size:11.5px">(Internal Admin only)</span></label><input type="text" id="rProvRate" placeholder="e.g. 0.040" /><div class="hint">Actual cost received from provider. Selling rates above remain untouched.</div></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Provider Rate 1/1 (Daily)</label><input type="text" id="rProv1" placeholder="0.005 or NA" /></div>
+      <div class="form-group"><label>Provider Rate 7/1 (Weekly)</label><input type="text" id="rProv2" placeholder="0.005 or NA" /></div>
+      <div class="form-group"><label>Provider Rate 7/7 (Weekly)</label><input type="text" id="rProv3" placeholder="0.005 or NA" /></div>
+      <div class="form-group"><label>Provider Rate 30/45 (Monthly)</label><input type="text" id="rProv4" placeholder="0.005 or NA" /></div>
+    </div>
     <div class="form-group"><label>Memo</label><input type="text" id="rMemo" placeholder="Optional note" /></div>
   </div>
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('rateModal')">Cancel</button><button class="btn btn-purple" onclick="saveRate()">Save Rate</button></div>
@@ -947,7 +994,7 @@
 /* auth guard — admin only */
 if(window.API){ API.guard('admin'); }
 window.PX_PANEL_MODE='admin_ops';
-const ADMIN_ALLOWED_PAGES=new Set(['dashboard','allocation','numbers','managers','agents','clients','smsReport','cliSearch','smsDetail','clientStats','agentStats','managerStats','rangeStats','numberStats','test','aiKnowledge','payMgmt']);
+const ADMIN_ALLOWED_PAGES=new Set(['dashboard','allocation','numbers','rates','managers','agents','clients','smsReport','cliSearch','smsDetail','clientStats','agentStats','managerStats','rangeStats','numberStats','test','aiKnowledge','payMgmt']);
 function normalizePanelPage(id){ id=String(id||'dashboard'); return ADMIN_ALLOWED_PAGES.has(id)?id:'dashboard'; }
 function applyPanelSplitUi(){
   if(window.PX_PANEL_MODE!=='admin_light') return;
@@ -1087,18 +1134,34 @@ function renderRates(){
   const pag=API.paginateRows('adminRates',rows,len,'ratesInfo',renderRates);const total=pag.total;rows=pag.rows;
   ratesBodyEl.innerHTML=rows.map(r=>`<tr>
     <td><b>${r.name}</b></td><td class="muted">${r.prefix||'—'}</td><td>${r.test_number||'—'}</td><td><span class="tag tag-green">${r.currency}</span></td>
-    <td>${fmtRate(r.rate_1_1)}</td><td>${fmtRate(r.rate_7_1)}</td><td>${fmtRate(r.rate_7_7)}</td><td>${fmtRate(r.rate_30_45)}</td><td class="muted">${r.memo||'—'}</td>
+    <td>${fmtRate(r.rate_1_1)}</td><td>${fmtRate(r.rate_7_1)}</td><td>${fmtRate(r.rate_7_7)}</td><td>${fmtRate(r.rate_30_45)}</td>
+    <td><span class="tag tag-amber" style="font-weight:700;">$ ${r.provider_rate||'0'}</span></td>
+    <td class="muted">${r.memo||'—'}</td>
     <td style="white-space:nowrap"><button type="button" class="gx-btn gx-amber"  onclick="openRateModal(${r.id})" data-tip="Set rate" title="Set rate" aria-label="Set rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></button>
     <button class="icon-btn btn-red" onclick="delRate(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></td></tr>`).join('');
   ratesInfoEl.textContent=`Showing ${rows.length} of ${total} ranges`;
 }
 let editRateId=-1;
 function openRateModal(id){editRateId=id;document.getElementById('rateModalTitle').textContent=id<0?'Add Range':'Set Range Rate';
-  const r=id<0?{name:'',prefix:'',test_number:'',currency:'USD',rate_1_1:'',rate_7_1:'',rate_7_7:'',rate_30_45:'',memo:'',provider_rate:'0'}:(ratesData.find(x=>x.id===id)||{});
-  rName.value=r.name||'';rPrefix.value=r.prefix||'';rTest.value=r.test_numbers||r.test_number||'';rCur.value=r.currency||'USD';r1.value=r.rate_1_1||'';r2.value=r.rate_7_1||'';r3.value=r.rate_7_7||'';r4.value=r.rate_30_45||'';rMemo.value=r.memo||'';if(document.getElementById('rProvRate'))rProvRate.value=r.provider_rate||'0';
+  const r=id<0?{name:'',prefix:'',test_number:'',currency:'USD',rate_1_1:'',rate_7_1:'',rate_7_7:'',rate_30_45:'',memo:'',provider_rate:'0',provider_rate_1_1:'',provider_rate_7_1:'',provider_rate_7_7:'',provider_rate_30_45:''}:(ratesData.find(x=>x.id===id)||{});
+  rName.value=r.name||'';rPrefix.value=r.prefix||'';rTest.value=r.test_numbers||r.test_number||'';rCur.value=r.currency||'USD';r1.value=r.rate_1_1||'';r2.value=r.rate_7_1||'';r3.value=r.rate_7_7||'';r4.value=r.rate_30_45||'';rMemo.value=r.memo||'';
+  if(document.getElementById('rProvRate'))rProvRate.value=r.provider_rate||'0';
+  if(document.getElementById('rProv1'))rProv1.value=r.provider_rate_1_1||'';
+  if(document.getElementById('rProv2'))rProv2.value=r.provider_rate_7_1||'';
+  if(document.getElementById('rProv3'))rProv3.value=r.provider_rate_7_7||'';
+  if(document.getElementById('rProv4'))rProv4.value=r.provider_rate_30_45||'';
   document.getElementById('rateModal').classList.add('show');}
 async function saveRate(){if(!rName.value.trim()){alert('Range name is required.');return;}
-  const body={name:rName.value.trim(),prefix:rPrefix.value.trim(),test_number:rTest.value.trim(),test_numbers:rTest.value.trim(),currency:rCur.value,rate_1_1:r1.value.trim()||'NA',rate_7_1:r2.value.trim()||'NA',rate_7_7:r3.value.trim()||'NA',rate_30_45:r4.value.trim()||'NA',memo:rMemo.value.trim(),provider_rate:(document.getElementById('rProvRate')?.value||'0').trim()};
+  const body={
+    name:rName.value.trim(),prefix:rPrefix.value.trim(),test_number:rTest.value.trim(),test_numbers:rTest.value.trim(),currency:rCur.value,
+    rate_1_1:r1.value.trim()||'NA',rate_7_1:r2.value.trim()||'NA',rate_7_7:r3.value.trim()||'NA',rate_30_45:r4.value.trim()||'NA',
+    memo:rMemo.value.trim(),
+    provider_rate:(document.getElementById('rProvRate')?.value||'0').trim(),
+    provider_rate_1_1:(document.getElementById('rProv1')?.value||'').trim(),
+    provider_rate_7_1:(document.getElementById('rProv2')?.value||'').trim(),
+    provider_rate_7_7:(document.getElementById('rProv3')?.value||'').trim(),
+    provider_rate_30_45:(document.getElementById('rProv4')?.value||'').trim()
+  };
   try{ if(editRateId<0) await API.post('/ranges',body); else await API.put('/ranges/'+editRateId,body); closeModal('rateModal'); loadRates(); }catch(e){ alert('❌ '+e.message); }
 }
 async function delRate(id){
@@ -2113,9 +2176,22 @@ async function loadDashboard(){
     const totCliEl = document.getElementById('dashTotalClients');
     if(totCliEl) totCliEl.textContent = `${d.clients || 0} Clients`;
 
-    // 9b. Real Provider Cost (Admin Real Route Cost)
+    // 9b. Real Provider Payout (Admin Only)
+    const weekProvVal = '$ ' + pay3(d.real_provider_cost_week !== undefined ? d.real_provider_cost_week : (d.real_provider_payout_week || 0));
+    const monthProvVal = '$ ' + pay3(d.real_provider_cost_month !== undefined ? d.real_provider_cost_month : (d.real_provider_payout_month || 0));
+
+    const weekProvEl = document.getElementById('dashWeekProvPay');
+    if(weekProvEl) weekProvEl.textContent = weekProvVal;
+    const heroWeekProvEl = document.getElementById('dashHeroWeekProvPay');
+    if(heroWeekProvEl) heroWeekProvEl.textContent = weekProvVal;
+
+    const monthProvEl = document.getElementById('dashMonthProvPay');
+    if(monthProvEl) monthProvEl.textContent = monthProvVal;
+    const heroMonthProvEl = document.getElementById('dashHeroMonthProvPay');
+    if(heroMonthProvEl) heroMonthProvEl.textContent = monthProvVal;
+
     const provCostEl = document.getElementById('dashProviderCost');
-    if(provCostEl) provCostEl.textContent = '$ ' + pay3(d.real_provider_cost_month !== undefined ? d.real_provider_cost_month : (d.real_provider_cost_total || 0));
+    if(provCostEl) provCostEl.textContent = monthProvVal;
 
     // 10. Volume Chart
     const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];

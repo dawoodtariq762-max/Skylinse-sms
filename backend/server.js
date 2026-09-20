@@ -1488,7 +1488,7 @@ app.get('/api/ranges', authRequired, (req, res) => cachedJson(req, res, 5000, ()
   const where = includeDeleted ? '1=1' : "COALESCE(r.deleted_at,'')=''";
   let rows;
   if (!includeTests) {
-    rows = db.all(`SELECT r.id,r.name,r.prefix,r.currency,r.rate_1_1,r.rate_7_1,r.rate_7_7,r.rate_30_45,r.memo,r.payment_type,r.created_at,r.deleted_at,r.country,r.provider,r.provider_rate,r.currency_rate,r.cli_limit,r.range_start,r.range_end,r.status,'' AS test_number,'' AS test_numbers
+    rows = db.all(`SELECT r.id,r.name,r.prefix,r.currency,r.rate_1_1,r.rate_7_1,r.rate_7_7,r.rate_30_45,r.memo,r.payment_type,r.created_at,r.deleted_at,r.country,r.provider,r.provider_rate,r.provider_rate_1_1,r.provider_rate_7_1,r.provider_rate_7_7,r.provider_rate_30_45,r.currency_rate,r.cli_limit,r.range_start,r.range_end,r.status,'' AS test_number,'' AS test_numbers
       FROM ranges r WHERE ${where} ORDER BY r.name COLLATE NOCASE ASC, r.id ASC`);
   } else {
     rows = db.all(`SELECT r.*,
@@ -1497,7 +1497,13 @@ app.get('/api/ranges', authRequired, (req, res) => cachedJson(req, res, 5000, ()
     rows.forEach(r => { if (r.test_numbers) r.test_number = r.test_numbers; });
   }
   if (req.user && req.user.role !== 'admin') {
-    rows.forEach(r => { delete r.provider_rate; });
+    rows.forEach(r => {
+      delete r.provider_rate;
+      delete r.provider_rate_1_1;
+      delete r.provider_rate_7_1;
+      delete r.provider_rate_7_7;
+      delete r.provider_rate_30_45;
+    });
   }
   return rows;
 }));
@@ -1519,11 +1525,16 @@ app.get('/api/ranges/allocated', authRequired, (req, res) => cachedJson(req, res
 app.post('/api/ranges', authRequired, requireRole('admin'), (req, res) => {
   const b = req.body || {};
   if (!b.name) return res.status(400).json({ error: 'Range name required' });
-  const ins = db.run(`INSERT INTO ranges (name,prefix,test_number,currency,rate_1_1,rate_7_1,rate_7_7,rate_30_45,memo,payment_type,country,provider,currency_rate,cli_limit,range_start,range_end,status,provider_rate)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  const provRate = b.provider_rate !== undefined ? String(b.provider_rate) : '0';
+  const prov1 = b.provider_rate_1_1 !== undefined ? String(b.provider_rate_1_1) : '';
+  const prov2 = b.provider_rate_7_1 !== undefined ? String(b.provider_rate_7_1) : '';
+  const prov3 = b.provider_rate_7_7 !== undefined ? String(b.provider_rate_7_7) : '';
+  const prov4 = b.provider_rate_30_45 !== undefined ? String(b.provider_rate_30_45) : '';
+  const ins = db.run(`INSERT INTO ranges (name,prefix,test_number,currency,rate_1_1,rate_7_1,rate_7_7,rate_30_45,memo,payment_type,country,provider,currency_rate,cli_limit,range_start,range_end,status,provider_rate,provider_rate_1_1,provider_rate_7_1,provider_rate_7_7,provider_rate_30_45)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [b.name, b.prefix || '', '', b.currency || 'USD',
      b.rate_1_1 || 'NA', b.rate_7_1 || 'NA', b.rate_7_7 || 'NA', b.rate_30_45 || 'NA', b.memo || '', normalizePaymentType(b.payment_type || b.payterm || 'weekly'),
-     b.country || '', b.provider || '', b.currency_rate || '', b.cli_limit || '', b.range_start || '', b.range_end || '', b.status || 'Active', String(b.provider_rate !== undefined ? b.provider_rate : '0')]);
+     b.country || '', b.provider || '', b.currency_rate || '', b.cli_limit || '', b.range_start || '', b.range_end || '', b.status || 'Active', provRate, prov1, prov2, prov3, prov4]);
   const newRange = db.get('SELECT id FROM ranges WHERE name=? ORDER BY id DESC LIMIT 1', [b.name]);
   syncRangeTestNumbers(newRange ? newRange.id : ins.lastInsertRowid, b.test_numbers || b.test_number || '');
   logAction(req,'create_range','ranges',b.name);
@@ -1757,7 +1768,11 @@ app.put('/api/ranges/:id', authRequired, requireRole('admin'), (req, res) => {
   const old = db.get('SELECT * FROM ranges WHERE id=?', [+req.params.id]);
   if (!old) return res.status(404).json({ error: 'Range not found' });
   const provRate = b.provider_rate !== undefined ? String(b.provider_rate) : (old.provider_rate || '0');
-  db.run(`UPDATE ranges SET name=?,prefix=?,currency=?,rate_1_1=?,rate_7_1=?,rate_7_7=?,rate_30_45=?,memo=?,payment_type=?,country=?,provider=?,currency_rate=?,cli_limit=?,range_start=?,range_end=?,status=?,provider_rate=? WHERE id=?`,
+  const prov1 = b.provider_rate_1_1 !== undefined ? String(b.provider_rate_1_1) : (old.provider_rate_1_1 || '');
+  const prov2 = b.provider_rate_7_1 !== undefined ? String(b.provider_rate_7_1) : (old.provider_rate_7_1 || '');
+  const prov3 = b.provider_rate_7_7 !== undefined ? String(b.provider_rate_7_7) : (old.provider_rate_7_7 || '');
+  const prov4 = b.provider_rate_30_45 !== undefined ? String(b.provider_rate_30_45) : (old.provider_rate_30_45 || '');
+  db.run(`UPDATE ranges SET name=?,prefix=?,currency=?,rate_1_1=?,rate_7_1=?,rate_7_7=?,rate_30_45=?,memo=?,payment_type=?,country=?,provider=?,currency_rate=?,cli_limit=?,range_start=?,range_end=?,status=?,provider_rate=?,provider_rate_1_1=?,provider_rate_7_1=?,provider_rate_7_7=?,provider_rate_30_45=? WHERE id=?`,
     [b.name !== undefined ? b.name : old.name,
      b.prefix !== undefined ? b.prefix : (old.prefix || ''),
      b.currency !== undefined ? b.currency : (old.currency || 'USD'),
@@ -1775,6 +1790,7 @@ app.put('/api/ranges/:id', authRequired, requireRole('admin'), (req, res) => {
      b.range_end !== undefined ? b.range_end : (old.range_end || ''),
      b.status !== undefined ? b.status : (old.status || 'Active'),
      provRate,
+     prov1, prov2, prov3, prov4,
      +req.params.id]);
   syncRangeTestNumbers(+req.params.id, b.test_numbers || b.test_number || '');
   logAction(req,'update_range','ranges',{id:+req.params.id});
@@ -3575,7 +3591,14 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
   if (u.role === 'admin') {
     const calcCost = (extraWhere = '', params = []) => {
       const sql = `SELECT COALESCE(SUM(
-        CAST(COALESCE(NULLIF(r.provider_rate,''),'0') AS REAL)
+        CASE
+          WHEN s.payment_type IN ('daily', '1_1') AND NULLIF(r.provider_rate_1_1, '') IS NOT NULL THEN CAST(r.provider_rate_1_1 AS REAL)
+          WHEN s.payment_type IN ('weekly_7_7', '7_7') AND NULLIF(r.provider_rate_7_7, '') IS NOT NULL THEN CAST(r.provider_rate_7_7 AS REAL)
+          WHEN s.payment_type IN ('weekly_7_1', '7_1', 'weekly') AND NULLIF(r.provider_rate_7_1, '') IS NOT NULL THEN CAST(r.provider_rate_7_1 AS REAL)
+          WHEN s.payment_type IN ('monthly_30x45', '30_45', 'monthly') AND NULLIF(r.provider_rate_30_45, '') IS NOT NULL THEN CAST(r.provider_rate_30_45 AS REAL)
+          WHEN NULLIF(r.provider_rate_7_1, '') IS NOT NULL THEN CAST(r.provider_rate_7_1 AS REAL)
+          ELSE CAST(COALESCE(NULLIF(r.provider_rate,''),'0') AS REAL)
+        END
       ), 0) AS cost
       FROM sms_records s
       JOIN ranges r ON r.id = s.range_id
@@ -3583,14 +3606,15 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
         AND CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) > 0
         ${extraWhere}`;
       const res = db.get(sql, params);
-      return normalizeDecimalString(res?.cost || 0) || '0';
+      const rounded = Math.round((Number(res?.cost || 0) + Number.EPSILON) * 10000) / 10000;
+      return normalizeDecimalString(rounded) || '0';
     };
     real_provider_cost_today = calcCost(` AND ${ukDayOffsetSql('s.received_at', 0)}`);
     real_provider_cost_week = calcCost(` AND s.received_at >= ?`, [ukTodayDateStr(-dowMon) + ' 00:00:00']);
     real_provider_cost_month = calcCost(` AND s.received_at >= ?`, [monthStart + ' 00:00:00']);
     real_provider_cost_total = calcCost('');
   }
-  return { sms_today: today, otp_today: today, successful_otp_today: successToday, failed_otp_today: failedToday, failed_sms_today: failedToday, total_sms: totalSms, failed_total: failedTotal, sms_yesterday: yesterday, sms_week: d7, sms_7d: d7, sms_month: month, payout_week: payoutWeek, payout_7d: payout7, payout_month: payoutMonth, managers, agents, clients, numbers, active_agents_today, daily7, recent, sms_year: smsYear, over_limit_today, over_limit_week, sms_by_country, real_provider_cost_today, real_provider_cost_week, real_provider_cost_month, real_provider_cost_total };
+  return { sms_today: today, otp_today: today, successful_otp_today: successToday, failed_otp_today: failedToday, failed_sms_today: failedToday, total_sms: totalSms, failed_total: failedTotal, sms_yesterday: yesterday, sms_week: d7, sms_7d: d7, sms_month: month, payout_week: payoutWeek, payout_7d: payout7, payout_month: payoutMonth, managers, agents, clients, numbers, active_agents_today, daily7, recent, sms_year: smsYear, over_limit_today, over_limit_week, sms_by_country, real_provider_cost_today, real_provider_cost_week, real_provider_cost_month, real_provider_cost_total, real_provider_payout_today: real_provider_cost_today, real_provider_payout_week: real_provider_cost_week, real_provider_payout_month: real_provider_cost_month, real_provider_payout_total: real_provider_cost_total };
 }, 'numbers_ver'));
 
 

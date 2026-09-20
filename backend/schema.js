@@ -360,6 +360,10 @@ function createTables() {
   ensureColumn('ranges', 'country', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'provider', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'provider_rate', "TEXT DEFAULT '0'");
+  ensureColumn('ranges', 'provider_rate_1_1', "TEXT DEFAULT ''");
+  ensureColumn('ranges', 'provider_rate_7_1', "TEXT DEFAULT ''");
+  ensureColumn('ranges', 'provider_rate_7_7', "TEXT DEFAULT ''");
+  ensureColumn('ranges', 'provider_rate_30_45', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'currency_rate', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'cli_limit', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'range_start', "TEXT DEFAULT ''");

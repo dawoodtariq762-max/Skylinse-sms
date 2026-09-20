@@ -737,16 +737,17 @@
       });
     }
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `CDR_Report_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   };
 
-  CdrReport.prototype.copyTable = function(){
+  CdrReport.prototype.copyTable = async function(){
     const table = document.getElementById('cdrTable');
     if (!table) return;
     let text = '';
@@ -754,7 +755,21 @@
       const cells = Array.from(r.cells).map(c => c.innerText.trim());
       text += cells.join('\t') + '\n';
     }
-    navigator.clipboard.writeText(text).then(() => alert('Table copied to clipboard!'));
+    const btn = document.getElementById('cdrBtnCopy');
+    if (window.Skyline && Skyline.copyTextToClipboard) {
+      await Skyline.copyTextToClipboard(text, btn);
+    } else if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(text);
+        if (btn) {
+          const old = btn.textContent;
+          btn.textContent = 'Copied! ✓';
+          btn.style.background = '#10b981';
+          btn.style.color = '#fff';
+          setTimeout(() => { btn.textContent = old; btn.style.background = ''; btn.style.color = ''; }, 1500);
+        }
+      } catch(e){}
+    }
   };
 
   CdrReport.prototype.downloadTxt = function(){
@@ -770,21 +785,27 @@
     link.href = URL.createObjectURL(blob);
     link.download = `CDR_Table_${new Date().toISOString().slice(0, 10)}.txt`;
     link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   };
 
   CdrReport.prototype.downloadCsv = function(){
-    const table = document.getElementById('cdrTable');
-    if (!table) return;
-    let text = '';
-    for (let r of table.rows) {
-      const cells = Array.from(r.cells).map(c => `"${c.innerText.trim().replace(/"/g, '""')}"`);
-      text += cells.join(',') + '\n';
+    try {
+      this.exportAllCsv();
+    } catch(e) {
+      const table = document.getElementById('cdrTable');
+      if (!table) return;
+      let text = '';
+      for (let r of table.rows) {
+        const cells = Array.from(r.cells).map(c => `"${c.innerText.trim().replace(/"/g, '""')}"`);
+        text += cells.join(',') + '\n';
+      }
+      const blob = new Blob(['\uFEFF' + text], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `CDR_Table_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     }
-    const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `CDR_Table_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
   };
 
   CdrReport.prototype.downloadExcel = function(){
