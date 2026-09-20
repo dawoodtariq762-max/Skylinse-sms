@@ -254,6 +254,17 @@ Skyline.downloadCsvBlob = function(csvText, filename){
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 
+Skyline.downloadTxtBlob = function(txtText, filename){
+  const blob = new Blob([txtText], { type: 'text/plain;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename || ('skyline-export-' + new Date().toISOString().slice(0, 10) + '.txt');
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
 Skyline.csvEsc = function(val){
   if(val === null || val === undefined) return '""';
   return '"' + String(val).replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
@@ -330,13 +341,18 @@ Skyline.handleTableCsv = async function(btn){
   // 2. SMS Report page or Client SMS Stats page
   if(pageId === 'page-smsReport' || pageId === 'page-stats' || pageId === 'smsReport' || pageId === 'stats'){
     try {
-      const f = document.getElementById('srFrom')?.value || document.getElementById('stFrom')?.value || '';
-      const t = document.getElementById('srTo')?.value || document.getElementById('stTo')?.value || '';
-      const tf = document.getElementById('srTFrom')?.value || document.getElementById('stTFrom')?.value || '';
-      const tt = document.getElementById('srTTo')?.value || document.getElementById('stTTo')?.value || '';
-      const rf = document.getElementById('srRange')?.value || document.getElementById('stRange')?.value || '';
-      const cf = document.getElementById('srCli')?.value || document.getElementById('stCli')?.value || '';
-      const nf = document.getElementById('srNumber')?.value || document.getElementById('stNumber')?.value || '';
+      const useDate = document.getElementById('stUseDate') ? document.getElementById('stUseDate').checked : (document.getElementById('sdUseDate') ? document.getElementById('sdUseDate').checked : true);
+      const useRange = document.getElementById('stUseRange') ? document.getElementById('stUseRange').checked : (document.getElementById('sdUseRange') ? document.getElementById('sdUseRange').checked : true);
+      const useCli = document.getElementById('stUseCli') ? document.getElementById('stUseCli').checked : (document.getElementById('sdUseCli') ? document.getElementById('sdUseCli').checked : true);
+      const useNumber = document.getElementById('stUseNumber') ? document.getElementById('stUseNumber').checked : (document.getElementById('sdUseNumber') ? document.getElementById('sdUseNumber').checked : true);
+
+      const f = useDate ? (document.getElementById('srFrom')?.value || document.getElementById('stFrom')?.value || '') : '';
+      const t = useDate ? (document.getElementById('srTo')?.value || document.getElementById('stTo')?.value || '') : '';
+      const tf = useDate ? (document.getElementById('srTFrom')?.value || document.getElementById('stTFrom')?.value || '') : '';
+      const tt = useDate ? (document.getElementById('srTTo')?.value || document.getElementById('stTTo')?.value || '') : '';
+      const rf = useRange ? (document.getElementById('srRange')?.value || document.getElementById('stRange')?.value || '') : '';
+      const cf = useCli ? (document.getElementById('srCli')?.value || document.getElementById('stCli')?.value || '') : '';
+      const nf = useNumber ? (document.getElementById('srNumber')?.value || document.getElementById('stNumber')?.value || '') : '';
       const mf = document.getElementById('srManager')?.value || '';
       const q = document.getElementById('srSearch')?.value || document.getElementById('stSearch')?.value || '';
 
@@ -423,15 +439,173 @@ Skyline.handleTableCsv = async function(btn){
   alert('No data available to export.');
 };
 
+Skyline.handleTableTxt = async function(btn){
+  const activePage = document.querySelector('section.page.active') || btn.closest('section.page');
+  const pageId = activePage ? activePage.id : '';
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const feedback = () => {
+    if(!btn) return;
+    const oldHtml = btn.dataset.gxOrigHtml || btn.innerHTML;
+    btn.dataset.gxOrigHtml = oldHtml;
+    btn.innerHTML = '<span style="font-size:11px;font-weight:700;line-height:1;display:inline-flex;align-items:center;padding:0 4px;">Exported! ✓</span>';
+    const oldBg = btn.style.background;
+    const oldColor = btn.style.color;
+    btn.style.background = '#2563eb';
+    btn.style.color = '#ffffff';
+    setTimeout(()=>{
+      btn.innerHTML = oldHtml;
+      btn.style.background = oldBg;
+      btn.style.color = oldColor;
+    }, 1500);
+  };
+
+  // 1. SMS Numbers page
+  if(pageId === 'page-numbers' || pageId === 'numbers'){
+    try {
+      const rf = document.getElementById('numRange')?.value || '';
+      const q = (document.getElementById('numSearch')?.value || '').trim();
+      const cf = document.getElementById('numClient')?.value || '';
+      const params = new URLSearchParams({ limit: '10000', paged: '1' });
+      if(rf) params.set('range', rf);
+      if(q) params.set('search', q);
+      if(cf) params.set('client', cf);
+      const res = await API.get('/numbers?' + params.toString());
+      const rows = res.rows || (Array.isArray(res) ? res : []);
+      if(rows.length > 0){
+        const user = (window.API && API.user) ? API.user : {};
+        let headers, mapRow;
+        if(user.role === 'client'){
+          headers = ['Range', 'Number', 'Payterm', 'Status', 'Last SMS Time', 'SD Limit', 'SW Limit'];
+          mapRow = r => [r.range_name || r.range || '', r.number || '', r.payterm || 'Weekly', r.status || 'Active', r.last_sms_at || '', r.sd_limit || 0, r.sw_limit || 0];
+        } else {
+          headers = ['Range', 'Prefix', 'Country', 'Number', 'Manager', 'Agent', 'Client', 'Rate', 'Payout', 'Status'];
+          mapRow = r => [r.range_name || r.range || '', r.prefix || '', r.country || '', r.number || '', r.manager_name || '', r.agent_name || '', r.client_name || '', r.rate || 'NA', r.payout || 'NA', r.status || 'Active'];
+        }
+        const txt = [headers.join('\t')].concat(rows.map(r => mapRow(r).join('\t'))).join('\r\n');
+        Skyline.downloadTxtBlob(txt, `SMS_Numbers_${dateStr}.txt`);
+        feedback();
+        return;
+      }
+    } catch(e){
+      console.warn('[Skyline] numbers txt export failed', e);
+    }
+  }
+
+  // 2. SMS Report page or Client SMS Stats page
+  if(pageId === 'page-smsReport' || pageId === 'page-stats' || pageId === 'smsReport' || pageId === 'stats'){
+    try {
+      const useDate = document.getElementById('stUseDate') ? document.getElementById('stUseDate').checked : (document.getElementById('sdUseDate') ? document.getElementById('sdUseDate').checked : true);
+      const useRange = document.getElementById('stUseRange') ? document.getElementById('stUseRange').checked : (document.getElementById('sdUseRange') ? document.getElementById('sdUseRange').checked : true);
+      const useCli = document.getElementById('stUseCli') ? document.getElementById('stUseCli').checked : (document.getElementById('sdUseCli') ? document.getElementById('sdUseCli').checked : true);
+      const useNumber = document.getElementById('stUseNumber') ? document.getElementById('stUseNumber').checked : (document.getElementById('sdUseNumber') ? document.getElementById('sdUseNumber').checked : true);
+
+      const f = useDate ? (document.getElementById('srFrom')?.value || document.getElementById('stFrom')?.value || '') : '';
+      const t = useDate ? (document.getElementById('srTo')?.value || document.getElementById('stTo')?.value || '') : '';
+      const tf = useDate ? (document.getElementById('srTFrom')?.value || document.getElementById('stTFrom')?.value || '') : '';
+      const tt = useDate ? (document.getElementById('srTTo')?.value || document.getElementById('stTTo')?.value || '') : '';
+      const rf = useRange ? (document.getElementById('srRange')?.value || document.getElementById('stRange')?.value || '') : '';
+      const cf = useCli ? (document.getElementById('srCli')?.value || document.getElementById('stCli')?.value || '') : '';
+      const nf = useNumber ? (document.getElementById('srNumber')?.value || document.getElementById('stNumber')?.value || '') : '';
+      const mf = document.getElementById('srManager')?.value || '';
+      const q = document.getElementById('srSearch')?.value || document.getElementById('stSearch')?.value || '';
+
+      const params = new URLSearchParams({ limit: '10000', page: '1', sort: 'date', dir: 'desc' });
+      if(f) params.set('from', f);
+      if(t) params.set('to', t);
+      if(tf) params.set('tfrom', tf);
+      if(tt) params.set('tto', tt);
+      if(rf) params.set('range', rf);
+      if(cf) params.set('cli', cf);
+      if(nf) params.set('number', nf.trim());
+      if(mf) params.set('manager', mf);
+      if(q) params.set('search', q.trim());
+
+      const res = await API.get('/sms/paged?' + params.toString());
+      const rows = res.rows || (Array.isArray(res) ? res : []);
+      if(rows.length > 0){
+        const user = (window.API && API.user) ? API.user : {};
+        let headers, mapRow;
+        if(user.role === 'client'){
+          headers = ['Date (UK)', 'Range', 'Number', 'CLI', 'OTP Code', 'Message'];
+          mapRow = r => [(r.received_at || '').slice(0, 19), r.range_name || '', r.number || '', r.cli || '', r.otp_code || '', (r.message || '').replace(/\r?\n/g, ' ')];
+        } else {
+          headers = ['Date (UK)', 'Range', 'Number', 'CLI', 'OTP Code', 'Message', 'Manager', 'Agent', 'Client', 'Payout Rate', 'Payout Amount'];
+          mapRow = r => [(r.received_at || '').slice(0, 19), r.range_name || '', r.number || '', r.cli || '', r.otp_code || '', (r.message || '').replace(/\r?\n/g, ' '), r.manager_name || '', r.agent_name || '', r.client_name || '', r.payout_rate || '0', r.payout_amount || '0'];
+        }
+        const txt = [headers.join('\t')].concat(rows.map(r => mapRow(r).join('\t'))).join('\r\n');
+        Skyline.downloadTxtBlob(txt, `SMS_Report_${dateStr}.txt`);
+        feedback();
+        return;
+      }
+    } catch(e){
+      console.warn('[Skyline] sms report txt export failed', e);
+    }
+  }
+
+  // 3. CDR Report / Detailed Report
+  if(pageId === 'page-smsDetail' || pageId === 'smsDetail'){
+    if(window.cdrReport && typeof window.cdrReport.downloadTxt === 'function'){
+      window.cdrReport.downloadTxt();
+      feedback();
+      return;
+    }
+  }
+
+  // 4. Rate Management
+  if(pageId === 'page-rates' || pageId === 'rates'){
+    if(window.ratesData && window.ratesData.length){
+      const user = (window.API && API.user) ? API.user : {};
+      let headers, mapRow;
+      if(user.role === 'admin'){
+        headers = ['Range Name', 'Prefix', 'Test Number', 'Currency', 'Rate 1/1', 'Rate 7/1', 'Rate 7/7', 'Rate 30/45', 'Provider Rate', 'Memo'];
+        mapRow = r => [r.name || '', r.prefix || '', r.test_number || '', r.currency || 'USD', r.rate_1_1 || 'NA', r.rate_7_1 || 'NA', r.rate_7_7 || 'NA', r.rate_30_45 || 'NA', r.provider_rate || '0', r.memo || ''];
+      } else {
+        headers = ['Range Name', 'Prefix', 'Test Number', 'Currency', 'Rate 1/1', 'Rate 7/1', 'Rate 7/7', 'Rate 30/45', 'Memo'];
+        mapRow = r => [r.name || '', r.prefix || '', r.test_number || '', r.currency || 'USD', r.rate_1_1 || 'NA', r.rate_7_1 || 'NA', r.rate_7_7 || 'NA', r.rate_30_45 || 'NA', r.memo || ''];
+      }
+      const q = (document.getElementById('rateSearch')?.value || '').toLowerCase();
+      const filtered = window.ratesData.filter(r => (r.name||'').toLowerCase().includes(q) || (r.test_number||'').includes(q));
+      const txt = [headers.join('\t')].concat(filtered.map(r => mapRow(r).join('\t'))).join('\r\n');
+      Skyline.downloadTxtBlob(txt, `Rate_Management_${dateStr}.txt`);
+      feedback();
+      return;
+    }
+  }
+
+  // 5. Fallback: Export current table from DOM as tab-delimited text
+  const wrap = btn.closest('.table-wrap') || btn.closest('.card') || document.querySelector('section.page.active .table-wrap');
+  const table = wrap ? wrap.querySelector('table') : null;
+  if(table){
+    const ths = [...table.querySelectorAll('thead th')].map(th => (th.textContent || '').replace(/[\u21C5\u25B2\u25BC⇅]/g, '').trim()).filter(Boolean);
+    const rows = [...table.querySelectorAll('tbody tr')].filter(tr => tr.children.length > 1 && !tr.querySelector('th'));
+    if(rows.length > 0){
+      const lines = [ths.join('\t')];
+      rows.forEach(tr => {
+        const cells = [...tr.children].map(td => (td.innerText || td.textContent || '').trim().replace(/\r?\n/g, ' '));
+        lines.push(cells.join('\t'));
+      });
+      Skyline.downloadTxtBlob(lines.join('\r\n'), `${pageId || 'Table'}_Export_${dateStr}.txt`);
+      feedback();
+      return;
+    }
+  }
+  alert('No data available to export.');
+};
+
 /* ---------------- Export Wiring (Copy / CSV / Excel) ---------------- */
 Skyline.wireExports = function(){
   document.addEventListener('click', async (e)=>{
-    const b = e.target.closest('.exp-btns button, .exp-btns .gx-btn, .exp-btns .btn, button[data-tip="Copy"], button[data-tip="Download CSV"], button[data-tip="Download Excel"]');
+    const b = e.target.closest('.exp-btns button, .exp-btns .gx-btn, .exp-btns .btn, button[data-tip="Copy"], button[data-tip="Download CSV"], button[data-tip="Download Excel"], button[data-tip="Download TXT"], button[data-tip="TXT"], #cdrBtnCopy, #cdrBtnTxt, #cdrBtnCsv, #cdrBtnExcel');
     if(!b) return;
     const tip = (b.getAttribute('data-tip') || b.getAttribute('title') || b.getAttribute('aria-label') || b.textContent || '').trim().toLowerCase();
     if(tip.includes('copy')){
       e.preventDefault();
       await Skyline.handleTableCopy(b);
+      return;
+    }
+    if(tip.includes('txt') || tip.includes('download txt')){
+      e.preventDefault();
+      await Skyline.handleTableTxt(b);
       return;
     }
     if(tip.includes('csv') || tip.includes('download csv') || tip.includes('excel') || tip.includes('download excel')){
@@ -516,7 +690,7 @@ Skyline.theme = {
         try{ localStorage.setItem('sk-theme', next); localStorage.setItem('gx-theme', next); }catch(e){}
         paint();
       });
-      const tb=document.querySelector('.topbar')||document.querySelector('.tb1')||document.querySelector('.mgr-topbar');
+      const tb=document.querySelector('.tb-right')||document.querySelector('.tb1')||document.querySelector('.topbar')||document.querySelector('.mgr-topbar');
       if(tb){ tb.appendChild(btn); }
       else { btn.style.cssText='position:fixed;right:14px;bottom:14px;z-index:90'; document.body.appendChild(btn); }
     };

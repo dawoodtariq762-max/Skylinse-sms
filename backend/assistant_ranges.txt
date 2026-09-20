@@ -1,5 +1,5 @@
 SKYLINE SMS — CURRENT RANGE & RATE INFORMATION
-Auto-generated: 2026-09-18 04:49 UTC
+Auto-generated: 2026-09-20 09:04 UTC
 ========================================================
 
 Range      : PK-Jazz-Direct
@@ -8,6 +8,107 @@ Country    : Pakistan
 Provider   : Skyline Global Route
 Payment    : weekly
 Rates      : Daily(1/1)=0.028 | Weekly(7/1)=0.025 | Weekly(7/7)=0.022 | Monthly(30/45)=0.020
+--------------------------------------------------------
+Range      : Range_Alpha
+Prefix     : 4470
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.05 | Weekly(7/1)=0.05 | Weekly(7/7)=0.05 | Monthly(30/45)=0.05
+--------------------------------------------------------
+Range      : Range_Alpha
+Prefix     : 4470
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.05 | Weekly(7/1)=0.05 | Weekly(7/7)=0.05 | Monthly(30/45)=0.05
+--------------------------------------------------------
+Range      : Range_Alpha
+Prefix     : 4470
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.05 | Weekly(7/1)=0.05 | Weekly(7/7)=0.05 | Monthly(30/45)=0.05
+--------------------------------------------------------
+Range      : Range_Alpha
+Prefix     : 4470
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.05 | Weekly(7/1)=0.05 | Weekly(7/7)=0.05 | Monthly(30/45)=0.05
+--------------------------------------------------------
+Range      : Range_Alpha
+Prefix     : 4470
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.05 | Weekly(7/1)=0.05 | Weekly(7/7)=0.05 | Monthly(30/45)=0.05
+--------------------------------------------------------
+Range      : Range_Alpha
+Prefix     : 4470
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.05 | Weekly(7/1)=0.05 | Weekly(7/7)=0.05 | Monthly(30/45)=0.05
+--------------------------------------------------------
+Range      : Range_Alpha
+Prefix     : 44
+Payment    : weekly
+Rates      : Daily(1/1)=0.015 | Weekly(7/1)=0.012 | Weekly(7/7)=0.010 | Monthly(30/45)=0.008
+--------------------------------------------------------
+Range      : Range_Beta
+Prefix     : 4471
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.06 | Weekly(7/1)=0.06 | Weekly(7/7)=0.06 | Monthly(30/45)=0.06
+--------------------------------------------------------
+Range      : Range_Beta
+Prefix     : 4471
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.06 | Weekly(7/1)=0.06 | Weekly(7/7)=0.06 | Monthly(30/45)=0.06
+--------------------------------------------------------
+Range      : Range_Beta
+Prefix     : 4471
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.06 | Weekly(7/1)=0.06 | Weekly(7/7)=0.06 | Monthly(30/45)=0.06
+--------------------------------------------------------
+Range      : Range_Beta
+Prefix     : 4471
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.06 | Weekly(7/1)=0.06 | Weekly(7/7)=0.06 | Monthly(30/45)=0.06
+--------------------------------------------------------
+Range      : Range_Beta
+Prefix     : 4471
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.06 | Weekly(7/1)=0.06 | Weekly(7/7)=0.06 | Monthly(30/45)=0.06
+--------------------------------------------------------
+Range      : Range_Gamma
+Prefix     : 4472
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.07 | Weekly(7/1)=0.07 | Weekly(7/7)=0.07 | Monthly(30/45)=0.07
+--------------------------------------------------------
+Range      : Range_Gamma
+Prefix     : 4472
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.07 | Weekly(7/1)=0.07 | Weekly(7/7)=0.07 | Monthly(30/45)=0.07
+--------------------------------------------------------
+Range      : Range_Gamma
+Prefix     : 4472
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.07 | Weekly(7/1)=0.07 | Weekly(7/7)=0.07 | Monthly(30/45)=0.07
+--------------------------------------------------------
+Range      : Range_Gamma
+Prefix     : 4472
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.07 | Weekly(7/1)=0.07 | Weekly(7/7)=0.07 | Monthly(30/45)=0.07
+--------------------------------------------------------
+Range      : Range_Gamma
+Prefix     : 4472
+Provider   : TestCarrier
+Payment    : weekly
+Rates      : Daily(1/1)=0.07 | Weekly(7/1)=0.07 | Weekly(7/7)=0.07 | Monthly(30/45)=0.07
 --------------------------------------------------------
 Range      : UAE-Etisalat-Fast
 Prefix     : 9715

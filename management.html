@@ -966,6 +966,12 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
       <div class="form-group"><label>Rate 30/45</label><input type="text" id="r4" placeholder="0.013 or NA" /></div>
     </div>
     <div class="form-grid"><div class="form-group"><label>Country</label><input type="text" id="rCountry" placeholder="e.g. Pakistan" /></div><div class="form-group"><label>Provider (reference)</label><input type="text" id="rProvider" placeholder="e.g. Provider 9AFE" /><div class="hint">Reference only — actual connections are managed under SMS Providers / SMPP.</div></div><div class="form-group"><label>Provider Rate (Real Cost)</label><input type="text" id="rProvRate" placeholder="e.g. 0.040" /><div class="hint">Admin internal real route cost per eligible OTP.</div></div></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Provider Rate 1/1 (Daily)</label><input type="text" id="rProv1" placeholder="0.005 or NA" /></div>
+      <div class="form-group"><label>Provider Rate 7/1 (Weekly)</label><input type="text" id="rProv2" placeholder="0.005 or NA" /></div>
+      <div class="form-group"><label>Provider Rate 7/7 (Weekly)</label><input type="text" id="rProv3" placeholder="0.005 or NA" /></div>
+      <div class="form-group"><label>Provider Rate 30/45 (Monthly)</label><input type="text" id="rProv4" placeholder="0.005 or NA" /></div>
+    </div>
     <div class="form-grid"><div class="form-group"><label>Currency Rate</label><input type="text" id="rCurRate" placeholder="e.g. 278.50" /></div><div class="form-group"><label>CLI Limit</label><input type="text" id="rCli" placeholder="e.g. 100/day" /></div></div>
     <div class="form-grid"><div class="form-group"><label>Range Start</label><input type="text" id="rStart" placeholder="92300123456" /></div><div class="form-group"><label>Range End</label><input type="text" id="rEnd" placeholder="92300999999" /></div><div class="form-group"><label>Status</label><select id="rStatus"><option>Active</option><option>Inactive</option></select></div></div>
     <div class="form-group"><label>Memo</label><input type="text" id="rMemo" placeholder="Optional note" /></div>
@@ -1316,11 +1322,30 @@ function renderRates(){
 }
 let editRateId=-1;
 function openRateModal(id){editRateId=id;document.getElementById('rateModalTitle').textContent=id<0?'Add Range':'Edit Range';
-  const r=id<0?{name:'',prefix:'',test_number:'',currency:'USD',payment_type:'weekly',rate_1_1:'',rate_7_1:'',rate_7_7:'',rate_30_45:'',memo:'',country:'',provider:'',provider_rate:'0',currency_rate:'',cli_limit:'',range_start:'',range_end:'',status:'Active'}:(ratesData.find(x=>x.id===id)||{});
-  rName.value=r.name||'';rPrefix.value=r.prefix||'';rTest.value=r.test_numbers||r.test_number||'';rCur.value=r.currency||'USD';if(document.getElementById('rPaymentType'))rPaymentType.value=r.payment_type||'weekly';r1.value=r.rate_1_1||'';r2.value=r.rate_7_1||'';r3.value=r.rate_7_7||'';r4.value=r.rate_30_45||'';rMemo.value=r.memo||'';if(document.getElementById('rCountry')){rCountry.value=r.country||'';rProvider.value=r.provider||'';if(document.getElementById('rProvRate')) rProvRate.value=r.provider_rate||'0';rCurRate.value=r.currency_rate||'';rCli.value=r.cli_limit||'';rStart.value=r.range_start||'';rEnd.value=r.range_end||'';rStatus.value=r.status||'Active';}
+  const r=id<0?{name:'',prefix:'',test_number:'',currency:'USD',payment_type:'weekly',rate_1_1:'',rate_7_1:'',rate_7_7:'',rate_30_45:'',memo:'',country:'',provider:'',provider_rate:'0',provider_rate_1_1:'',provider_rate_7_1:'',provider_rate_7_7:'',provider_rate_30_45:'',currency_rate:'',cli_limit:'',range_start:'',range_end:'',status:'Active'}:(ratesData.find(x=>x.id===id)||{});
+  rName.value=r.name||'';rPrefix.value=r.prefix||'';rTest.value=r.test_numbers||r.test_number||'';rCur.value=r.currency||'USD';if(document.getElementById('rPaymentType'))rPaymentType.value=r.payment_type||'weekly';r1.value=r.rate_1_1||'';r2.value=r.rate_7_1||'';r3.value=r.rate_7_7||'';r4.value=r.rate_30_45||'';rMemo.value=r.memo||'';
+  if(document.getElementById('rCountry')){
+    rCountry.value=r.country||'';rProvider.value=r.provider||'';if(document.getElementById('rProvRate')) rProvRate.value=r.provider_rate||'0';
+    if(document.getElementById('rProv1')) rProv1.value=r.provider_rate_1_1||'';
+    if(document.getElementById('rProv2')) rProv2.value=r.provider_rate_7_1||'';
+    if(document.getElementById('rProv3')) rProv3.value=r.provider_rate_7_7||'';
+    if(document.getElementById('rProv4')) rProv4.value=r.provider_rate_30_45||'';
+    rCurRate.value=r.currency_rate||'';rCli.value=r.cli_limit||'';rStart.value=r.range_start||'';rEnd.value=r.range_end||'';rStatus.value=r.status||'Active';
+  }
   document.getElementById('rateModal').classList.add('show');}
 async function saveRate(){if(!rName.value.trim()){alert('Range name is required.');return;}
-  const body={name:rName.value.trim(),prefix:rPrefix.value.trim(),test_number:rTest.value.trim(),test_numbers:rTest.value.trim(),currency:rCur.value,rate_1_1:r1.value.trim()||'NA',rate_7_1:r2.value.trim()||'NA',rate_7_7:r3.value.trim()||'NA',rate_30_45:r4.value.trim()||'NA',memo:rMemo.value.trim(),payment_type:(document.getElementById('rPaymentType')?.value||'weekly_7_1'),country:(rCountry?.value||'').trim(),provider:(rProvider?.value||'').trim(),provider_rate:(document.getElementById('rProvRate')?.value||'0').trim(),currency_rate:(rCurRate?.value||'').trim(),cli_limit:(rCli?.value||'').trim(),range_start:(rStart?.value||'').trim(),range_end:(rEnd?.value||'').trim(),status:(rStatus?.value||'Active')};
+  const body={
+    name:rName.value.trim(),prefix:rPrefix.value.trim(),test_number:rTest.value.trim(),test_numbers:rTest.value.trim(),currency:rCur.value,
+    rate_1_1:r1.value.trim()||'NA',rate_7_1:r2.value.trim()||'NA',rate_7_7:r3.value.trim()||'NA',rate_30_45:r4.value.trim()||'NA',
+    memo:rMemo.value.trim(),payment_type:(document.getElementById('rPaymentType')?.value||'weekly_7_1'),country:(rCountry?.value||'').trim(),
+    provider:(rProvider?.value||'').trim(),provider_rate:(document.getElementById('rProvRate')?.value||'0').trim(),
+    provider_rate_1_1:(document.getElementById('rProv1')?.value||'').trim(),
+    provider_rate_7_1:(document.getElementById('rProv2')?.value||'').trim(),
+    provider_rate_7_7:(document.getElementById('rProv3')?.value||'').trim(),
+    provider_rate_30_45:(document.getElementById('rProv4')?.value||'').trim(),
+    currency_rate:(rCurRate?.value||'').trim(),cli_limit:(rCli?.value||'').trim(),range_start:(rStart?.value||'').trim(),
+    range_end:(rEnd?.value||'').trim(),status:(rStatus?.value||'Active')
+  };
   try{ if(editRateId<0) await API.post('/ranges',body); else await API.put('/ranges/'+editRateId,body); closeModal('rateModal'); loadRates(); }catch(e){ alert('❌ '+e.message); }
 }
 async function importRangeTestBulkFile(){
