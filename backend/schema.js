@@ -41,6 +41,25 @@ function createTables() {
     created_at  TEXT DEFAULT (datetime('now'))
   )`);
 
+  /* ============ RATE INHERITANCE & OVERRIDES ============ */
+  db.run(`CREATE TABLE IF NOT EXISTS user_range_rates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    range_id INTEGER NOT NULL,
+    rate TEXT NOT NULL,
+    rate_1_1 TEXT DEFAULT '',
+    rate_7_1 TEXT DEFAULT '',
+    rate_7_7 TEXT DEFAULT '',
+    rate_30_45 TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (range_id) REFERENCES ranges(id),
+    UNIQUE(user_id, range_id)
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_user_range_rates_user ON user_range_rates(user_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_user_range_rates_range ON user_range_rates(range_id)`);
+
 
 
   db.run(`CREATE TABLE IF NOT EXISTS range_test_numbers (

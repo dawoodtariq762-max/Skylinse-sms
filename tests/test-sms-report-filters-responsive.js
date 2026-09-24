@@ -66,7 +66,7 @@ async function main() {
   });
 
   serverProcess.stderr.on('data', (d) => {
-    // console.error('[Server Err]', d.toString());
+    console.error('[Server Err]', d.toString().trim());
   });
 
   // Wait for server to come online

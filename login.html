@@ -514,8 +514,41 @@
     .login-head .eyebrow {
       justify-content: center;
     }
-    .login-head h2 {
-      font-size: 24px;
+  }
+
+  .top-test-panel-btn {
+    position: absolute;
+    top: 24px;
+    right: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 10px;
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    z-index: 50;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    transition: all 0.16s ease;
+  }
+  .top-test-panel-btn:hover {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: #38bdf8;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.25);
+  }
+  @media (max-width: 600px) {
+    .top-test-panel-btn {
+      top: 14px;
+      right: 14px;
+      padding: 5px 10px;
+      font-size: 11px;
     }
   }
 </style>
@@ -578,18 +611,20 @@
     </section>
 
     <!-- Right Authentication Form Panel -->
-    <section class="login-panel">
+    <section class="login-panel" style="position:relative;">
+      <a href="/test" class="top-test-panel-btn" id="topTestPanelLink" title="Access SMS Test Panel">
+        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M9 18v-6a3 3 0 0 1 6 0v6"/><rect x="4" y="18" width="16" height="3"/><path d="M12 3v3"/></svg>
+        <span>SMS Test Panel</span>
+      </a>
+
       <div class="login-card">
         <div class="m-brand-header">
           <img src="/assets/skyline-mark.png" alt="SKYLINE SMS" />
-          <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.02em;color:#fff">SKYLINE SMS</h2>
-          <span style="font-size:11.5px;color:#38bdf8;text-transform:uppercase;letter-spacing:0.12em;font-weight:700">Enterprise Control Panel</span>
+          <h2 style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#fff;margin:6px 0 0">SKYLINE SMS</h2>
         </div>
 
-        <div class="login-head">
-          <div class="eyebrow">Enterprise Access Gateway</div>
-          <h2>Sign In to Panel</h2>
-          <p>Access your messaging telemetry, number pools, and real-time OTP routing controls.</p>
+        <div class="login-head" style="margin-bottom:20px;padding-top:4px;">
+          <h2 style="font-size:24px;font-weight:800;letter-spacing:-0.02em;color:#fff;margin-bottom:4px;">Sign In to Panel</h2>
         </div>
 
         <form id="loginForm" autocomplete="off">
@@ -715,6 +750,30 @@
       showMsg('❌ ' + err.message, 'error');
       newCaptcha();
     });
+  });
+
+  // Direct SSO routing for SMS Test Panel link
+  document.getElementById('topTestPanelLink')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const token = sessionStorage.getItem('ms_token') || localStorage.getItem('ms_token');
+    if (!token) {
+      window.location.href = '/test-login';
+      return;
+    }
+    try {
+      const res = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) throw new Error('Unauthenticated');
+      const u = await res.json();
+      if (!u || !u.role) throw new Error('Invalid user');
+      if (u.role === 'test') window.location.href = '/test';
+      else if (u.role === 'admin') window.location.href = '/admin/test';
+      else if (u.role === 'manager') window.location.href = '/manager/test';
+      else if (u.role === 'client') window.location.href = '/client/test';
+      else if (u.role === 'agent') window.location.href = '/agent';
+      else window.location.href = '/test';
+    } catch (_) {
+      window.location.href = '/test-login';
+    }
   });
 </script>
 </body>

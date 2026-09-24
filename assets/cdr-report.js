@@ -158,18 +158,18 @@
             ${roleUserFilters}
           </div>
 
-          <div class="cdr-filter-row">
-            <div class="cdr-field" style="flex: 2 1 220px;">
+          <div class="cdr-filter-row" style="align-items:flex-end;gap:10px;">
+            <div class="cdr-field" style="flex:0 1 180px;min-width:140px;max-width:220px;">
               <label class="cdr-label">Search Number</label>
               <input type="text" id="cdrNumber" class="cdr-input" placeholder="Search Number">
             </div>
 
-            <div class="cdr-field" style="flex: 2 1 220px;">
+            <div class="cdr-field" style="flex:0 1 180px;min-width:140px;max-width:220px;">
               <label class="cdr-label">Search CLI</label>
               <input type="text" id="cdrCli" class="cdr-input" placeholder="Search CLI">
             </div>
 
-            <div class="cdr-field-fixed" style="display:flex;gap:8px;">
+            <div class="cdr-field-fixed" style="display:flex;gap:8px;align-items:flex-end;">
               <button type="button" id="cdrExportBtn" class="cdr-btn-export">Export Report</button>
               <button type="button" id="cdrShowBtn" class="cdr-btn-show">Show Report</button>
               <button type="button" id="cdrResetBtn" class="cdr-btn-reset" title="Reset Filters">Reset</button>
@@ -646,7 +646,7 @@
       this.state.dir = this.state.dir === 'asc' ? 'desc' : 'asc';
     } else {
       this.state.sort = k;
-      this.state.dir = (['sms', 'my_payout', 'client_payout', 'payout'].includes(k)) ? 'desc' : 'asc';
+      this.state.dir = 'asc';
     }
     this.render();
   };

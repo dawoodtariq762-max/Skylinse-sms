@@ -1161,8 +1161,39 @@ function payoutRateFromRow(r){
   for(const c of candidates){ const v=normalizeDecimalString(c); if(isPositiveDecimal(v)) return v; }
   return '0';
 }
-function attachSmsPayoutFields(rows){
-  return (rows||[]).map(r=>{ const rate=payoutRateFromRow(r); return {...r,payout_rate:rate,payout_amount:rate}; });
+function attachSmsPayoutFields(rows, user = null){
+  return (rows||[]).map(r=>{
+    const isZero = !!(r.is_test || (r.limit_reason && r.limit_reason !== ''));
+    const defRate = payoutRateFromRow(r);
+
+    const clientRate = r.client_id && r.range_id ? getEffectiveRangeRate(r.client_id, r.range_id, r.payterm) : '0.00';
+    const agentRate = r.agent_id && r.range_id ? getEffectiveRangeRate(r.agent_id, r.range_id, r.payterm) : defRate;
+    const managerRate = r.manager_id && r.range_id ? getEffectiveRangeRate(r.manager_id, r.range_id, r.payterm) : defRate;
+    const providerCost = r.provider_rate || '0.00';
+
+    const clientPayout = isZero ? '0.00' : clientRate;
+    const agentPayout = isZero ? '0.00' : agentRate;
+    const managerPayout = isZero ? '0.00' : managerRate;
+    const adminPayout = isZero ? '0.00' : defRate;
+
+    let myRate = defRate;
+    if (user && user.role === 'client') myRate = clientPayout;
+    else if (user && user.role === 'agent') myRate = agentPayout;
+    else if (user && user.role === 'manager') myRate = managerPayout;
+    else if (user && user.role === 'admin') myRate = adminPayout;
+
+    return {
+      ...r,
+      payout_rate: myRate,
+      payout_amount: myRate,
+      my_payout: myRate,
+      client_payout: clientPayout,
+      agent_payout: agentPayout,
+      manager_payout: managerPayout,
+      admin_payout: adminPayout,
+      provider_cost: providerCost
+    };
+  });
 }
 function sumPayout(rows){ return (rows||[]).reduce((s,r)=>decimalAdd(s,r.payout_amount ?? r.payout_rate ?? payoutRateFromRow(r)), '0'); }
 /**
@@ -1481,6 +1512,214 @@ function syncRangeTestNumbers(rangeId, testValue) {
   return nums;
 }
 
+/* ============ RATE INHERITANCE & OVERRIDE SYSTEM ============
+   ADMIN
+     ↓ (Admin sets default rate for range; can override for specific Manager)
+   MANAGER
+     ↓ (Manager inherits Admin rate or override; can override for specific Agent)
+   AGENT
+     ↓ (Agent inherits Manager rate or override; can assign rate to Client)
+   CLIENT
+       (Default: 0.00 / 0; Agent assigns explicit rate)
+   Explicit overrides at any level are strictly preserved across parent rate updates.
+============================================================= */
+function getEffectiveRangeRate(userId, rangeId, paymentCycle) {
+  if (!rangeId) return '0';
+  const range = db.get('SELECT * FROM ranges WHERE id=?', [rangeId]);
+  if (!range) return '0';
+  const cycle = normalizePaymentCycle(paymentCycle || range.payment_type || 'weekly_7_1');
+
+  if (!userId) {
+    return payoutRateForPaymentCycle(range, cycle);
+  }
+
+  const user = db.get('SELECT id, role, parent_id FROM users WHERE id=?', [userId]);
+  if (!user || user.role === 'admin') {
+    return payoutRateForPaymentCycle(range, cycle);
+  }
+
+  // 1. Check if user has explicit override in user_range_rates
+  const explicit = db.get('SELECT rate, rate_1_1, rate_7_1, rate_7_7, rate_30_45 FROM user_range_rates WHERE user_id=? AND range_id=?', [user.id, rangeId]);
+  if (explicit && explicit.rate !== '' && explicit.rate !== null && explicit.rate !== undefined) {
+    const cycleCol = { daily: 'rate_1_1', weekly: 'rate_7_1', weekly_7_1: 'rate_7_1', weekly_7_7: 'rate_7_7', monthly_30x45: 'rate_30_45' }[cycle];
+    if (cycleCol && explicit[cycleCol] && explicit[cycleCol] !== '' && explicit[cycleCol] !== 'NA') {
+      return normalizeDecimalString(explicit[cycleCol]);
+    }
+    return normalizeDecimalString(explicit.rate);
+  }
+
+  // 2. Client role: default is 0.00 unless explicitly assigned (or set on allocated numbers)
+  if (user.role === 'client') {
+    const numWithPayout = db.get("SELECT payout FROM numbers WHERE client_id=? AND range_id=? AND payout IS NOT NULL AND payout != '' AND payout != '0' LIMIT 1", [user.id, rangeId]);
+    if (numWithPayout && isPositiveDecimal(numWithPayout.payout)) {
+      return normalizeDecimalString(numWithPayout.payout);
+    }
+    return '0.00';
+  }
+
+  // 3. Agent or Manager: inherit from parent user (Manager inherits from Admin default if parent_id is null)
+  if (user.parent_id) {
+    return getEffectiveRangeRate(user.parent_id, rangeId, cycle);
+  }
+
+  // Fallback: Admin default rate for this range
+  return payoutRateForPaymentCycle(range, cycle);
+}
+
+app.get('/api/user-rates/:userId', authRequired, (req, res) => {
+  const targetId = parseInt(req.params.userId, 10);
+  if (!targetId) return res.status(400).json({ error: 'Valid userId required' });
+  const target = db.get('SELECT id, username, role, parent_id FROM users WHERE id=?', [targetId]);
+  if (!target) return res.status(404).json({ error: 'User not found' });
+
+  // Scoping & permission verification
+  if (req.user.role === 'client' && req.user.id !== target.id) {
+    return res.status(403).json({ error: 'Clients can only view their own rates' });
+  }
+  if (req.user.role === 'agent' && req.user.id !== target.id && target.parent_id !== req.user.id) {
+    return res.status(403).json({ error: 'Agents can only view rates for their direct clients' });
+  }
+  if (req.user.role === 'manager' && req.user.id !== target.id) {
+    const allowed = descendantIds(req.user.id);
+    if (!allowed.includes(target.id)) {
+      return res.status(403).json({ error: 'Managers can only view rates for users in their hierarchy' });
+    }
+  }
+
+  const ranges = db.all("SELECT id, name, prefix, currency, rate_1_1, rate_7_1, rate_7_7, rate_30_45, payment_type FROM ranges WHERE COALESCE(deleted_at,'')='' ORDER BY name ASC");
+  const overrides = db.all('SELECT range_id, rate, rate_1_1, rate_7_1, rate_7_7, rate_30_45 FROM user_range_rates WHERE user_id=?', [target.id]);
+  const overrideMap = new Map(overrides.map(o => [o.range_id, o]));
+
+  const result = ranges.map(r => {
+    const cycle = normalizePaymentCycle(r.payment_type || 'weekly_7_1');
+    const adminDefault = payoutRateForPaymentCycle(r, cycle);
+    const parentRate = target.parent_id ? getEffectiveRangeRate(target.parent_id, r.id, cycle) : adminDefault;
+    const ov = overrideMap.get(r.id);
+    const hasOverride = !!ov && ov.rate !== '' && ov.rate !== null && ov.rate !== undefined;
+    const assignedRate = hasOverride ? ov.rate : null;
+    const effectiveRate = getEffectiveRangeRate(target.id, r.id, cycle);
+    return {
+      range_id: r.id,
+      range_name: r.name,
+      currency: r.currency || 'USD',
+      admin_default_rate: adminDefault,
+      parent_effective_rate: target.role === 'client' ? '0.00' : parentRate,
+      assigned_rate: assignedRate,
+      effective_rate: effectiveRate,
+      is_override: hasOverride,
+      role: target.role
+    };
+  });
+
+  res.json({ user: { id: target.id, username: target.username, role: target.role }, rates: result });
+});
+
+app.post('/api/user-rates', authRequired, (req, res) => {
+  const { user_id, range_id, rate, rates, rate_1_1, rate_7_1, rate_7_7, rate_30_45 } = req.body || {};
+  const targetId = parseInt(user_id || req.body?.userId, 10);
+  if (!targetId) return res.status(400).json({ error: 'user_id is required' });
+
+  const target = db.get('SELECT id, username, role, parent_id FROM users WHERE id=?', [targetId]);
+  if (!target) return res.status(404).json({ error: 'User not found' });
+
+  // Authorization rules:
+  // Admin: can set for manager, agent, client
+  // Manager: can set for agent under manager or client under agent
+  // Agent: can set for client under agent
+  // Client: cannot set any rate
+  if (req.user.role === 'client') {
+    return res.status(403).json({ error: 'Clients cannot configure rates' });
+  }
+  if (req.user.role === 'agent') {
+    if (target.role !== 'client' || target.parent_id !== req.user.id) {
+      return res.status(403).json({ error: 'Agents can only configure rates for their direct clients' });
+    }
+  }
+  if (req.user.role === 'manager') {
+    const isDirectAgent = target.role === 'agent' && target.parent_id === req.user.id;
+    const isChildClient = target.role === 'client' && descendantIds(req.user.id).includes(target.id);
+    if (!isDirectAgent && !isChildClient) {
+      return res.status(403).json({ error: 'Managers can only configure rates for users in their hierarchy' });
+    }
+  }
+
+  // Batch update mode
+  if (rates && typeof rates === 'object') {
+    for (const [rIdStr, rVal] of Object.entries(rates)) {
+      const rId = parseInt(rIdStr, 10);
+      if (!rId) continue;
+      const strVal = String(rVal ?? '').trim();
+      if (strVal === '' || strVal === 'inherit' || rVal === null) {
+        db.run('DELETE FROM user_range_rates WHERE user_id=? AND range_id=?', [target.id, rId]);
+        if (target.role === 'client') {
+          db.run("UPDATE numbers SET payout='0' WHERE client_id=? AND range_id=?", [target.id, rId]);
+        }
+      } else if (/^\d+(\.\d+)?$/.test(strVal)) {
+        db.run(`INSERT INTO user_range_rates (user_id, range_id, rate, rate_1_1, rate_7_1, rate_7_7, rate_30_45, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(user_id, range_id) DO UPDATE SET
+            rate=excluded.rate,
+            rate_1_1=excluded.rate_1_1,
+            rate_7_1=excluded.rate_7_1,
+            rate_7_7=excluded.rate_7_7,
+            rate_30_45=excluded.rate_30_45,
+            updated_at=datetime('now')`,
+          [target.id, rId, strVal, strVal, strVal, strVal, strVal]);
+        if (target.role === 'client') {
+          db.run('UPDATE numbers SET payout=? WHERE client_id=? AND range_id=?', [strVal, target.id, rId]);
+        }
+      }
+    }
+    clearApiReadCache();
+    logAction(req, 'batch_update_user_rates', 'user_range_rates', { target: target.username, count: Object.keys(rates).length });
+    return res.json({ ok: true, user_id: target.id, batch: true });
+  }
+
+  const rangeId = parseInt(range_id, 10);
+  if (!rangeId) return res.status(400).json({ error: 'range_id is required' });
+
+  const range = db.get("SELECT * FROM ranges WHERE id=? AND COALESCE(deleted_at,'')=''", [rangeId]);
+  if (!range) return res.status(404).json({ error: 'Range not found' });
+
+  // Handle clear/reset to inherited
+  if (rate === '' || rate === null || rate === undefined || rate === 'inherit') {
+    db.run('DELETE FROM user_range_rates WHERE user_id=? AND range_id=?', [target.id, range.id]);
+    if (target.role === 'client') {
+      db.run("UPDATE numbers SET payout='0' WHERE client_id=? AND range_id=?", [target.id, range.id]);
+    }
+    clearApiReadCache();
+    const eff = getEffectiveRangeRate(target.id, range.id);
+    logAction(req, 'reset_user_rate', 'user_range_rates', { target: target.username, range: range.name, effective_rate: eff });
+    return res.json({ ok: true, user_id: target.id, range_id: range.id, rate: null, effective_rate: eff, is_override: false });
+  }
+
+  // Validate numeric rate
+  const strRate = String(rate).trim();
+  if (!/^\d+(\.\d+)?$/.test(strRate)) {
+    return res.status(400).json({ error: 'Rate must be a non-negative decimal number' });
+  }
+
+  db.run(`INSERT INTO user_range_rates (user_id, range_id, rate, rate_1_1, rate_7_1, rate_7_7, rate_30_45, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(user_id, range_id) DO UPDATE SET
+      rate=excluded.rate,
+      rate_1_1=excluded.rate_1_1,
+      rate_7_1=excluded.rate_7_1,
+      rate_7_7=excluded.rate_7_7,
+      rate_30_45=excluded.rate_30_45,
+      updated_at=datetime('now')`,
+    [target.id, range.id, strRate, rate_1_1 || strRate, rate_7_1 || strRate, rate_7_7 || strRate, rate_30_45 || strRate]);
+
+  if (target.role === 'client') {
+    db.run('UPDATE numbers SET payout=? WHERE client_id=? AND range_id=?', [strRate, target.id, range.id]);
+  }
+
+  clearApiReadCache();
+  const eff = getEffectiveRangeRate(target.id, range.id);
+  logAction(req, 'set_user_rate', 'user_range_rates', { target: target.username, range: range.name, rate: strRate, effective_rate: eff });
+  res.json({ ok: true, user_id: target.id, range_id: range.id, rate: strRate, effective_rate: eff, is_override: true });
+});
+
 /* ============ RANGES / RATE MANAGEMENT ============ */
 app.get('/api/ranges', authRequired, (req, res) => cachedJson(req, res, 5000, () => {
   const includeDeleted = String(req.query.include_deleted || '').toLowerCase() === '1' || String(req.query.include_deleted || '').toLowerCase() === 'true';
@@ -1503,6 +1742,13 @@ app.get('/api/ranges', authRequired, (req, res) => cachedJson(req, res, 5000, ()
       delete r.provider_rate_7_1;
       delete r.provider_rate_7_7;
       delete r.provider_rate_30_45;
+      delete r.provider;
+      const eff = getEffectiveRangeRate(req.user.id, r.id, r.payment_type || 'weekly_7_1');
+      r.effective_rate = eff;
+      r.rate_7_1 = eff;
+      r.rate_1_1 = eff;
+      r.rate_7_7 = eff;
+      r.rate_30_45 = eff;
     });
   }
   return rows;
@@ -3060,7 +3306,16 @@ function buildSmsPagedQuery(user, q = {}) {
 function smsPagedOrderSql(q){
   const D = String(q.dir || 'desc').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
   const k = String(q.sort || 'date');
-  if (k === 'payout') return `CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) ${D}, s.id DESC`;
+  if (k === 'payout') {
+    return D === 'ASC'
+      ? `(CASE WHEN CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) = 0 THEN 1 ELSE 0 END) ASC, CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) ASC, s.id DESC`
+      : `CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) DESC, s.id DESC`;
+  }
+  if (k === 'sms') {
+    return D === 'ASC'
+      ? `(CASE WHEN COALESCE(s.id, 0) = 0 THEN 1 ELSE 0 END) ASC, s.id ASC`
+      : `s.id DESC`;
+  }
   if (k === 'number') return `(CASE WHEN TRIM(COALESCE(s.number,'')) GLOB '[0-9]*' THEN 0 ELSE 1 END) ${D}, CAST(COALESCE(NULLIF(s.number,''),'0') AS REAL) ${D}, COALESCE(s.number,'') ${D}, s.id DESC`;
   if (k === 'cli') return `(CASE WHEN TRIM(COALESCE(s.cli,'')) GLOB '[0-9]*' THEN 0 ELSE 1 END) ${D}, (CASE WHEN TRIM(COALESCE(s.cli,'')) GLOB '[0-9]*' THEN CAST(TRIM(COALESCE(s.cli,'0')) AS REAL) ELSE 0 END) ${D}, COALESCE(s.cli,'') COLLATE NOCASE ${D}, s.id DESC`;
   if (k === 'range') return `COALESCE(r.name,'') COLLATE NOCASE ${D}, s.id DESC`;
@@ -3125,8 +3380,11 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
         selectParts.push("COALESCE(NULLIF(r.currency,''), 'USD') AS currency");
       }
       selectParts.push('COUNT(*) AS sms');
-      selectParts.push("COALESCE(SUM(CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL)),0) AS my_payout");
-      selectParts.push("COALESCE(SUM(CAST(COALESCE(NULLIF(n.payout,''),'0') AS REAL)),0) AS client_payout");
+      const myPayoutExpr = req.user.role === 'client'
+        ? "COALESCE(SUM(CASE WHEN COALESCE(s.is_test,0)=1 OR (s.limit_reason IS NOT NULL AND s.limit_reason!='') THEN 0 ELSE CAST(COALESCE(NULLIF(n.payout,''),'0') AS REAL) END),0)"
+        : "COALESCE(SUM(CASE WHEN COALESCE(s.is_test,0)=1 OR (s.limit_reason IS NOT NULL AND s.limit_reason!='') THEN 0 ELSE CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) END),0)";
+      selectParts.push(`${myPayoutExpr} AS my_payout`);
+      selectParts.push("COALESCE(SUM(CASE WHEN COALESCE(s.is_test,0)=1 OR (s.limit_reason IS NOT NULL AND s.limit_reason!='') THEN 0 ELSE CAST(COALESCE(NULLIF(n.payout,''),'0') AS REAL) END),0) AS client_payout");
 
       const groupParts = activeDims.map(d => CDR_DIMENSIONS[d].expr);
       if (!activeDims.includes('currency')) {
@@ -3137,9 +3395,15 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
       let orderSql = 'sms DESC';
       if (q.sort) {
         const dir = String(q.dir || 'desc').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-        if (q.sort === 'sms') orderSql = `sms ${dir}`;
-        else if (q.sort === 'my_payout' || q.sort === 'payout') orderSql = `CAST(my_payout AS REAL) ${dir}`;
-        else if (q.sort === 'client_payout') orderSql = `CAST(client_payout AS REAL) ${dir}`;
+        if (q.sort === 'sms') {
+          orderSql = dir === 'ASC' ? 'CASE WHEN sms = 0 THEN 1 ELSE 0 END ASC, sms ASC' : 'sms DESC';
+        }
+        else if (q.sort === 'my_payout' || q.sort === 'payout') {
+          orderSql = dir === 'ASC' ? 'CASE WHEN CAST(my_payout AS REAL) = 0 THEN 1 ELSE 0 END ASC, CAST(my_payout AS REAL) ASC' : 'CAST(my_payout AS REAL) DESC';
+        }
+        else if (q.sort === 'client_payout') {
+          orderSql = dir === 'ASC' ? 'CASE WHEN CAST(client_payout AS REAL) = 0 THEN 1 ELSE 0 END ASC, CAST(client_payout AS REAL) ASC' : 'CAST(client_payout AS REAL) DESC';
+        }
         else if (q.sort === 'currency') orderSql = `currency ${dir}`;
         else {
           const dim = activeDims.find(d => d === q.sort || CDR_DIMENSIONS[d]?.alias === q.sort);
@@ -3151,8 +3415,8 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
       const total = +(totalRow?.c || 0);
 
       const totalsRow = db.get(`SELECT COUNT(*) AS total_sms,
-          COALESCE(SUM(CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL)),0) AS total_my_payout,
-          COALESCE(SUM(CAST(COALESCE(NULLIF(n.payout,''),'0') AS REAL)),0) AS total_client_payout
+          ${myPayoutExpr} AS total_my_payout,
+          COALESCE(SUM(CASE WHEN COALESCE(s.is_test,0)=1 OR (s.limit_reason IS NOT NULL AND s.limit_reason!='') THEN 0 ELSE CAST(COALESCE(NULLIF(n.payout,''),'0') AS REAL) END),0) AS total_client_payout
         ${built.baseSql}`, built.params) || {};
 
       const limit = limitRaw.toLowerCase() === 'all' ? Math.max(1, Math.min(total || 1, ROLE_ALL_MAX[req.user.role] || smsRoleCap)) : Math.max(1, Math.min(parseInt(limitRaw || '25', 10) || 25, smsRoleCap));
@@ -3166,17 +3430,32 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
         ORDER BY ${orderSql}
         LIMIT ? OFFSET ?`, [...built.params, limit, offset]);
 
+      // Refine effective payouts for role/user overrides
+      const mappedRows = rows.map(r => {
+        let pay = r.my_payout;
+        if (req.user && req.user.role !== 'admin' && r.range_name) {
+          const rObj = db.get("SELECT id, payment_type FROM ranges WHERE name=?", [r.range_name]);
+          if (rObj) {
+            const effRate = getEffectiveRangeRate(req.user.id, rObj.id, rObj.payment_type);
+            pay = (+(r.sms || 0) * (parseFloat(effRate) || 0)).toFixed(4);
+          }
+        }
+        return {
+          ...r,
+          my_payout: normalizeDecimalString(pay || 0) || '0.00',
+          client_payout: normalizeDecimalString(r.client_payout || 0) || '0.00'
+        };
+      });
+
+      const totalMyPayout = mappedRows.reduce((acc, row) => decimalAdd(acc, row.my_payout), '0');
+
       return {
         grouped: true,
         dimensions: activeDims,
-        rows: rows.map(r => ({
-          ...r,
-          my_payout: normalizeDecimalString(r.my_payout || 0) || '0.00',
-          client_payout: normalizeDecimalString(r.client_payout || 0) || '0.00'
-        })),
+        rows: mappedRows,
         total,
         totalSms: totalsRow.total_sms || 0,
-        totalPayment: normalizeDecimalString(totalsRow.total_my_payout || 0) || '0.00',
+        totalPayment: normalizeDecimalString(totalMyPayout || totalsRow.total_my_payout || 0) || '0.00',
         totalClientPayout: normalizeDecimalString(totalsRow.total_client_payout || 0) || '0.00',
         currency: rows[0]?.currency || 'USD',
         page,
@@ -3187,7 +3466,7 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
   }
 
   const total = +(db.get(`SELECT COUNT(*) c ${built.baseSql}`, built.params)?.c || 0);
-  const totalPayment = normalizeDecimalString(db.get(`SELECT COALESCE(SUM(CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL)),0) p ${built.baseSql}`, built.params)?.p || '0') || '0';
+  let totalPayment = normalizeDecimalString(db.get(`SELECT COALESCE(SUM(CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL)),0) p ${built.baseSql}`, built.params)?.p || '0') || '0';
   const limit = limitRaw.toLowerCase() === 'all' ? Math.max(1, Math.min(total || 1, ROLE_ALL_MAX[req.user.role] || smsRoleCap)) : Math.max(1, Math.min(parseInt(limitRaw || '25', 10) || 25, smsRoleCap));
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const page = Math.min(Math.max(1, parseInt(q.page || '1', 10) || 1), totalPages);
@@ -3204,14 +3483,21 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
       ${built.baseSql} AND s.id < ?
       ORDER BY s.id DESC LIMIT ?`, [...built.params, cursor, limit]);
     const nextCursor = cRows.length === limit ? cRows[cRows.length - 1].id : null;
-    return { rows: attachSmsPayoutFields(cRows), total, page: 1, limit, totalPages: Math.max(1, Math.ceil(total / limit)), totalPayment, next_cursor: nextCursor, cursor_mode: true };
+    const mapped = attachSmsPayoutFields(cRows, req.user);
+    const cursorTotalPayment = sumPayout(mapped);
+    return { rows: mapped, total, page: 1, limit, totalPages: Math.max(1, Math.ceil(total / limit)), totalPayment: cursorTotalPayment, next_cursor: nextCursor, cursor_mode: true };
   }
   const rows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45,
       n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
       cu.username AS client_name, COALESCE(su.panel_name, au.username) AS agent_name, au.username AS agent_username, su.panel_name AS sharing_panel_name, su.id AS sharing_user_id, mu.username AS manager_name
     ${built.baseSql}
     ORDER BY ${orderSql} LIMIT ? OFFSET ?`, [...built.params, limit, offset]);
-  return { rows: attachSmsPayoutFields(rows), total, page, limit, totalPages, totalPayment };
+  const mapped = attachSmsPayoutFields(rows, req.user);
+  totalPayment = normalizeDecimalString(db.get(`SELECT COALESCE(SUM(CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL)),0) p ${built.baseSql}`, built.params)?.p || '0') || '0';
+  if (req.user && req.user.role === 'client') {
+    totalPayment = normalizeDecimalString(db.get(`SELECT COALESCE(SUM(CASE WHEN COALESCE(s.is_test,0)=1 OR (s.limit_reason IS NOT NULL AND s.limit_reason!='') THEN 0 ELSE CAST(COALESCE(NULLIF(n.payout,''),'0') AS REAL) END),0) p ${built.baseSql}`, built.params)?.p || '0') || '0';
+  }
+  return { rows: mapped, total, page, limit, totalPages, totalPayment };
 }, 'numbers_ver')); /* P19: number-delete report cache turant invalidate */
 app.get('/api/stats-summary/:by', authRequired, (req, res) => cachedJson(req, res, 1500, () => {
   const by = req.params.by;
