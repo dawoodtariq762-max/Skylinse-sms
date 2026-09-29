@@ -24,6 +24,9 @@ const path = require('path');
 
 const ROOT = process.env.PANEL_DIR || '/home/user/panel-fix';
 const WINDOW = Number(process.argv[5] || 45);
+/* armed   = window configured AND SMPP_ALLOW_CONTENT_SUPPRESSION=1 (suppression happens)
+   unarmed = window configured but NOT armed — must be IGNORED (lossless default) */
+const MODE = String(process.argv[6] || 'armed').toLowerCase();
 const DATA_DIR = process.argv[2] || fs.mkdtempSync(path.join(os.tmpdir(), 'panel-window-'));
 const PORT = Number(process.argv[3] || 47151);
 
@@ -33,6 +36,7 @@ process.env.POWERX_ROLE = 'api';
 process.env.PORT = String(PORT);
 process.env.SMPP_ENABLED = 'true';
 process.env.SMPP_FALLBACK_RETRY_WINDOW_SECONDS = String(WINDOW);
+if (MODE !== 'unarmed') process.env.SMPP_ALLOW_CONTENT_SUPPRESSION = '1';
 process.env.PAYMENT_LEDGER_BACKFILL_ON_STARTUP = 'false';
 
 const { MockSmsc, bootPanel, api, login, sleep, waitReady } = require('./lib/mock_smsc');
@@ -117,10 +121,13 @@ const x = (sql, p = []) => db.run(sql, p);
   r.rowsAfterGenuineInsideWindow = rows();
 
   // after the window expires the identical message is kept
-  await waitUntil(WINDOW * 1000 + 6000);
+  await waitUntil(MODE === 'unarmed' ? 24000 : WINDOW * 1000 + 6000);
   r.genuineOutsideWindow = await push({ smid: 'W-3', src: Z.src, dst: NUM, text: Z.text });
   r.rowsAfterGenuineOutsideWindow = rows();
   r.window = WINDOW;
+  r.mode = MODE;
+  // what the PANEL actually resolved, not what we asked for
+  { const stn = smppService.statusOf(connId) || {}; r.effectiveWindow = (stn.dedup_policy || {}).content_suppression_window_seconds; r.armed = !!(stn.dedup_policy || {}).content_suppression_armed; }
   r.ageAtLastPushSeconds = Math.round(since() / 1000);
   r.suppressedWarningLogged = !!q("SELECT id FROM smpp_logs WHERE detail LIKE '%duplicate suppressed%' LIMIT 1");
 

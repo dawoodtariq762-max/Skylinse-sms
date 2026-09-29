@@ -1,147 +1,138 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Rollback / audit tool for the SMPP dedup-v2 schema additions
- * ===========================================================================
- * The migration (`migrateDedupV2()` in backend/schema.js) is purely ADDITIVE:
- * it creates two new tables, adds nullable/defaulted columns and one partial
- * index. It never edits, rewrites or deletes an existing SMS row.
+ * Rollback for the SMPP dedup-v2 change (schema side).
  *
- * This script is the reverse switch. It is deliberately conservative:
+ * SAFE BY DESIGN:
+ *   - dry run by default; nothing is written without --apply
+ *   - the SMS/dedup database is COPIED (consistent snapshot via VACUUM INTO)
+ *     before any write
+ *   - sms_records is never modified except for the identity bookkeeping values
+ *     this change added (dedup_identity / identity_state), and only with
+ *     --clear-identities. No SMS row is ever deleted. Timestamps untouched.
+ *   - refuses to drop smpp_parts while it still holds unfinished parts unless
+ *     --force is given (those parts would otherwise be lost — deliver them
+ *     first, or accept the loss explicitly)
  *
- *   node backend/scripts/rollback-dedup-v2.js                    # dry run (default)
- *   node backend/scripts/rollback-dedup-v2.js --yes --clear-columns
- *   node backend/scripts/rollback-dedup-v2.js --yes --drop-tables
- *   node backend/scripts/rollback-dedup-v2.js --yes --restore-backup
- *   node backend/scripts/rollback-dedup-v2.js --yes --full
+ * Usage (run with the panel STOPPED):
+ *   node backend/scripts/rollback-dedup-v2.js                 # dry run (default)
+ *   node backend/scripts/rollback-dedup-v2.js --apply         # drop the two new tables
+ *   node backend/scripts/rollback-dedup-v2.js --apply --clear-identities
+ *   node backend/scripts/rollback-dedup-v2.js --apply --reset-meta --force
  *
- *   --clear-columns   empty sms_records.dedup_identity, failed_sms_queue
- *                     .dedup_identity/.sms_record_id and
- *                     smpp_connections.connection_uid, and drop the partial
- *                     UNIQUE index. All rows are kept. This is the safe way
- *                     back to the pre-fix behaviour: the code that is not
- *                     aware of these columns simply ignores them.
- *   --drop-tables     additionally DROP sms_dedup_ledger and smpp_parts.
- *                     That deletes the replay history only — never SMS records.
- *   --restore-backup  replace the live database with the pre-migration backup
- *                     file recorded by the migration. The panel MUST be stopped.
- *   --full            clear-columns + drop-tables (keeps the SMS history).
- *
- * Safety: without --yes nothing is written; the dry run prints exactly what
- * would change, with row counts, and where the backup file is.
+ * Env: DATA_DIR (same as the panel) or --db <path>
  */
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
-const argv = process.argv.slice(2);
-const has = (f) => argv.includes(f);
-const APPLY = has('--yes');
-const DO_COLS = has('--clear-columns') || has('--full');
-const DO_TABLES = has('--drop-tables') || has('--full');
-const DO_RESTORE = has('--restore-backup');
+const args = process.argv.slice(2);
+const has = (f) => args.includes(f);
+const val = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; };
+const APPLY = has('--apply') || has('--yes');
+const CLEAR_IDENTITIES = has('--clear-identities');
+const RESET_META = has('--reset-meta');
+const FORCE = has('--force');
 
-const db = require('../db');
+const dbPath = val('--db')
+  || process.env.DB_FILE
+  || path.join(process.env.DATA_DIR || path.join(__dirname, '..'), 'data.sqlite');
 
-function info(label, value) { console.log(`  ${label.padEnd(34)} ${value}`); }
+if (!fs.existsSync(dbPath)) {
+  console.error('✖ database not found: ' + dbPath + '\n  pass --db <path> or set DATA_DIR');
+  process.exit(2);
+}
 
-(async () => {
-  await db.init();
-  const file = (typeof db.getDbFile === 'function' && db.getDbFile()) || '(unknown)';
-  console.log('SMPP dedup-v2 rollback');
-  console.log('database: ' + file);
-  console.log('mode    : ' + (APPLY ? 'APPLY' : 'DRY RUN (add --yes to change anything)') + '\n');
+let Database;
+try { Database = require('better-sqlite3'); }
+catch (_) { Database = require(path.join(__dirname, '..', '..', 'node_modules', 'better-sqlite3')); }
 
-  const tableExists = (t) => !!db.get("SELECT name FROM sqlite_master WHERE type='table' AND name=?", [t]);
-  const columnExists = (t, c) => {
-    try { return db.all(`PRAGMA table_info(${t})`).some((x) => x.name === c); } catch (_) { return false; }
+const db = new Database(dbPath);
+const q = (sql, p = []) => { try { return db.prepare(sql).get(p); } catch (_) { return null; } };
+const all = (sql, p = []) => { try { return db.prepare(sql).all(p); } catch (_) { return []; } };
+const run = (sql, p = []) => db.prepare(sql).run(p);
+const tableExists = (t) => !!q("SELECT name FROM sqlite_master WHERE type='table' AND name=?", [t]);
+const indexExists = (t) => !!q("SELECT name FROM sqlite_master WHERE type='index' AND name=?", [t]);
+const meta = (k) => { try { const r = q('SELECT value FROM meta WHERE key=?', [k]); return r ? r.value : null; } catch (_) { return null; } };
+
+function inventory() {
+  return {
+    db: dbPath,
+    sms_records: (q('SELECT COUNT(*) c FROM sms_records') || {}).c || 0,
+    dedup_identity_column_present: (() => { try { return (q("SELECT COUNT(*) c FROM pragma_table_info('sms_records') WHERE name='dedup_identity'") || {}).c || 0; } catch (_) { return 0; } })(),
+    sms_with_dedup_identity: (() => { try { return (q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(dedup_identity,'')<>''") || {}).c || 0; } catch (_) { return 0; } })(),
+    sms_marked: (() => { try { return (q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')<>''") || {}).c || 0; } catch (_) { return 0; } })(),
+    ledger_table: tableExists('sms_dedup_ledger'),
+    ledger_rows: tableExists('sms_dedup_ledger') ? ((q('SELECT COUNT(*) c FROM sms_dedup_ledger') || {}).c || 0) : 0,
+    parts_table: tableExists('smpp_parts'),
+    parts_rows: tableExists('smpp_parts') ? ((q('SELECT COUNT(*) c FROM smpp_parts') || {}).c || 0) : 0,
+    partial_index: indexExists('idx_sms_records_dedup_strong'),
+    state_index: indexExists('idx_sms_records_identity_state'),
+    connection_uid_column_present: (() => { try { return (q("SELECT COUNT(*) c FROM pragma_table_info('smpp_connections') WHERE name='connection_uid'") || {}).c || 0; } catch (_) { return 0; } })(),
+    meta_migrated: meta('dedup_v2_migrated'),
+    meta_identity_state: meta('dedup_v2_identity_state'),
   };
-  const count = (sql) => { try { return (db.get(sql) || {}).c || 0; } catch (_) { return -1; }; };
+}
 
-  /* ---------------- 1. inventory ---------------- */
-  console.log('1) What the migration added');
-  info('sms_dedup_ledger table', tableExists('sms_dedup_ledger') ? 'present (' + count('SELECT COUNT(*) c FROM sms_dedup_ledger') + ' identities)' : 'absent');
-  info('smpp_parts table', tableExists('smpp_parts') ? 'present (' + count('SELECT COUNT(*) c FROM smpp_parts') + ' pending parts)' : 'absent');
-  info('sms_records.dedup_identity', columnExists('sms_records', 'dedup_identity') ? 'present (' + count("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(dedup_identity,'')<>''") + ' rows filled, all SMS rows kept)' : 'absent');
-  info('failed_sms_queue.dedup_identity', columnExists('failed_sms_queue', 'dedup_identity') ? 'present' : 'absent');
-  info('failed_sms_queue.sms_record_id', columnExists('failed_sms_queue', 'sms_record_id') ? 'present' : 'absent');
-  info('smpp_connections.connection_uid', columnExists('smpp_connections', 'connection_uid') ? 'present (' + count("SELECT COUNT(*) c FROM smpp_connections WHERE COALESCE(connection_uid,'')<>''") + ' accounts identified)' : 'absent');
-  info('meta.dedup_v2_migrated', (() => { try { const r = db.get("SELECT value FROM meta WHERE key='dedup_v2_migrated'"); return r ? r.value : '(unset)'; } catch (_) { return '(no meta table)'; } })());
-  let backup = '';
-  try { const r = db.get("SELECT value FROM meta WHERE key='dedup_v2_backup'"); backup = r ? r.value : ''; } catch (_) {}
-  info('pre-migration backup', backup ? backup + (fs.existsSync(backup) ? ' (exists)' : ' (MISSING)') : '(none recorded)');
-  info('sms_records rows (never touched)', count('SELECT COUNT(*) c FROM sms_records'));
+console.log('SMPP dedup-v2 rollback — ' + (APPLY ? 'APPLY' : 'DRY RUN') + (APPLY && !has('--yes') ? '' : ''));
+console.log('mode: ' + (APPLY ? 'writes will happen' : 'nothing will be written (add --apply)'));
+console.log(JSON.stringify(inventory(), null, 2));
 
-  if (!APPLY) {
-    console.log('\nNothing was changed. Re-run with --yes and one of:');
-    console.log('  --clear-columns    back to pre-fix behaviour, SMS history untouched');
-    console.log('  --drop-tables      also drop the replay ledger + pending parts');
-    console.log('  --restore-backup   put the pre-migration backup file back (stop the panel first)');
-    console.log('  --full             clear-columns + drop-tables');
-    console.log('\nThe old code (pre-fix) ignores the added columns/tables completely, so');
-    console.log('restoring the previous backend build does not require this script at all.');
-    process.exit(0);
+const inv = inventory();
+const pending = inv.parts_rows;
+if (pending && APPLY && !FORCE) {
+  console.error(`\n✖ smpp_parts still holds ${pending} unfinished part(s).`);
+  for (const p of all('SELECT connection_uid, group_key, seq, total, received_at FROM smpp_parts ORDER BY received_at')) {
+    console.error('   - ' + p.connection_uid + '  ' + p.group_key + '  part ' + p.seq + '/' + p.total + '  ' + p.received_at);
   }
+  console.error('   Those parts are not stored anywhere else yet. Either let the panel finish');
+  console.error('   them (or wait for the staleness sweep) and re-run, or pass --force to drop them.');
+  process.exit(3);
+}
 
-  /* ---------------- 2. restore the backup file ---------------- */
-  if (DO_RESTORE) {
-    if (!backup || !fs.existsSync(backup)) {
-      console.error('No usable pre-migration backup was recorded; refusing to guess.');
-      process.exit(2);
-    }
-    const park = file + '.rolled-back-' + new Date().toISOString().replace(/[:.]/g, '-');
-    console.log('\n2) Restoring the pre-migration backup');
-    console.log('   current database -> ' + park);
-    console.log('   ' + backup + ' -> ' + file);
-    console.log('   STOP THE PANEL (pm2 stop …) BEFORE CONTINUING.');
-    if (!fs.existsSync(park)) fs.copyFileSync(file, park);
-    fs.copyFileSync(backup, file);
-    console.log('   done. Start the panel again (pm2 start …).');
-    process.exit(0);
-  }
-
-  /* ---------------- 3. clear the dedup columns/index ---------------- */
-  if (DO_COLS) {
-    console.log('\n3) Clearing the dedup columns (rows are kept)');
-    const before = count('SELECT COUNT(*) c FROM sms_records');
-    if (columnExists('smpp_connections', 'connection_uid')) {
-      db.run("UPDATE smpp_connections SET connection_uid=''");
-      console.log('   smpp_connections.connection_uid emptied');
-    }
-    if (columnExists('failed_sms_queue', 'dedup_identity')) {
-      db.run("UPDATE failed_sms_queue SET dedup_identity=''");
-      console.log('   failed_sms_queue.dedup_identity emptied (queued SMS are kept)');
-    }
-    if (columnExists('failed_sms_queue', 'sms_record_id')) {
-      db.run('UPDATE failed_sms_queue SET sms_record_id=NULL');
-      console.log('   failed_sms_queue.sms_record_id cleared');
-    }
-    if (columnExists('sms_records', 'dedup_identity')) {
-      db.run("UPDATE sms_records SET dedup_identity=''");
-      console.log('   sms_records.dedup_identity emptied (all ' + before + ' SMS rows kept)');
-    }
-    try { db.run('DROP INDEX IF EXISTS idx_sms_records_dedup_strong'); console.log('   partial UNIQUE index idx_sms_records_dedup_strong dropped'); } catch (e) { console.log('   index drop skipped: ' + e.message); }
-    try { db.run("DELETE FROM meta WHERE key IN ('dedup_v2_migrated','dedup_v2_backup')"); console.log('   migration marker cleared (a future start will re-run the migration)'); } catch (_) {}
-    const after = count('SELECT COUNT(*) c FROM sms_records');
-    console.log('   sms_records rows before/after: ' + before + ' / ' + after);
-  }
-
-  /* ---------------- 4. drop the new tables ---------------- */
-  if (DO_TABLES) {
-    console.log('\n4) Dropping the replay ledger and pending parts');
-    const led = count('SELECT COUNT(*) c FROM sms_dedup_ledger');
-    const parts = count('SELECT COUNT(*) c FROM smpp_parts');
-    db.run('DROP INDEX IF EXISTS idx_sms_dedup_unique');
-    db.run('DROP INDEX IF EXISTS idx_sms_dedup_sms');
-    db.run('DROP INDEX IF EXISTS idx_smpp_parts_age');
-    db.run('DROP TABLE IF EXISTS sms_dedup_ledger');
-    db.run('DROP TABLE IF EXISTS smpp_parts');
-    console.log('   dropped sms_dedup_ledger (' + led + ' identities) and smpp_parts (' + parts + ' pending parts)');
-    console.log('   note: replay protection for ALREADY-SEEN messages is gone with them.');
-  }
-
-  console.log('\nDone. sms_records was not modified' + (DO_COLS ? ' beyond emptying the added column' : '') + '.');
+if (!APPLY) {
+  console.log('\n-- dry run: nothing written. The --apply run would:');
+  console.log('   1. snapshot the database (VACUUM INTO) before touching anything');
+  if (inv.parts_table) console.log('   2. DROP TABLE smpp_parts' + (pending ? '   (holds ' + pending + ' part(s) — --force required)' : ''));
+  if (inv.ledger_table) console.log('   3. DROP TABLE sms_dedup_ledger   (' + inv.ledger_rows + ' identity rows)');
+  if (CLEAR_IDENTITIES) console.log('   4. clear sms_records.dedup_identity / identity_state values (' + inv.sms_with_dedup_identity + ' / ' + inv.sms_marked + ' rows) — content untouched');
+  else console.log('   4. (skip) identity values kept — the pre-fix code ignores them; add --clear-identities to blank them');
+  if (RESET_META) console.log('   5. clear meta keys dedup_v2_migrated / dedup_v2_identity_state (a future deploy re-runs the migration)');
+  if (inv.partial_index) console.log('   note: index idx_sms_records_dedup_strong is left in place — harmless for the old code');
+  console.log('\n   sms_records rows are NEVER deleted or edited beyond the two added columns.');
   process.exit(0);
-})().catch((e) => {
-  console.error('rollback failed: ' + (e && e.stack || e));
-  process.exit(1);
-});
+}
+
+/* ---------------- apply ---------------- */
+const snap = dbPath + '.pre-rollback-' + new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15);
+try {
+  db.prepare('VACUUM INTO ?').run(snap);
+  console.log('\n✔ snapshot written: ' + path.basename(snap));
+} catch (e) {
+  console.error('✖ could not create a snapshot (' + e.message + ') — refusing to continue');
+  process.exit(4);
+}
+
+const done = [];
+try {
+  if (tableExists('smpp_parts')) { run('DROP TABLE smpp_parts'); done.push('dropped smpp_parts'); }
+  if (tableExists('sms_dedup_ledger')) { run('DROP TABLE sms_dedup_ledger'); done.push('dropped sms_dedup_ledger'); }
+  if (CLEAR_IDENTITIES) {
+    let a = 0, b = 0;
+    try { a = run("UPDATE sms_records SET dedup_identity='' WHERE COALESCE(dedup_identity,'')<>''").changes; } catch (_) {}
+    try { b = run("UPDATE sms_records SET identity_state='' WHERE COALESCE(identity_state,'')<>''").changes; } catch (_) {}
+    done.push('cleared identity values (' + a + ' dedup_identity, ' + b + ' identity_state)');
+  }
+  if (RESET_META) {
+    try { run("DELETE FROM meta WHERE key IN ('dedup_v2_migrated','dedup_v2_identity_state')"); done.push('reset migration meta keys'); } catch (_) {}
+  }
+} catch (e) {
+  console.error('✖ rollback failed halfway: ' + e.message);
+  console.error('  snapshot is available at ' + snap);
+  process.exit(5);
+}
+
+console.log('apply: ' + (done.join('; ') || 'nothing to do'));
+console.log('after: ' + JSON.stringify(inventory(), null, 2));
+console.log('\nNow redeploy the previous code (server.js / smppService.js / schema.js / providerSync.js)');
+console.log('and start the panel. The snapshot above is your restore point.');
+db.close();

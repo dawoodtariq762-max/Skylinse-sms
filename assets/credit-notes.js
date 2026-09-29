@@ -41,7 +41,7 @@ function init(){
   const cells=['cycle_key','agent_name','payment_type','currency','total_amount','cdr_count','eligible_at','maturity','open_amount','requested_amount','paid_amount','other_amount','request_ids'];
   const cell=v=>'"'+String(v??'Not recorded').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"';
   const text=[cells.map(cell).join(','),...rows.map(r=>cells.map(k=>cell(Array.isArray(r[k])?r[k].join(';'):r[k])).join(','))].join('\r\n');
-  const u=URL.createObjectURL(new Blob(['\uFEFF'+text],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download='galaxy-live-settlement-page-'+page+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
+  const u=URL.createObjectURL(new Blob(['\uFEFF'+text],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download='skyline-live-settlement-page-'+page+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
  };
  let active=false;const changed=()=>{const next=root.classList.contains('active');if(next&&!active)load();active=next;};
  new MutationObserver(changed).observe(root,{attributes:true,attributeFilter:['class']});changed();

@@ -1,142 +1,165 @@
-# Galaxy SMS Panel — Dedup / Multipart / UTC-day fix (release 2026-09-29)
+# Skyline SMS Panel — release 2026-09-29 (Skyline branding + SMPP dedup/multipart/UTC fix)
 
-Ye archive **poora updated panel** hai: base = aap ka deployed source (`fbee64e`), us par
-SMPP/SMS ingestion ka fix laga hua. **Abhi tak kuch bhi deploy nahi hua**, koi SMSC bind
-nahi kiya gaya, production database ko haath nahi lagaya gaya.
+Ye archive **poora updated panel** hai: base = aap ka deployed source, aur us par do cheezen:
 
-Andar kya hai: `backend/` (fixed), `tests/` (naye test suites), `docs/dedup-v2/` (diagnosis,
-plan, verification report), `backend/scripts/rollback-dedup-v2.js` (wapsi ka tool).
+1. **Frontend branding: Galaxy → Skyline SMS** (naya, is release ki buniyadi tabdeeli)
+2. **SMPP/SMS ingestion ka dedup-v2 fix** (pichhle release ka wahi verified backend code — bilkul same)
+
+**Abhi tak kuch deploy nahi hua**, koi SMSC bind nahi kiya gaya, production database ko haath nahi lagaya gaya.
+
+Andar: poora frontend (13 pages, sab Skyline-branded), `backend/` (fixed), `tests/` (6 suites),
+`docs/dedup-v2/` (diagnosis, plan, verification report + dono run logs),
+`docs/SKYLINE-BRANDING-NOTES.md` (branding ka record), `backend/scripts/rollback-dedup-v2.js`,
+aur `MANIFEST-SHA256.txt` (har file ka sha256).
 
 ---
 
-## 1. Kya badla (sirf ye files)
+## 1. Frontend branding — kya badla
 
-| file | kaam |
+| Surface | Pehle | Ab |
+|---|---|---|
+| Login page `/panel-login` | GALAXY logo, "GALAXY SECURE ACCESS", "Welcome to Galaxy SMS" | Skyline lockup, "SKYLINE SECURE ACCESS", "Welcome to Skyline SMS" |
+| Admin / Manager / Agent / Client panels | sidebar "GALAXY SMS" + purana logo | sidebar "SKYLINE SMS" + Skyline mark |
+| Browser tab + favicon (sab pages) | "GALAXY SMS — …" | "SKYLINE SMS — …", Skyline favicon |
+| Baqi 8 pages (management, panel-sharing, payment, test + unke logins) | wahi purana brand | wahi Skyline brand — **koi page purana naam nahi dikhata** |
+
+Naye assets: `assets/skyline-logo.svg|png`, `assets/skyline-lockup.svg|png`, `assets/skyline-favicon.svg|png`.
+Purane filenames `galaxy-logo.png`, `galaxy-favicon.png`, `galaxy-icon.png`, `galaxy-appicon.png` **andar se
+Skyline artwork** se refresh kar diye gaye hain, is liye kahin bhi purana logo render nahi hota.
+
+Logo white/light theme ke liye banaya gaya hai (blue mark + navy ink), screenshot-verified.
+
+**Sirf frontend badla:** branding ki wajah se `backend/` ki **ek bhi line nahi badli** — is archive ke
+saare 21 backend files ka sha256 pichhle (94/0 e2e-verified) archive se **bilkul identical** hai.
+
+---
+
+## 2. Backend SMS fix (pichhle release ka wahi code)
+
+Aap ki policy: fallback **lossless** rahe, 300 s wala content window production me **na chale**, jis message
+ka physical id na ho wo **store** ho + `no-id` mark ho + stats me alag gina jaye, aur sirf sender/destination/body
+same hone par kuch bhi **silently suppress na ho**.
+
+| hidayat | kaise enforce hui |
 |---|---|
-| `backend/smppIdentity.js` | **naya** — raw PDU parse, TLV 0x001E / appended-id, UDH decode, multipart identity, canonical hash, SMSC-account identity |
-| `backend/dayWindow.js` | **naya** — UTC SMS-day helpers (sirf SMS counting; payments UK hi rehte hain) |
-| `backend/smppService.js` | identity-first ingest, durable ledger, `smpp_parts` multipart, `message_payload` fix, sahi ACK order |
-| `backend/server.js` | exact `lastInsertRowid`, dedup identity insert + pre-check, UTC day windows, retry idempotency, `connection_uid`, `/api/smpp/dedup-stats` |
-| `backend/schema.js` | additive tables/columns/indexes + guarded, backed-up `migrateDedupV2()` |
-| `backend/providerSync.js` | provider reference ledger me record (cross-channel sirf opt-in) |
-| `backend/scripts/rollback-dedup-v2.js` | **naya** — rollback (dry-run default) |
-| `tests/unit_identity.js`, `tests/e2e_mock_smsc.js`, `tests/lib/mock_smsc.js`, `tests/restart_child.js`, `tests/window_policy_child.js`, `tests/smoke_endpoints.js` | **naye** test suites |
-| `docs/dedup-v2/*` | diagnosis, plan, verification report (before/after har check) |
+| **lossless default** | `SMPP_FALLBACK_RETRY_WINDOW_SECONDS=0`; window **akela kaafi nahi** — effective window tab tak `0` rehta hai jab tak `SMPP_ALLOW_CONTENT_SUPPRESSION=1` bhi set na ho |
+| **300 s window off** | window set kar dein magar arm na karein → panel ignore karta hai, boot par warning, aur `/api/smpp/dedup-stats` me `content_suppression_armed: false`, `lossless: true` |
+| **no-id messages store** | durable id na ho to hamesha store; `smpp_logs` me saaf entry (`stored without content-based suppression`) |
+| **`no-id` marking** | naya column `sms_records.identity_state`: `strong` / `multipart` / `weak` / `no-id` |
+| **alag statistics** | `/api/smpp/dedup-stats` → `no_id {last_24h, last_7d, total}` + `identity_states {…}` |
+| **identical content par suppression nahi** | koi content hash decision me use nahi hota (TEST 5: 3 bilkul same OTP → teeno store) |
 
-Baqi sab files (frontend, admin/agent/client.html, deploy/, ecosystem config, roles, rates,
-allocations, payments, provider credentials) **jaisi thi waisi hai**.
+Multipart SMS (UDH concatenation), `message_payload` TLV, aur SMS-day counting **UTC** par — tafseel
+`docs/dedup-v2/smpp-fix-verification.md` me (point-by-point mapping + before/after table + limitations).
 
 ---
 
-## 2. Archive me kya NAHI hai (jaan bujh kar)
+## 3. Archive me kya NAHI hai (jaan bujh kar)
 
-* `node_modules/` — archive me nahi (size + native build). Server par:
-  `npm install --omit=dev` (Node >= 20; `better-sqlite3` native module dobara build hoga).
-  Agar aap ka maujooda `node_modules` theek chal raha hai to usay **jaise hai waisa rehne dein** —
-  dependencies badli nahi gayi hain.
-* `.env` — kabhi include nahi kiya jata (sirf `.env.example` archive me hai). Apna `.env`
-  server par se hi use karein; `JWT_SECRET` set karna na bhoolein.
-* `data.sqlite`, backups, logs — archive me nahi.
+* `node_modules/` — size + native build. Server par: `npm install --omit=dev` (Node >= 20).
+  Agar maujooda `node_modules` theek chal raha hai to usay waise hi rehne dein.
+* `.env` — sirf `.env.example` hai; apna `.env` server par se hi use karein (`JWT_SECRET` set karein).
+* `data.sqlite`, backups, logs — nahi.
 
 ---
 
-## 3. Deploy (jab aap faisla kar lein)
+## 4. Deploy — step by step (VPS)
 
 ```bash
-# 1) backup — zaroori
-cd /path/to/panel
-cp backend/data.sqlite backend/data.sqlite.bak-$(date +%F)
+# 0) pehle backup (poora folder — sab se mehfooz wapsi)
+cd /path/to/panel && cp -a . ../panel-backup-$(date +%F) && cd ..
 
-# 2) panel band karein
-pm2 stop galaxy-sms            # ya: pm2 stop powerx-api powerx-sync
+# 1) upload
+scp skyline-sms-panel-2026-09-29.zip user@vps:/tmp/
 
-# 3) ye files replace karein (archive se)
-#    backend/smppIdentity.js  backend/dayWindow.js  backend/smppService.js
-#    backend/server.js        backend/schema.js     backend/providerSync.js
-#    backend/scripts/rollback-dedup-v2.js          (naya, folder bana lein)
-#    chahein to tests/ aur docs/dedup-v2/ bhi rakh lein — production inhe parhta nahi
+# 2) extract + integrity check
+cd /tmp && unzip -q skyline-sms-panel-2026-09-29.zip -d skyline-release
+cd skyline-release && sha256sum -c MANIFEST-SHA256.txt | grep -v ': OK$'
+#    (kuch bhi print na ho = saari files theek)
 
-# 4) start + log dekhein
-pm2 start galaxy-sms && pm2 logs galaxy-sms --lines 80
-#    expected:
-#      • [DEDUP-V2] pre-migration backup: data.sqlite.pre-dedup-v2-<date>
-#      • [DEDUP-V2] ledger seeded from strong keys: N (fp:* fingerprint keys intentionally NOT seeded)
-#      • [DEDUP-V2] migration complete (backup ready)
-#      • SMPP service active ... -> bind -> status bound
+# 3) panel folder me sync karein (apna .env / data.sqlite / node_modules waise hi rahenge)
+rsync -a --exclude '.env' --exclude 'data.sqlite' --exclude 'node_modules' ./ /path/to/panel/
+#    Sirf branding chahiye (backend wapas na chhedna ho) to itna kaafi hai:
+#    cp -f *.html api.js /path/to/panel/ && cp -f assets/* /path/to/panel/assets/
 
-# 5) naya admin endpoint (read-only)
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:4000/api/smpp/dedup-stats
+# 4) dependencies (agar node_modules maujood hai to skip)
+cd /path/to/panel && npm install --omit=dev
+
+# 5) restart
+pm2 restart galaxy-sms --update-env && pm2 logs galaxy-sms --lines 80
+#    expected boot lines:
+#      • [SMPP] lossless mode: nothing is ever suppressed because the content looks identical …
+#      • [DEDUP-V2] migration complete
+#        (pehli baar migration chalne par is se pehle ek line aati hai:
+#         • [DEDUP-V2] pre-migration backup: data.sqlite.pre-dedup-v2-<date>)
 ```
 
-Migration **additive** hai: purani rows ko chhota nahi karta, koi SMS record delete nahi hota,
-koi timestamp edit nahi hota. Pehle se `<db>.pre-dedup-v2-<date>` backup bhi apne aap banta hai.
-Split deploy (`powerx-api` + `powerx-sync`, ek hi SQLite) me jo process pehle uthega wahi migration
-chalayega — `meta.dedup_v2_migrated` key usay dobara nahi chalne deti.
+### Verify karein
 
-### Rollback (agar kuch ghalat lage)
+**Frontend:** browser me `/panel-login` kholein → Skyline lockup + "SKYLINE SECURE ACCESS" nazar aaye;
+tab ka title "SKYLINE SMS — Login"; favicon Skyline. Purana logo dikhe to hard-refresh (Ctrl+Shift+R) —
+images `?v=skyline-1` se cache-busted hain.
+
+**Backend (admin token):**
 
 ```bash
-pm2 stop galaxy-sms
-node backend/scripts/rollback-dedup-v2.js                          # dry run, inventory print karta hai
-node backend/scripts/rollback-dedup-v2.js --yes --clear-columns    # pre-fix behaviour, SMS rows salamat
-node backend/scripts/rollback-dedup-v2.js --yes --restore-backup   # pre-migration backup file wapas
-pm2 start galaxy-sms
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:4000/api/smpp/dedup-stats | head -40
+#    expect: "lossless": true, "content_suppression_armed": false, aur ek "no_id" block
 ```
 
 ---
 
-## 4. Env knobs (sab optional — default theek hai)
+## 5. Rollback
+
+* **Frontend:** `panel-backup-<date>` se `*.html`, `api.js`, `assets/` wapas copy kar dein (server restart ki zaroorat nahi).
+* **Backend (migration wapas):** panel band kar ke:
+
+```bash
+node backend/scripts/rollback-dedup-v2.js                 # dry run: inventory + kya hoga
+node backend/scripts/rollback-dedup-v2.js --apply         # sirf do nayi tables drop
+node backend/scripts/rollback-dedup-v2.js --apply --clear-identities --reset-meta --force
+```
+
+Rollback likhne se pehle `VACUUM INTO` se consistent snapshot banata hai, adhoore multipart parts hone par
+`--force` ke bina `smpp_parts` drop nahi karta, kisi SMS row ko delete ya edit nahi karta.
+
+* **Poora folder:** `rm -rf /path/to/panel && mv ../panel-backup-<date> /path/to/panel && pm2 restart galaxy-sms`.
+
+---
+
+## 6. Env knobs
 
 | env | default | matlab |
 |---|---|---|
-| `SMPP_ID_TLVS` | `0x001e` | kaun se TLV provider message-id ginein (`receipted_message_id`) |
+| `SMPP_ID_TLVS` | `0x001e` | kaun se TLV provider message-id ginein |
 | `SMPP_ID_APPENDED` | `0` | `1` = provider agar body me id append karta hai to usay bhi identity maano |
-| `SMPP_FALLBACK_RETRY_WINDOW_SECONDS` | `0` | `0` = kuch bhi content se suppress na karo (lossless). `>0` = is window ke andar **bilkul same** SMS ko retry maan kar chhod dein (asli duplicate-OTP bhi chhup sakta hai) |
-| `SMPP_PARTS_MAX_AGE_SECONDS` | `300` | itne waqt baad adhoora multipart ek partial row ke tor par store ho jata hai (delete nahi hota) |
-| `SMPP_CROSS_CHANNEL_IDENTITY` | `0` | `1` = SMPP aur API channel ke ids ek hi namespace (tab hi cross-channel dedup hota hai) |
-
-**Faisla aap ka hai:** live provider koi per-message id nahi bhejta (measure kiya gaya). Is liye
-shipped default **lossless** hai — retry dobara store ho jata hai, lekin kuch bhi silently drop
-nahi hota, aur har no-id message `smpp_logs` (event `ident`) me log + `/api/smpp/dedup-stats` me
-count hota hai. Agar duplicates se zyada tang hain aur "same OTP dobara" ka theoretical loss
-manzoor hai, to `SMPP_FALLBACK_RETRY_WINDOW_SECONDS=300` laga dein.
+| `SMPP_FALLBACK_RETRY_WINDOW_SECONDS` | `0` | window (seconds) — akela kaam nahi karta |
+| `SMPP_ALLOW_CONTENT_SUPPRESSION` | `0` | `1` = window ko arm karo. **Production me off rakhna hai** |
+| `SMPP_PARTS_MAX_AGE_SECONDS` | `300` | itne baad adhoora multipart partial row ban kar store ho jata hai (delete nahi) |
+| `SMPP_CROSS_CHANNEL_IDENTITY` | `0` | `1` = SMPP aur API channel ids ek namespace |
 
 ---
 
-## 5. Saboot (verification)
+## 7. Saboot (verification)
 
-* poori report: `docs/dedup-v2/smpp-fix-verification.md` — check-by-check before/after table,
-  A1–A7 audit queries + unke measured results, deploy checklist, aur saari known limitations.
-* unit tests: `node tests/unit_identity.js` → **24/24**
-* end-to-end (asli panel + mock SMSC over TCP + asli SQLite): `node tests/e2e_mock_smsc.js`
-  → **79/79** (purane code par wahi suite: 30 pass / 35 fail)
-* endpoint smoke: `node tests/smoke_endpoints.js` → **15/15**
-
-Tests ko chalane ke liye `node_modules` chahiye (archive me nahi hai) — server par `npm install` ke
-baad ye commands chal jayengi. e2e suite real timings leti hai (retry/reconnect ke intervals ke
-dauraan soti hai), aur fail hone par apna DATA_DIR rakh deti hai taake aap DB dekh sakein.
+* **Branding (browser, real server):** 5 surfaces (login + admin/manager/agent/client) — Skyline title,
+  sidebar "SKYLINE SMS", logo file load, Skyline favicon, **zero** "Galaxy" text, zero broken images;
+  before/after screenshots workspace me (`verify/shots-skyline/`, `verify/shots-before/`).
+* `node tests/ui-theme.test.js` → **27/27 pass** (UI/branding contract)
+* `node tests/unit_identity.js` → **PASS 29 / FAIL 0**
+* `node tests/smoke_endpoints.js` → **PASS 18 / FAIL 0**
+* `node tests/e2e_mock_smsc.js` → **PASS 94 / FAIL 0** (asli panel + asli SQLite + TCP mock SMSC;
+  purane code par wahi suite: 29 pass / 47 fail) — ye backend code pichhle archive me chala chuka hai,
+  aur is archive me `backend/` ke saare files us se **sha256-identical** hain.
 
 ---
 
-## 6. Is release ke baad kya nahi hua
+## 8. Is release ke baad bhi kya baqi hai
 
+* **PM2 app ka naam** (`galaxy-sms`), `ecosystem.config.js`, aur backend ka startup banner abhi bhi purana
+  naam lete hain — ye backend/ops hain, "full rebrand" wale pass me badlenge (aap ne abhi rok rakha hai).
+* Asset **filenames** `galaxy.css` / `galaxy.js` abhi wahi hain (sirf naam; andar ka brand text Skyline hai).
+* Daily SMS **limits** abhi bhi UK day par reset hoti hain (reporting/counting UTC par hai) — client-visible
+  behaviour hai, is liye jaan kar waisa chhoda gaya.
+* Purane duplicate rows delete nahi kiye — A7 query se sirf dekh sakte hain.
 * Koi live SMSC bind nahi, koi production DB touch nahi, kuch deploy nahi.
-* Purane duplicated rows delete nahi kiye (report me A8 query se sirf **dekh** sakte hain).
-* Daily SMS **limits** abhi bhi UK day par reset hoti hain (reporting UTC par hai) — chahein to
-  ek line ka change hai.
-* `webhook_logs` ka purana intake message text likhta hai (pehle se aisa tha, chheda nahi).
-
----
-
-## 7. Archive ki verification (is zip ko extract kar ke chalaya gaya hai)
-
-1. Zip ko ek saaf folder me extract kiya, `node_modules` ko maujooda `panel-src/node_modules` se
-   link kiya, aur usi extracted copy par suites chalayi:
-   * `node tests/unit_identity.js` → **PASS 24  FAIL 0**
-   * `node tests/smoke_endpoints.js` → **PASS 15  FAIL 0**
-   * `node tests/e2e_mock_smsc.js` (asli TCP + SQLite) → **PASS 79  FAIL 0**
-2. Sab badli hui files byte-identical hain working copy se — `MANIFEST-SHA256.txt` me har file ka
-   sha256 hai, deploy ke baad `sha256sum -c` se check kar sakte hain (paths archive root se relative).
-
-Deploy ke baad sab se pehla check: `pm2 logs` me `[DEDUP-V2] migration complete` line, aur
-`/api/smpp/dedup-stats` ka jawab.

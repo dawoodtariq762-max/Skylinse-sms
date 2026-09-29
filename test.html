@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png?v=light-20260928" />
-<title>GALAXY SMS — Test Panel</title>
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-1" />
+<title>SKYLINE SMS — Test Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}</style>
 <script>
 (function(){try{const t=sessionStorage.getItem('ms_token')||localStorage.getItem('ms_token'),r=sessionStorage.getItem('ms_role')||localStorage.getItem('ms_role');if(!t||r!=='test'){location.replace('/test-login');return;}fetch('/api/me',{headers:{Authorization:'Bearer '+t}}).then(x=>{if(!x.ok)throw 0;return x.json()}).then(u=>{if(!u||u.role!=='test')throw 0;document.documentElement.style.visibility='visible';}).catch(()=>{sessionStorage.clear();['ms_token','ms_role','ms_user','ms_name'].forEach(k=>localStorage.removeItem(k));location.replace('/test-login')});}catch(e){sessionStorage.clear();['ms_token','ms_role','ms_user','ms_name'].forEach(k=>localStorage.removeItem(k));location.replace('/test-login')}})();
@@ -65,7 +65,7 @@ th{font-size:12px;text-transform:uppercase;}
 </head>
 <body class="gx-light gx-lamix">
 <aside class="sidebar" id="sidebar">
-  <div class="brand"><div class="logo"><img src="/assets/galaxy-logo.png?v=light-20260928" alt="GALAXY SMS"></div><div><h1>GALAXY SMS</h1><small>Test Panel</small></div></div>
+  <div class="brand"><div class="logo"><img src="/assets/skyline-logo.svg?v=skyline-1" alt="Skyline SMS"></div><div><h1>SKYLINE SMS</h1><small>Test Panel</small></div></div>
   <div class="nav">
     <div class="sec">Main</div>
     <div class="item active" data-page="dashboard">▦ Dashboard</div>

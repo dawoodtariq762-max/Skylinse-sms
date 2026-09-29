@@ -773,15 +773,37 @@ app.get('/api/smpp/dedup-stats', authRequired, requireRole('admin'), (req, res) 
     pending_parts: q('SELECT COUNT(*) c FROM smpp_parts WHERE connection_uid=?', [c.connection_uid || '']).c || 0,
     status: smppService.statusOf(c.id) || null,
   }));
+  let idcfg = { idTlvs: [0x001e], allowAppended: false, fallbackRequested: 0, fallbackArmed: false, fallbackWindow: 0 };
+  try { idcfg = smppService._internal.identityConfig() || idcfg; } catch (_) {}
+  const stCount = (state) => q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')=?", [state]).c || 0;
   res.json({
     identities_total: q('SELECT COUNT(*) c FROM sms_dedup_ledger').c || 0,
     strong_identities: q("SELECT COUNT(*) c FROM sms_dedup_ledger WHERE identity_kind NOT IN ('pdu','mp')").c || 0,
     weak_identities: q("SELECT COUNT(*) c FROM sms_dedup_ledger WHERE identity_kind IN ('pdu','mp')").c || 0,
+    /* Replay / no-id accounting. Rows marked 'no-id' had NO durable physical
+       identity and were stored anyway (lossless). They are counted here so the
+       operator can see exactly how much of the traffic cannot be told apart
+       from a retry — instead of the panel guessing by content. */
+    no_id: {
+      last_24h: q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')='no-id' AND received_at >= datetime('now','-1 day')").c || 0,
+      last_7d: q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')='no-id' AND received_at >= datetime('now','-7 days')").c || 0,
+      total: stCount('no-id'),
+    },
+    identity_states: {
+      strong: stCount('strong'),
+      multipart: stCount('multipart'),
+      weak: stCount('weak'),
+      no_id: stCount('no-id'),
+      unmarked: q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')=''").c || 0,
+    },
     dedup_mode: {
-      id_tlvs: (process.env.SMPP_ID_TLVS || '0x001e (receipted_message_id)'),
-      appended_id: String(process.env.SMPP_ID_APPENDED || '0') === '1',
-      fallback_retry_window_seconds: Math.max(0, parseInt(process.env.SMPP_FALLBACK_RETRY_WINDOW_SECONDS || '0', 10) || 0),
-      note: 'fallback window 0 = content/time suppression disabled (lossless default)',
+      id_tlvs: (idcfg.idTlvs || []).map(t => '0x' + Number(t).toString(16).padStart(4, '0')).join(',') || '0x001e',
+      appended_id: !!idcfg.allowAppended,
+      fallback_retry_window_seconds: idcfg.fallbackWindow || 0,
+      content_suppression_requested_seconds: idcfg.fallbackRequested || 0,
+      content_suppression_armed: !!idcfg.fallbackArmed,
+      lossless: !(idcfg.fallbackArmed && idcfg.fallbackWindow > 0),
+      note: "lossless default: a message is NEVER suppressed because sender, destination and body look identical; messages with no physical id are stored and marked identity_state='no-id'",
     },
     connections: perConn,
   });
@@ -5571,8 +5593,8 @@ app.post('/api/failed-sms/:id/retry', authRequired, requireRole('admin'), (req,r
   const retryRate=payoutRateForPaymentCycle({...rangeForRetry, number_rate:effectiveRetryRate, number_payout:n.payout}, retryPaymentCycle);
   const retrySenderType=classifySender(f.cli||'');
   const retryOtpCode=extractOtpCode(f.message||'');
-  const retryIns=db.run(`INSERT INTO sms_records (number_id,number,range_id,cli,sender_type,message,otp_code,client_id,agent_id,manager_id,payout_rate,payout_amount,payment_type,dedup_identity) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [n.id,n.number,n.range_id,f.cli||'',retrySenderType,f.message||'',retryOtpCode,n.client_id,n.agent_id,n.manager_id,retryRate,retryRate,retryPaymentType,retryIdentity]);
+  const retryIns=db.run(`INSERT INTO sms_records (number_id,number,range_id,cli,sender_type,message,otp_code,client_id,agent_id,manager_id,payout_rate,payout_amount,payment_type,dedup_identity,identity_state) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [n.id,n.number,n.range_id,f.cli||'',retrySenderType,f.message||'',retryOtpCode,n.client_id,n.agent_id,n.manager_id,retryRate,retryRate,retryPaymentType,retryIdentity,retryIdentity?'strong':'']);
   const retryId=(retryIns&&retryIns.lastInsertRowid)?Number(retryIns.lastInsertRowid):null;
   if(retryId){ try{ recordPaymentLedgerForSms(retryId); }catch(e){ console.warn('[PAYMENT_V2] retry ledger failed:', e.message); } }
   try { recordSmsStats({ m: n.manager_id, a: n.agent_id, c: n.client_id, cli: f.cli || '', payout: retryRate, ts: '' }); } catch (_) {}
@@ -5793,6 +5815,12 @@ function processIncomingSmsPayload(req, payload, sourceIp='', opts={}) {
      multipart id) — never a content hash — so a row that already carries this
      identity is the SAME physical SMS arriving through another channel. */
   const dedupIdentity = String(opts.dedupIdentity || '').trim();
+  /* Persisted marking for the replay/no-id statistics. The ingest path passes
+     it explicitly ('no-id' when NO durable physical identity existed and the
+     message was stored anyway — lossless). For callers that only pass an
+     identity, "has an identity" is the honest default; nothing is inferred
+     about content. */
+  const identityState = String(opts.identityState || '').trim() || (dedupIdentity ? 'strong' : '');
   if (dedupIdentity) {
     const already = db.get('SELECT id, received_at FROM sms_records WHERE dedup_identity=? LIMIT 1', [dedupIdentity]);
     if (already) {
@@ -5865,9 +5893,9 @@ function processIncomingSmsPayload(req, payload, sourceIp='', opts={}) {
      that is already stored and we insert it twice. */
   let saved = null;
   try {
-    const ins = db.run(`INSERT INTO sms_records (number_id,number,range_id,cli,sender_type,message,otp_code,client_id,agent_id,manager_id,is_test,test_batch_id,source,payout_rate,payout_amount,limit_reason,payment_type,received_at,dedup_identity)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,COALESCE(NULLIF(?,''),datetime('now')),?)`,
-      [n.id, n.number, n.range_id, cli || '', senderType, message || '', otpCode, n.client_id, n.agent_id, resolvedManagerId, opts.isTest?1:0, opts.testBatchId||'', opts.source||'carrier', smsPayoutRate, smsPayoutRate, limitReason, assignedPaymentType, opts.received_at || '', dedupIdentity]);
+    const ins = db.run(`INSERT INTO sms_records (number_id,number,range_id,cli,sender_type,message,otp_code,client_id,agent_id,manager_id,is_test,test_batch_id,source,payout_rate,payout_amount,limit_reason,payment_type,received_at,dedup_identity,identity_state)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,COALESCE(NULLIF(?,''),datetime('now')),?,?)`,
+      [n.id, n.number, n.range_id, cli || '', senderType, message || '', otpCode, n.client_id, n.agent_id, resolvedManagerId, opts.isTest?1:0, opts.testBatchId||'', opts.source||'carrier', smsPayoutRate, smsPayoutRate, limitReason, assignedPaymentType, opts.received_at || '', dedupIdentity, identityState]);
     // Exact row id of THIS insert (the old `ORDER BY id DESC LIMIT 1` could
     // return another writer's row under interleaved ingestion).
     const insertedId = (ins && ins.lastInsertRowid) ? Number(ins.lastInsertRowid) : null;

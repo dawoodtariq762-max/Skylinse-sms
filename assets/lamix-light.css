@@ -169,7 +169,7 @@ body.gx-light.gx-lamix .rail>.brand-text {padding:0 12px 20px!important;text-ali
 body.gx-light.gx-lamix .stat-card.dash-metric {justify-content:flex-end!important;}
 /* ===== Final colour pass, 28 September 2026 =====
    Blue sidebar and light blue top bar, chosen to sit with the approved light theme,
-   the white Galaxy logo and the existing card/table surfaces. Visual only. */
+   the white Skyline logo and the existing card/table surfaces. Visual only. */
 body.gx-light.gx-lamix :is(.sidebar,.rail,.side,.appbar) {
  background:linear-gradient(180deg,#155177 0%,#103f61 45%,#0b2f4c 100%)!important;
  border-right:1px solid #072844!important;

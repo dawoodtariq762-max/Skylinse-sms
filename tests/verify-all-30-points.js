@@ -55,8 +55,8 @@ async function run() {
     const html = fs.readFileSync(path.join(__dirname, '../login.html'), 'utf-8');
     assert(!html.includes('Sign in to the Galaxy SMS control panel. Available to Admin, Manager, Agent, Client and Test Panel users.'), 'Removed text still present');
     assert(!html.includes('Sign in to Galaxy SMS Control Panel, available to admin, manager, agent, client and test panel users.'), 'Removed text variation present');
-    assert(html.includes('Galaxy Secure Access'), 'Missing Galaxy Secure Access eyebrow');
-    assert(html.includes('Welcome to Galaxy SMS'), 'Missing Welcome to Galaxy SMS heading');
+    assert(html.includes('Skyline Secure Access'), 'Missing Skyline Secure Access eyebrow');
+    assert(html.includes('Welcome to Skyline SMS'), 'Missing Welcome to Skyline SMS heading');
     assert(html.includes('id="username"'), 'Missing username field');
     assert(html.includes('id="password"'), 'Missing password field');
     assert(html.includes('Math Captcha'), 'Missing Math Captcha');

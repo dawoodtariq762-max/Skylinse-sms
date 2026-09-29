@@ -1,5 +1,5 @@
 /* ============================================================================
-   GALAXY SMS — UI helpers (galaxy.js v1)  — ZERO business-logic changes.
+   SKYLINE SMS — UI helpers (galaxy.js v1)  — ZERO business-logic changes.
    Provides: icon system, tooltips, country resolution (E.164), dashboard map,
    error/empty states, mobile card-table helper. Panels opt-in explicitly.
    ========================================================================== */
@@ -161,7 +161,7 @@ GX.wireExports = function(){
       const csv=head.map(esc).join(',')+'\n'+rows.map(tr=>[...tr.children].map(td=>esc(td.innerText)).join(',')).join('\n');
       const a=document.createElement('a');
       a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-      a.download='galaxy-export-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+      a.download='skyline-export-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
       return;
     }
   });

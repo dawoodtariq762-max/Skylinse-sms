@@ -14,7 +14,7 @@ for (const role of ['admin','manager','agent','client','management','panel-shari
     const s=read(role+'.html');
     assert.match(s, /<body class="gx-light gx-lamix">/);
     assert.equal((s.match(/href="\/assets\/lamix-light\.css/g)||[]).length,1);
-    assert.match(s,/assets\/galaxy-logo\.png/);
+    assert.match(s,/assets\/skyline-logo\.svg/);
     assert.doesNotMatch(s, /data-page=["']bonus["']|href=["'][^"']*\/bonus["']/i);
   });
 }

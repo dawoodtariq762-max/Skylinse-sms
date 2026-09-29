@@ -76,6 +76,16 @@ const ENDPOINTS = [
   const strayDays = q("SELECT COUNT(*) c FROM sms_daily_stats WHERE stat_date = date('now','+1 hour') AND stat_date <> date('now')").c;
   console.log('   ' + (strayDays === 0 ? 'PASS' : 'FAIL') + '  no stats were bucketed into the Europe/London day (' + strayDays + ' stray rows)');
   if (strayDays === 0) pass++; else fail++;
+  const ds = await api(PORT, 'GET', '/api/smpp/dedup-stats', undefined, token);
+  const dm = (ds.body && ds.body.dedup_mode) || {};
+  console.log('   ' + (ds.status === 200 ? 'PASS' : 'FAIL') + '  dedup-stats answers with the policy block');
+  if (ds.status === 200) pass++; else fail++;
+  console.log('   ' + (dm.lossless === true && dm.content_suppression_armed === false ? 'PASS' : 'FAIL') + '  dedup-stats says lossless / not armed (window=' + dm.fallback_retry_window_seconds + 's)');
+  if (dm.lossless === true && dm.content_suppression_armed === false) pass++; else fail++;
+  const hasNoId = !!(ds.body && ds.body.no_id && typeof ds.body.no_id.total === 'number');
+  console.log('   ' + (hasNoId ? 'PASS' : 'FAIL') + '  dedup-stats counts no-id messages separately' + (hasNoId ? ' (total=' + ds.body.no_id.total + ')' : ''));
+  if (hasNoId) pass++; else fail++;
+
   const lastBucket = (d.daily7 && d.daily7.length) ? d.daily7[d.daily7.length - 1].date : '';
   console.log('   daily7 last bucket: ' + lastBucket + '   (UTC today = ' + new Date().toISOString().slice(0, 10) + ')');
   const okBucket = lastBucket === new Date().toISOString().slice(0, 10);

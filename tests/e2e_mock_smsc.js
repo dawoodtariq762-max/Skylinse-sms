@@ -485,8 +485,8 @@ async function createConnection() {
   await step('TEST 17 — opt-in retry window (SMPP_FALLBACK_RETRY_WINDOW_SECONDS>0), own process + own DB', async () => {
     const childOut = await new Promise((resolve) => {
       const wdir = fs.mkdtempSync(path.join(os.tmpdir(), 'panel-window-'));
-      const c = spawn(process.execPath, [ROOT + '/tests/window_policy_child.js', wdir, String(PORT + 2), '0', '45'], {
-        env: Object.assign({}, process.env, { PANEL_DIR: ROOT, DATA_DIR: wdir, PORT: String(PORT + 2), SMPP_FALLBACK_RETRY_WINDOW_SECONDS: '45' }),
+      const c = spawn(process.execPath, [ROOT + '/tests/window_policy_child.js', wdir, String(PORT + 2), '0', '45', 'armed'], {
+        env: Object.assign({}, process.env, { PANEL_DIR: ROOT, DATA_DIR: wdir, PORT: String(PORT + 2), SMPP_FALLBACK_RETRY_WINDOW_SECONDS: '45', SMPP_ALLOW_CONTENT_SUPPRESSION: '1' }),
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       let buf = '';
@@ -510,6 +510,34 @@ async function createConnection() {
     }
   });
 
+await step('TEST 17b — SAFETY: a window WITHOUT SMPP_ALLOW_CONTENT_SUPPRESSION=1 is ignored (lossless)', async () => {
+    const childOut = await new Promise((resolve) => {
+      const wdir = fs.mkdtempSync(path.join(os.tmpdir(), 'panel-window-unarmed-'));
+      const c = spawn(process.execPath, [ROOT + '/tests/window_policy_child.js', wdir, String(PORT + 4), '0', '300', 'unarmed'], {
+        env: Object.assign({}, process.env, { PANEL_DIR: ROOT, DATA_DIR: wdir, PORT: String(PORT + 4), SMPP_FALLBACK_RETRY_WINDOW_SECONDS: '300' }),
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let buf = '';
+      c.stdout.on('data', (d) => { buf += d; });
+      c.stderr.on('data', (d) => { buf += d; });
+      c.on('close', (code) => resolve({ code, buf }));
+    });
+    const line = (childOut.buf.match(/^RESULT (.*)$/m) || [])[1];
+    let w = null; try { w = JSON.parse(line); } catch (_) {}
+    check('T17b unarmed probe completed', childOut.code === 0 && !!w, 'exit=' + childOut.code);
+    if (w) {
+      check('T17b a 300 s window without the arming flag resolves to 0 (nothing can be suppressed by content)',
+        w.effectiveWindow === 0 && w.armed === false, 'effective window=' + w.effectiveWindow + 's armed=' + w.armed);
+      check('T17b every identical replay is STORED when unarmed (+4 s retry)', w.rowsAfterRetry === 2, 'rows=' + w.rowsAfterRetry);
+      check('T17b unarmed: reconnect replay stored', w.rowsAfterReconnect === 3, 'rows=' + w.rowsAfterReconnect);
+      check('T17b unarmed: replay after delete + re-create stored', w.rowsAfterRecreate === 4, 'rows=' + w.rowsAfterRecreate);
+      check('T17b unarmed: a genuine identical SMS inside the requested window is NOT dropped', w.rowsAfterGenuineInsideWindow === 5, 'rows=' + w.rowsAfterGenuineInsideWindow);
+      check('T17b unarmed: nothing was logged as suppressed', w.suppressedWarningLogged === false, 'suppression log lines present=' + w.suppressedWarningLogged);
+    } else {
+      console.log('   ---   unarmed probe output tail: ' + childOut.buf.split('\n').slice(-5).join(' | '));
+    }
+  });
+
 await step('TEST 18 — an incomplete multipart is never lost: the stale sweep stores it as one partial row', async () => {
     const src18 = '447911100080';
     const ref = 88;
@@ -523,12 +551,46 @@ await step('TEST 18 — an incomplete multipart is never lost: the stale sweep s
     check('T18 the pending part row is cleared after the sweep', !!left && left.c === 0, left ? 'pending=' + left.c : 'n/a');
   });
 
+await step('TEST 19 — every stored SMS is marked with where its identity came from', async () => {
+  const noId = tryQ("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')='no-id'");
+  check('T19 messages with no physical id are marked identity_state=no-id (and still stored)', !!noId && noId.c > 0, noId ? 'no-id rows=' + noId.c : 'column missing');
+  const strong = tryQ("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')='strong'");
+  check('T19 messages that carried a provider id are marked identity_state=strong', !!strong && strong.c > 0, strong ? 'strong rows=' + strong.c : 'column missing');
+  const mp = tryQ("SELECT identity_state FROM sms_records WHERE message='Hello this is part one of a longer message.' LIMIT 1");
+  check('T19 a completed multipart is marked identity_state=multipart', !!mp && mp.identity_state === 'multipart', mp ? JSON.stringify(mp) : 'multipart row missing');
+  const mp2 = tryQ("SELECT identity_state FROM sms_records WHERE message='PART ONE OF THE MULTIPART TEST.' LIMIT 1");
+  check('T19 the reassembled test-16 message is marked multipart too', !!mp2 && mp2.identity_state === 'multipart', mp2 ? JSON.stringify(mp2) : 'row missing');
+  if (B) {
+    /* TEST 5 pushed the SAME sender + SAME body three times and all three were
+       stored. This is the user's rule at the database level: identical content
+       is not evidence of a retry, so nothing may be suppressed for it. */
+    const same = tryQ("SELECT COUNT(*) c FROM sms_records WHERE cli=? AND message=? AND COALESCE(identity_state,'')='no-id'", [B.src, B.text]);
+    check('T19 identical sender+body messages are ALL stored and ALL marked no-id (never suppressed for being identical)',
+      rowsFor(B.src) === 3 && !!same && same.c === 3,
+      'rows=' + rowsFor(B.src) + ', marked no-id with the identical body=' + (same ? same.c : 'n/a'));
+  } else {
+    check('T19 identical-content pair available for the marking check', false, 'TEST 5 did not run');
+  }
+});
+
 await step('Cross-checks', async () => {
   const ds = await api(PORT, 'GET', '/api/smpp/dedup-stats', undefined, token);
   check('dedup-stats endpoint answers with identity counts', ds.status === 200 && ds.body && ds.body.identities_total > 50, ds.body ? 'identities=' + ds.body.identities_total + ' strong=' + ds.body.strong_identities + ' weak=' + ds.body.weak_identities : 'http ' + ds.status);
   const pduKind = tryQ("SELECT COUNT(*) c FROM sms_dedup_ledger WHERE identity_kind='pdu'");
   check('no content-derived (pdu) identities exist while the retry window is off',
     !!pduKind && pduKind.c === 0, pduKind ? 'pdu-kind ledger rows=' + pduKind.c : 'no ledger in this build');
+  const dm = (ds.body && ds.body.dedup_mode) || {};
+  check('dedup-stats reports the lossless policy (content suppression not armed)',
+    dm.lossless === true && dm.content_suppression_armed === false && (dm.fallback_retry_window_seconds || 0) === 0,
+    'lossless=' + dm.lossless + ' armed=' + dm.content_suppression_armed + ' window=' + dm.fallback_retry_window_seconds);
+  const dbNoId = tryQ("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')='no-id'");
+  check('dedup-stats counts no-id messages separately and agrees with the table',
+    !!(ds.body && ds.body.no_id) && ds.body.no_id.total === (dbNoId ? dbNoId.c : -1) && ds.body.no_id.total > 0,
+    ds.body && ds.body.no_id ? 'no_id total=' + ds.body.no_id.total + ' (24h=' + ds.body.no_id.last_24h + ') vs table=' + (dbNoId ? dbNoId.c : 'n/a') : 'no_id block missing');
+  const states = (ds.body && ds.body.identity_states) || {};
+  check('identity_states breaks the traffic down (strong/multipart/weak/no_id)',
+    (states.strong || 0) > 0 && (states.multipart || 0) > 0 && (states.no_id || 0) > 0 && (states.weak || 0) === 0,
+    JSON.stringify(states));
   const queued = q('SELECT COUNT(*) c FROM failed_sms_queue').c;
   const stored = q('SELECT COUNT(*) c FROM sms_records').c;
   console.log('   ---   failed_sms_queue rows: ' + queued + '   sms_records rows: ' + stored);

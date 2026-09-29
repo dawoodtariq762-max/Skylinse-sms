@@ -216,6 +216,31 @@ t('utcDayOffsetSql/utcLastDaysSql/utcThisMonthSql generate usable SQL', () => {
   assert(typeof month.c === 'number');
   assert.strictEqual(yesterday, dayWindow.utcDayString(-1));
 });
+/* ---- tier-3 content-suppression policy: lossless unless explicitly armed ---- */
+t('policy: with no env at all nothing can be suppressed (lossless)', () => {
+  const p = ident.contentSuppressionPolicy({});
+  assert.strictEqual(p.window, 0); assert.strictEqual(p.enabled, false); assert.strictEqual(p.armed, false);
+});
+t('policy: a window WITHOUT SMPP_ALLOW_CONTENT_SUPPRESSION=1 resolves to 0 (ignored)', () => {
+  const p = ident.contentSuppressionPolicy({ SMPP_FALLBACK_RETRY_WINDOW_SECONDS: '300' });
+  assert.strictEqual(p.requested, 300); assert.strictEqual(p.window, 0);
+  assert.strictEqual(p.armed, false); assert.strictEqual(p.enabled, false);
+});
+t('policy: only window + arming flag together enable content suppression', () => {
+  const p = ident.contentSuppressionPolicy({ SMPP_FALLBACK_RETRY_WINDOW_SECONDS: '300', SMPP_ALLOW_CONTENT_SUPPRESSION: '1' });
+  assert.strictEqual(p.window, 300); assert.strictEqual(p.enabled, true); assert.strictEqual(p.armed, true);
+});
+t('policy: arming alone (no window) still suppresses nothing', () => {
+  const p = ident.contentSuppressionPolicy({ SMPP_ALLOW_CONTENT_SUPPRESSION: '1' });
+  assert.strictEqual(p.window, 0); assert.strictEqual(p.enabled, false);
+});
+t('policy: garbage or negative window values stay 0', () => {
+  for (const v of ['-5', 'abc', '', '0']) {
+    const p = ident.contentSuppressionPolicy({ SMPP_FALLBACK_RETRY_WINDOW_SECONDS: v, SMPP_ALLOW_CONTENT_SUPPRESSION: '1' });
+    assert.strictEqual(p.window, 0, 'value ' + JSON.stringify(v)); assert.strictEqual(p.enabled, false);
+  }
+});
+
 t('payment helpers are untouched: dayWindow exposes only UTC SMS-day helpers', () => {
   const names = Object.keys(dayWindow);
   assert(!names.some((n) => /payout|payment|paid|cost/i.test(n)), 'no payment logic here: ' + names.join(','));

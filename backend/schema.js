@@ -417,12 +417,21 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     ensureColumn('smpp_connections', 'connection_uid', "TEXT DEFAULT ''");
   }
   ensureColumn('sms_records', 'dedup_identity', "TEXT DEFAULT ''");
+  /* Explicit per-message marking of where the identity came from:
+       'strong'    — durable provider/SMSC id
+       'multipart' — concatenated message rebuilt from UDH parts
+       'weak'      — only with the armed content-suppression window
+       'no-id'     — no physical identity existed; STORED ANYWAY (lossless)
+       ''          — legacy / non-SMPP rows (nothing inferred) */
+  ensureColumn('sms_records', 'identity_state', "TEXT NOT NULL DEFAULT ''");
   ensureColumn('failed_sms_queue', 'dedup_identity', "TEXT DEFAULT ''");
   ensureColumn('failed_sms_queue', 'sms_record_id', 'INTEGER');
   /* Partial UNIQUE index: only STRONG identities (SMSC message ids, completed
      multipart ids) ever populate sms_records.dedup_identity, so a content-only
      duplicate can never be rejected by the database. */
   db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_sms_records_dedup_strong ON sms_records(dedup_identity) WHERE dedup_identity <> ''`);
+  /* Replay/no-id statistics: cheap COUNTs over the marked rows only. */
+  db.run(`CREATE INDEX IF NOT EXISTS idx_sms_records_identity_state ON sms_records(identity_state, received_at) WHERE identity_state <> ''`);
   ensureColumn('ranges', 'deleted_at', "TEXT DEFAULT ''");
   /* P19k #4: Provider Rate — admin-internal, per payment-cycle period (ranges.rate_1_1/7_1/7_7/30_45
      wahi convention follow). Sirf Real Provider Cost (admin dashboard) use karta hai;
@@ -1007,6 +1016,19 @@ function migrateDedupV2(log = console) {
       }
       log.log(`• [DEDUP-V2] ledger seeded from strong keys: ${seeded} (fp:* fingerprint keys intentionally NOT seeded)`);
     } catch (e) { log.warn('[DEDUP-V2] seed: ' + e.message); }
+
+    // ---- mark rows that already carry a durable identity ----------------
+    // Additive and guarded by its OWN meta key, so a database where the first
+    // migration already ran still gets it. Rows WITHOUT an id are deliberately
+    // left alone: nothing is inferred and no SMS record is rewritten.
+    if (meta('dedup_v2_identity_state') !== '1') {
+      try {
+        const r = db.run(`UPDATE sms_records SET identity_state='strong' WHERE COALESCE(identity_state,'')='' AND COALESCE(dedup_identity,'')<>''`);
+        const n = (r && r.changes) || 0;
+        if (n) log.log(`• [DEDUP-V2] marked ${n} existing row(s) identity_state='strong' (no row rewritten)`);
+        meta('dedup_v2_identity_state', '1');
+      } catch (e) { log.warn('[DEDUP-V2] identity_state backfill: ' + e.message); }
+    }
 
     meta('dedup_v2_migrated', '1');
     log.log('• [DEDUP-V2] migration complete' + (backupPath ? ' (backup ready)' : ''));

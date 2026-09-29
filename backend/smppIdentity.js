@@ -305,6 +305,22 @@ function apiIdentity(provider, ref) {
   return 'api:' + sha1(String(provider || '') + '|' + String(ref || '')).slice(0, 40);
 }
 
+/**
+ * Content-suppression policy (tier 3). Pure function so it can be unit-tested.
+ *
+ * The panel is LOSSLESS by default: a message is never suppressed because the
+ * sender, destination and body look identical. A content+time window is only
+ * honoured when the operator BOTH configures a window AND explicitly arms it
+ * with SMPP_ALLOW_CONTENT_SUPPRESSION=1 — so a forgotten env var can never
+ * enable content-based suppression in production.
+ */
+function contentSuppressionPolicy(env) {
+  const e = env || process.env || {};
+  const requested = Math.max(0, parseInt(e.SMPP_FALLBACK_RETRY_WINDOW_SECONDS || '0', 10) || 0);
+  const armed = String(e.SMPP_ALLOW_CONTENT_SUPPRESSION || '0') === '1';
+  return { requested, armed, window: armed ? requested : 0, enabled: !!(armed && requested > 0) };
+}
+
 module.exports = {
   parseRawPdu,
   identityCandidates,
@@ -320,5 +336,6 @@ module.exports = {
   weakPduIdentity,
   connectionUidOf,
   apiIdentity,
+  contentSuppressionPolicy,
   sha1,
 };

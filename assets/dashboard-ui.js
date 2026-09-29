@@ -1,4 +1,4 @@
-/* Galaxy / Lamix-inspired presentation. No writes, storage, auth changes or financial calculations.
+/* Skyline / Lamix-inspired presentation. No writes, storage, auth changes or financial calculations.
  * Core input is the existing role-scoped /api/dashboard response, supplied by each
  * existing loadDashboard handler AFTER its original updates. Financial values
  * retain their backend meaning; provider cost is never relabelled as earning. */

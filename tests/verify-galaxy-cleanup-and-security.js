@@ -250,9 +250,9 @@ async function runTests() {
 
   // TEST 6: Branding Check
   console.log('--- Test 6: Branding Check ---');
-  assert.strictEqual(/GALAXY SMS/i.test(adminHtml), true, 'admin.html must contain Galaxy SMS branding');
+  assert.strictEqual(/SKYLINE SMS/i.test(adminHtml), true, 'admin.html must contain Skyline SMS branding');
   assert.strictEqual(adminHtml.includes('Agent Account PIN'), true, 'admin.html must display Agent Account PIN instead of Chat Accounts');
-  console.log('  ✓ PASS: Branding is consistently "Galaxy SMS" and "Agent Account PIN".');
+  console.log('  ✓ PASS: Branding is consistently "Skyline SMS" and "Agent Account PIN".');
 
   server.close();
   console.log('\n====================================================');

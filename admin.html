@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png?v=light-20260928" />
-<title>GALAXY SMS — Admin Panel</title>
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-1" />
+<title>SKYLINE SMS — Admin Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
 .page > .toolbar,.page > .table-wrap,.page > .card,.page > .grid2{position:relative!important;}
@@ -300,8 +300,8 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/galaxy-logo.png?v=light-20260928" alt="GALAXY SMS" /></div>
-      <div><h1>GALAXY SMS</h1><small>Admin Panel</small></div>
+      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-1" alt="Skyline SMS" /></div>
+      <div><h1>SKYLINE SMS</h1><small>Admin Panel</small></div>
     </div>
     <nav class="sb-nav">
       <div class="sb-section">Daily Operations</div>
@@ -2026,7 +2026,7 @@ function money(v){return '$ '+cleanDec(v);}
 async function loadDashboard(){
   try{
     const d=await API.get('/dashboard').catch(e=>{window.GXDashboard && GXDashboard.error();throw e;});
-    /* GALAXY dashboard: verified /api/dashboard fields (backend meaning):
+    /* SKYLINE dashboard: verified /api/dashboard fields (backend meaning):
        "Today SMS" == "SMS Received Today" in current backend (same pre-agg source,
        both = today's received count) — so ONE card per spec's verify-first rule. */
     const cards=[
@@ -2069,7 +2069,7 @@ async function loadDashboard(){
       } else { pcr.style.display='none'; pcr.innerHTML=''; }
     }
     const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    buildBarChart('weekChart',(d.daily7||[]).slice().reverse().map(x=>({l:days[new Date(x.date).getDay()]||'',v:x.count||0}))); /* GALAXY: aaj hamesha LEFT */
+    buildBarChart('weekChart',(d.daily7||[]).slice().reverse().map(x=>({l:days[new Date(x.date).getDay()]||'',v:x.count||0}))); /* SKYLINE: aaj hamesha LEFT */
     window.GX&&GX.map('#gxMap',(d.sms_by_country||[]));
     window.GXDashboard && GXDashboard.render(d, 'admin');
     window.GXDashboard && GXDashboard.refreshExtras('admin');

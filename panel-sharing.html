@@ -1,4 +1,4 @@
-<!doctype html><html lang="en" class="gx-light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/assets/galaxy-favicon.png?v=light-20260928"><title>GALAXY SMS — Panel Sharing</title><style>html{visibility:hidden;}
+<!doctype html><html lang="en" class="gx-light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/assets/skyline-favicon.png?v=skyline-1"><title>SKYLINE SMS — Panel Sharing</title><style>html{visibility:hidden;}
 body{margin:0;font-family:Inter,Segoe UI,Arial;}
 .layout{display:flex;min-height:100vh;}
 .side{width:260px;position:fixed;inset:0 auto 0 0;padding:16px;box-sizing:border-box;}
@@ -53,7 +53,7 @@ td{border-bottom:1px solid #ddd!important;}
 .help-shot{border:1px solid #ddd!important;}</style>
 <link rel="stylesheet" href="/assets/galaxy.css?v=light-20260928"/><script src="/assets/galaxy.js?v=light-20260928" defer></script>
 <link rel="stylesheet" href="/assets/lamix-light.css?v=20260928-implementation"/>
-</head><body class="gx-light gx-lamix"><div class="layout"><aside class="side"><div class="brand"><img src="/assets/galaxy-logo.png?v=light-20260928"><div><b>GALAXY SMS</b><div class="muted">Panel Sharing</div></div></div><div class="nav"><div class="item active" data-page="dashboard">Dashboard</div><div class="item" data-page="numbers">SMS Numbers</div><div class="item" data-page="bulk">Bulk Allocation</div><div class="item" data-page="users">Sharing Users</div><div class="item" data-page="smpp">SMPP Connections</div><div class="item" data-page="logs">Forward Logs</div></div></aside><main class="main"><div class="top"><b>Panel Sharing Panel</b><div class="sp"></div><button class="btn ghost" onclick="location.href='/admin'">Admin Panel</button><button class="btn red" onclick="API.logout()">Logout</button></div><div class="content"><section class="page active" id="page-dashboard"><div class="page-head"><h2>Dashboard</h2><button class="btn" onclick="loadDashboard()">Refresh</button></div><div class="grid"><div class="card metric"><div class="muted">Total Sharing Users</div><h3 id="totalUsers">0</h3></div><div class="card metric"><div class="muted">Total Shared Numbers</div><h3 id="totalNumbers">0</h3></div><div class="card metric"><div class="muted">Total OTP Received</div><h3 id="totalOtp">0</h3></div></div></section><section class="page" id="page-numbers">
+</head><body class="gx-light gx-lamix"><div class="layout"><aside class="side"><div class="brand"><img src="/assets/skyline-logo.svg?v=skyline-1"><div><b>SKYLINE SMS</b><div class="muted">Panel Sharing</div></div></div><div class="nav"><div class="item active" data-page="dashboard">Dashboard</div><div class="item" data-page="numbers">SMS Numbers</div><div class="item" data-page="bulk">Bulk Allocation</div><div class="item" data-page="users">Sharing Users</div><div class="item" data-page="smpp">SMPP Connections</div><div class="item" data-page="logs">Forward Logs</div></div></aside><main class="main"><div class="top"><b>Panel Sharing Panel</b><div class="sp"></div><button class="btn ghost" onclick="location.href='/admin'">Admin Panel</button><button class="btn red" onclick="API.logout()">Logout</button></div><div class="content"><section class="page active" id="page-dashboard"><div class="page-head"><h2>Dashboard</h2><button class="btn" onclick="loadDashboard()">Refresh</button></div><div class="grid"><div class="card metric"><div class="muted">Total Sharing Users</div><h3 id="totalUsers">0</h3></div><div class="card metric"><div class="muted">Total Shared Numbers</div><h3 id="totalNumbers">0</h3></div><div class="card metric"><div class="muted">Total OTP Received</div><h3 id="totalOtp">0</h3></div></div></section><section class="page" id="page-numbers">
   <div class="page-head">
     <div>
       <h2>SMS Numbers Management</h2>
@@ -474,7 +474,7 @@ td{border-bottom:1px solid #ddd!important;}
 
     <!-- SERVER MODE GUIDANCE -->
     <div id="smppServerGuide" style="display:none;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px">
-      <b>Direction B: The other panel connects in to our Galaxy SMS SMPP Server.</b><br>
+      <b>Direction B: The other panel connects in to our Skyline SMS SMPP Server.</b><br>
       <span class="muted">These are the details you configure and give to the other panel so they can connect to you.</span>
     </div>
 

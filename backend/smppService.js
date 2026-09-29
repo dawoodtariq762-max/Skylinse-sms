@@ -289,10 +289,16 @@ function stateOf(id) {
 function identityConfig() {
   const rawTags = String(process.env.SMPP_ID_TLVS || '').split(/[\s,]+/).filter(Boolean);
   const tags = rawTags.map(t => parseInt(String(t).replace(/^0x/i, ''), 16)).filter(n => Number.isFinite(n) && n > 0);
+  const pol = ident.contentSuppressionPolicy(process.env);
   return {
     idTlvs: tags.length ? tags : [0x001e],                    // receipted_message_id by default
     allowAppended: String(process.env.SMPP_ID_APPENDED || '0') === '1',
-    fallbackWindow: Math.max(0, parseInt(process.env.SMPP_FALLBACK_RETRY_WINDOW_SECONDS || '0', 10) || 0),
+    // Tier 3 (content+time) is LOSSLESS by default: the effective window stays
+    // 0 unless the operator sets a window AND arms it explicitly with
+    // SMPP_ALLOW_CONTENT_SUPPRESSION=1. See smppIdentity.contentSuppressionPolicy().
+    fallbackRequested: pol.requested,
+    fallbackArmed: pol.armed,
+    fallbackWindow: pol.window,
     partsMaxAge: Math.max(30, parseInt(process.env.SMPP_PARTS_MAX_AGE_SECONDS || '300', 10) || 300),
   };
 }
@@ -453,8 +459,8 @@ function storeMessage(conn, st, ctx) {
       if (!weak || age <= cfg.fallbackWindow) {
         ledgerBump(prev.id);
         st.dedup.duplicates = (st.dedup.duplicates || 0) + 1;
-        logEvent(conn, 'dedup', 'info',
-          `duplicate suppressed [${identity.kind}:${String(identity.value).slice(0, 12)}…] first seen ${prev.first_seen_at}, age ${age}s, ack ${prev.acked_at ? 'confirmed' : 'UNCONFIRMED'}${weak ? ' (fallback window — weak identity)' : ''}`);
+        logEvent(conn, 'dedup', weak ? 'warn' : 'info',
+          `duplicate suppressed [${identity.kind}:${String(identity.value).slice(0, 12)}…] first seen ${prev.first_seen_at}, age ${age}s, ack ${prev.acked_at ? 'confirmed' : 'UNCONFIRMED'}${weak ? ` (CONTENT SUPPRESSION ARMED: identical sender/destination/body inside the ${cfg.fallbackWindow}s window — no stored row is ever modified)` : ''}`);
         return asIngest(0, identity, 'duplicate', prev.sms_record_id, { weak, age });
       }
       // weak identity outside the window → treated as a genuinely new message
@@ -473,11 +479,20 @@ function storeMessage(conn, st, ctx) {
     ? 'smpp:' + ident.sha1(uid + '|' + identity.kind + '|' + identity.value).slice(0, 40)
     : '';
 
+  /* Persisted marking, so the operator can count what actually happened:
+       strong    — a durable provider/SMSC id (or completed all-strong multipart)
+       multipart — a concatenated message rebuilt from UDH parts
+       weak      — ONLY ever with the armed content-suppression window
+       no-id     — NO physical identity existed; stored anyway (lossless) */
+  const identityState = ctx.multipart
+    ? 'multipart'
+    : (identity && strong ? 'strong' : (identity ? 'weak' : 'no-id'));
+
   const result = deps.processIncomingSmsPayload(
     { ip: ctx.peer || 'SMPP', smpp_connection: conn.name },
     { number: ctx.dst, cli: ctx.src, message: ctx.text },
     `smpp:${conn.name}`,
-    { source: 'smpp', dedupIdentity: dedupColumn }
+    { source: 'smpp', dedupIdentity: dedupColumn, identityState }
   );
 
   const ok = result && result.status === 200;
@@ -1190,6 +1205,7 @@ function statusOf(id) {
   const conn = getConnection(id);
   if (!conn) return null;
   const st = runtime.get(id);
+  const pcfg = identityConfig();
   return {
     id: conn.id,
     name: conn.name,
@@ -1206,6 +1222,15 @@ function statusOf(id) {
     total_sent: conn.total_sent || 0,
     queued: (db.get('SELECT COUNT(*) c FROM smpp_outbox WHERE connection_id=? AND status=?', [id, 'queued']) || {}).c || 0,
     connection_uid: conn.connection_uid || '',
+    dedup_policy: {
+      still: 'no message is ever suppressed because content looks identical',
+      id_tlvs: pcfg.idTlvs,
+      appended_id: !!pcfg.allowAppended,
+      content_suppression_requested_seconds: pcfg.fallbackRequested,
+      content_suppression_armed: !!pcfg.fallbackArmed,
+      content_suppression_window_seconds: pcfg.fallbackWindow,
+      lossless: !(pcfg.fallbackArmed && pcfg.fallbackWindow > 0),
+    },
     dedup: st && st.dedup ? Object.assign({}, st.dedup) : {},
     identity_report: (st && st.ident && st.ident.report) ? st.ident.report : '',
     pending_parts: (() => { try { return (db.get('SELECT COUNT(*) c FROM smpp_parts WHERE connection_uid=?', [conn.connection_uid || '']) || {}).c || 0; } catch (_) { return 0; } })(),
@@ -1264,6 +1289,17 @@ function start(d) {
   partsTimer = setInterval(() => { try { sweepStaleParts(); } catch (_) {} }, 60000);
   if (partsTimer.unref) partsTimer.unref();
 
+  // Policy summary — loud on purpose: content suppression is never a silent
+  // side effect of an env var.
+  try {
+    const pc = identityConfig();
+    if (pc.fallbackRequested > 0 && !pc.fallbackArmed) {
+      deps.log.warn(`• [SMPP] a ${pc.fallbackRequested}s content-suppression window was requested but is NOT armed (set SMPP_ALLOW_CONTENT_SUPPRESSION=1 to allow it) — ignoring it: every message is stored (lossless)`);
+    }
+    deps.log.log(pc.fallbackArmed && pc.fallbackWindow > 0
+      ? `• [SMPP] !! CONTENT SUPPRESSION ARMED !! identical sender+destination+body inside ${pc.fallbackWindow}s is treated as a retry (a genuine identical resend can be suppressed) — /api/smpp/dedup-stats shows the counts`
+      : `• [SMPP] lossless mode: nothing is ever suppressed because the content looks identical; messages with no provider id are stored and marked identity_state='no-id' (see /api/smpp/dedup-stats)`);
+  } catch (_) {}
   deps.log.log(`• SMPP service active: ${list.length} connection(s) configured`);
 }
 

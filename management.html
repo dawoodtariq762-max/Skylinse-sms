@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png?v=light-20260928" />
-<title>GALAXY SMS — Management Panel</title>
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-1" />
+<title>SKYLINE SMS — Management Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
 .page > .toolbar,.page > .table-wrap,.page > .card,.page > .grid2{position:relative!important;}
@@ -296,13 +296,13 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/galaxy-logo.png?v=light-20260928" alt="GALAXY SMS" /></div>
-      <div><h1>GALAXY SMS</h1><small>Management Panel</small></div>
+      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-1" alt="Skyline SMS" /></div>
+      <div><h1>SKYLINE SMS</h1><small>Management Panel</small></div>
     </div>
     <nav class="sb-nav">
       <div class="sb-section">Number Maintenance</div>
       <div class="nav-item" data-page="import"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Import Numbers</span></div>
-      <!-- GALAXY: Import Test Numbers nav removed per spec -->
+      <!-- SKYLINE: Import Test Numbers nav removed per spec -->
 
       <div class="sb-section">Pricing</div>
       <div class="nav-item active" data-page="rates"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Rate Management</span></div>
@@ -379,7 +379,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
           <button class="btn btn-purple" onclick="bulkImportTxtFiles()">Import Selected TXT Files</button>
           <div class="hint" id="bulkTxtInfo" style="margin-top:10px">Example: <b>Nigeria.txt</b> will import all numbers inside it into range <b>Nigeria</b>.</div>
         </div>
-          <!-- GALAXY: Upload Ranges File card removed per spec (backend untouched) -->
+          <!-- SKYLINE: Upload Ranges File card removed per spec (backend untouched) -->
         </div>
 
         </section>
@@ -422,7 +422,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       <!-- ========== RATE MANAGEMENT ========== -->
             <section class="page active" id="page-rates">
         <div class="page-head"><div><h2>Rate Management</h2><div class="breadcrumb"><b>Pricing</b> › Ranges &amp; Rates</div></div>
-          <div class="head-actions"><!-- GALAXY: Import Ranges button removed per spec (import page remains via sidebar) --><button class="btn btn-purple" onclick="openRateModal(-1)">+ Add Range</button></div>
+          <div class="head-actions"><!-- SKYLINE: Import Ranges button removed per spec (import page remains via sidebar) --><button class="btn btn-purple" onclick="openRateModal(-1)">+ Add Range</button></div>
         </div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-head"><div><h3>Bulk Range Creation</h3><div class="sub">Enter one range name per line. Existing ranges will be skipped automatically.</div></div><button class="btn btn-green" onclick="bulkCreateRanges()">Create Ranges</button></div>
@@ -436,7 +436,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
             <div><div class="form-group"><label>Default Currency</label><select id="bulkRangeCurrency"><option value="USD">USD</option><option value="EUR">EUR</option><option value="PKR">PKR</option></select></div><div class="form-group"><label>Payment Type</label><select id="bulkRangePaymentType"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly_30x45">Monthly (30x45)</option></select></div><button class="btn btn-purple" style="width:100%;margin-top:10px" onclick="bulkCreateRanges()">Create All</button></div>
           </div>
         </div>
-        <!-- GALAXY: combined Range+Test bulk import UI removed per spec (backend endpoint untouched) -->
+        <!-- SKYLINE: combined Range+Test bulk import UI removed per spec (backend endpoint untouched) -->
 
         <div class="table-wrap" style="padding:16px 18px;margin-top:0">
           <div class="table-controls">
@@ -745,8 +745,8 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
         </div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-head"><div><h3>How this works</h3><div class="sub">SMPP is an additional channel. It runs alongside the HTTP callback and the API Providers sync — all three write into the same SMS records, and none of them affect the others.</div></div></div>
-          <div class="hint"><b>Client mode</b> — Galaxy SMS connects out to your provider's SMPP server. You need their host, port, system&nbsp;ID and password.<br>
-          <b>Server mode</b> — Galaxy SMS listens on a port and your carrier connects in. You choose the system&nbsp;ID and password and give them to the carrier, plus this server's IP and the port.<br>
+          <div class="hint"><b>Client mode</b> — Skyline SMS connects out to your provider's SMPP server. You need their host, port, system&nbsp;ID and password.<br>
+          <b>Server mode</b> — Skyline SMS listens on a port and your carrier connects in. You choose the system&nbsp;ID and password and give them to the carrier, plus this server's IP and the port.<br>
           Reconnection is automatic with backoff. Incoming messages are de-duplicated, so a redelivered message is never counted twice.</div>
         </div>
         <div class="table-wrap"><div class="tscroll"><table>
@@ -900,8 +900,8 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
     </div>
     <div class="form-group"><label>Mode <span class="req">*</span></label>
       <select id="smMode" onchange="smModeChange()">
-        <option value="client">Client — Galaxy SMS connects out to the provider</option>
-        <option value="server">Server — the carrier connects in to Galaxy SMS</option>
+        <option value="client">Client — Skyline SMS connects out to the provider</option>
+        <option value="server">Server — the carrier connects in to Skyline SMS</option>
       </select>
       <div class="hint" id="smModeHint"></div>
     </div>
@@ -1010,7 +1010,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
       <div class="form-group"><label>Overlap Window (seconds)</label><input type="number" id="apOverlap" value="30" min="0" max="3600" /><div class="hint">Re-checks this many seconds back so no SMS is missed. Duplicates are blocked automatically.</div></div>
       <div class="form-group"><label>Response Array Path</label><input type="text" id="apRecPath" placeholder="data" /><div class="hint">Where the records array is, e.g. <b>data</b>.</div></div>
     </div>
-    <div class="section-title" style="margin:14px 0 8px">Field Mapping <span class="muted" style="font-weight:500">(provider field → Galaxy SMS field)</span></div>
+    <div class="section-title" style="margin:14px 0 8px">Field Mapping <span class="muted" style="font-weight:500">(provider field → Skyline SMS field)</span></div>
     <div class="form-grid">
       <div class="form-group"><label>Number</label><input type="text" id="apMapNumber" placeholder="num" /></div>
       <div class="form-group"><label>CLI / Sender</label><input type="text" id="apMapCli" placeholder="cli" /></div>
@@ -1021,7 +1021,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
     </div>
     <div class="form-grid">
       <div class="form-group"><label>Payout (optional)</label><input type="text" id="apMapPayout" placeholder="payout" /><div class="hint">Used only as an indicator. Payout is always calculated from panel rate cards; a provider payout of 0 marks the SMS non-payable.</div></div>
-      <div class="form-group"><label>Unique ID (optional)</label><input type="text" id="apMapRef" placeholder="Leave empty if not provided" /><div class="hint">If the provider sends no id, Galaxy SMS generates a fingerprint to prevent duplicates.</div></div>
+      <div class="form-group"><label>Unique ID (optional)</label><input type="text" id="apMapRef" placeholder="Leave empty if not provided" /><div class="hint">If the provider sends no id, Skyline SMS generates a fingerprint to prevent duplicates.</div></div>
     </div>
     <div class="hint" id="apTestResult" style="margin-top:12px"></div>
   </div>
@@ -2182,7 +2182,7 @@ async function loadCarrierSettings(){
     await loadCarrierWebhookLogs();
   }catch(e){ if(String(e.message||'').includes('locked')||String(e.message||'').includes('Locked')){localStorage.removeItem('carrier_integration_lock');updateCarrierLockView();alert('❌ Wrong carrier integration password.');} else console.warn(e); }
 }
-/* ===== GALAXY P7: HTTP Integration IPs + Provider Management (manual) ===== */
+/* ===== SKYLINE P7: HTTP Integration IPs + Provider Management (manual) ===== */
 function pay3(v){ if(window.GX&&GX.pay3) return GX.pay3(v); let s=String(v??'').replace(/[$,\s]/g,'');const mm=s.match(/-?\d+(?:\.\d+)?/);if(!mm)return'0';const p=mm[0].split('.');if(p.length<2)return p[0];const d=p[1].slice(0,3).replace(/0+$/,'');return d?p[0]+'.'+d:p[0]; }
 async function fillProvDatalists(){
   try{
@@ -2878,8 +2878,8 @@ function smModeChange(){
   document.getElementById('smClientBox').style.display=isServer?'none':'';
   document.getElementById('smServerBox').style.display=isServer?'':'none';
   document.getElementById('smModeHint').textContent=isServer
-    ? 'Galaxy SMS opens a port and waits. Give the carrier this server IP, the listen port, and the System ID / Password you set below.'
-    : 'Galaxy SMS connects out to the provider. Enter the host, port, System ID and Password they gave you.';
+    ? 'Skyline SMS opens a port and waits. Give the carrier this server IP, the listen port, and the System ID / Password you set below.'
+    : 'Skyline SMS connects out to the provider. Enter the host, port, System ID and Password they gave you.';
 }
 
 function openSmppModal(id){
@@ -3214,7 +3214,7 @@ if(typeof applyPanelSplitUi==='function') applyPanelSplitUi();
 // Default Management page is Rate Management. Heavy daily reports/dashboard are not loaded here.
 loadRates();
 setTimeout(()=>{Promise.allSettled([ensureAdminManagers(), loadImportBatches(), refreshNumberDbTools()]);},500);
-/* GALAXY P7: khali .content div flex:1 se bara khali gap banata tha (pages section-level hain) */
+/* SKYLINE P7: khali .content div flex:1 se bara khali gap banata tha (pages section-level hain) */
 document.querySelectorAll('.content').forEach(c=>{ if(!c.querySelector('*')) c.remove(); });
 </script>
 </body>
