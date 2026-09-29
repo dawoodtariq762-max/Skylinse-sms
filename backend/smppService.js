@@ -1,5 +1,5 @@
 /**
- * Skyline SMS — SMPP Connection Service
+ * Power X SMS — SMPP Connection Service
  * ---------------------------------------------------------------------------
  * ADDITIONAL channel. It does not touch the existing HTTP integrations.
  *
@@ -8,8 +8,8 @@
  *     HTTP pull  : providerSync.js -> provider REST API every N seconds
  *
  *   Added here:
- *     SMPP client : Skyline binds OUT to a provider's SMPP server (ESME)
- *     SMPP server : Skyline LISTENS, the carrier binds IN to us
+ *     SMPP client : Power X binds OUT to a provider's SMPP server (ESME)
+ *     SMPP server : Power X LISTENS, the carrier binds IN to us
  *
  * All three converge on the SAME ingestion function that the carrier webhook
  * already uses (processIncomingSmsPayload), so allocation, rate cards, OTP
@@ -17,28 +17,31 @@
  * no matter which channel an SMS arrived on. Nothing in that function was
  * changed for SMPP.
  *
- * ARCHITECTURAL DESIGN & DUPLICATION FIX:
+ * DESIGN NOTES
  *
- *  - Fast Acknowledgement: Inbound PDUs (deliver_sm / data_sm / submit_sm)
- *    are acknowledged IMMEDIATELY with matching sequence_number. This
- *    prevents provider SMSC response-timer expiration and wire retransmissions.
+ *  - Isolation: every connection runs in its own state object. One bad
+ *    connection can never take down another, and an SMPP failure can never
+ *    reach the Express request path — every callback is wrapped.
  *
- *  - Session & Sequence Idempotency: Every SMPP session receives a unique
- *    immutable session ID. Incoming sequence numbers are tracked per active
- *    session. Wire retransmissions within a session are acknowledged and dropped
- *    without touching database layers.
+ *  - Lazy require: the `smpp` package is only loaded when a connection is
+ *    actually started. If the dependency is missing the rest of the panel
+ *    still boots normally; the SMPP screen simply reports it.
  *
- *  - Inbound FIFO Queue: Acknowledged PDUs are enqueued into an in-memory
- *    FIFO queue for decoupled, safe ingestion. SQLite database writes never
- *    block the network ACK loop.
+ *  - Reconnect: exponential backoff with jitter, capped by
+ *    max_reconnect_seconds. Reconnect timers are unref()'d so they never hold
+ *    the process open.
  *
- *  - Reconnect Safety: Tearing down old sessions thoroughly clears timers,
- *    deregisters event listeners, and destroys sockets. Outdated socket events
- *    are strictly ignored.
+ *  - Deduplication: SMPP links redeliver on any missing response, so every
+ *    inbound message is keyed. If the PDU carries a receipted_message_id we
+ *    use it; otherwise a deterministic fingerprint of
+ *    (src|dst|text|time-bucket) is used, exactly like the HTTP pull path.
  *
- *  - Safe Deduplication: Distinguishes between wire retry/reconnect replays
- *    and genuine repeated OTPs (e.g. user clicking Resend OTP). Legitimate
- *    OTPs are always preserved.
+ *  - Concatenated (multipart) SMS are reassembled before ingestion, so a long
+ *    OTP message is stored as one row and the OTP regex sees the whole text.
+ *
+ *  - Back-pressure: inbound handling is synchronous and cheap (one DB write
+ *    via the shared better-sqlite3 layer). No queue is needed, and the event
+ *    loop is never blocked by network waits.
  */
 
 const db = require('./db');
@@ -71,71 +74,27 @@ function safeStr(v) {
 /**
  * short_message arrives in several shapes depending on the peer and the
  * data_coding used: a plain string, a Buffer, or the library's decoded
- * { message, udh } object. Normalise all of them to text, with full support
- * for message_payload TLV when short_message is empty.
+ * { message, udh } object. Normalise all of them to text.
  */
 function pduText(pdu) {
-  if (!pdu) return '';
-
-  let sm = pdu.short_message;
-  let text = '';
-
-  if (typeof sm === 'string' && sm.length > 0) {
-    text = sm;
-  } else if (Buffer.isBuffer(sm) && sm.length > 0) {
-    text = sm.toString('utf8');
-  } else if (sm && typeof sm === 'object') {
-    if (typeof sm.message === 'string' && sm.message.length > 0) {
-      text = sm.message;
-    } else if (Buffer.isBuffer(sm.message) && sm.message.length > 0) {
-      text = sm.message.toString('utf8');
-    }
+  const sm = pdu && pdu.short_message;
+  if (sm === null || sm === undefined || sm === '') {
+    // Some peers put long text in message_payload instead.
+    return safeStr(pdu && pdu.message_payload);
   }
-
-  // Fallback to message_payload TLV (used by SMSCs when payload exceeds short_message or by default)
-  if (!text && pdu.message_payload) {
-    const mp = pdu.message_payload;
-    if (typeof mp === 'string' && mp.length > 0) {
-      text = mp;
-    } else if (Buffer.isBuffer(mp) && mp.length > 0) {
-      text = mp.toString('utf8');
-    } else if (mp && typeof mp === 'object') {
-      if (typeof mp.message === 'string' && mp.message.length > 0) {
-        text = mp.message;
-      } else if (Buffer.isBuffer(mp.message) && mp.message.length > 0) {
-        text = mp.message.toString('utf8');
-      }
-    }
+  if (typeof sm === 'string') return sm;
+  if (Buffer.isBuffer(sm)) return sm.toString('utf8');
+  if (typeof sm === 'object') {
+    if (typeof sm.message === 'string') return sm.message;
+    if (Buffer.isBuffer(sm.message)) return sm.message.toString('utf8');
   }
-
-  return text || safeStr(sm);
+  return safeStr(sm);
 }
 
 /** UDH of a concatenated message, when the library exposes it. */
 function pduUdh(pdu) {
   const sm = pdu && pdu.short_message;
   if (sm && typeof sm === 'object' && Array.isArray(sm.udh)) return sm.udh;
-  return null;
-}
-
-/** Extract concatenation / multipart information from either SAR TLVs or UDH. */
-function extractSarInfo(pdu) {
-  if (pdu && pdu.sar_total_segments && pdu.sar_total_segments > 1) {
-    const ref = Number(pdu.sar_msg_ref_num || 0);
-    const total = Number(pdu.sar_total_segments || 0);
-    const seq = Number(pdu.sar_segment_seqnum || 0);
-    if (total >= 2 && seq >= 1) return { ref, total, seq };
-  }
-  const udh = pduUdh(pdu);
-  if (udh && udh.length) {
-    for (const el of udh) {
-      const id = Number(el.id);
-      const data = el.value;
-      if (!Buffer.isBuffer(data)) continue;
-      if (id === 0x00 && data.length >= 3) return { ref: data[0], total: data[1], seq: data[2] };
-      if (id === 0x08 && data.length >= 4) return { ref: data.readUInt16BE(0), total: data[2], seq: data[3] };
-    }
-  }
   return null;
 }
 
@@ -151,28 +110,6 @@ function clampInt(v, min, max, dflt) {
   const n = parseInt(v, 10);
   if (isNaN(n)) return dflt;
   return Math.min(max, Math.max(min, n));
-}
-
-function cleanPhone(v) {
-  return String(v || '').trim().replace(/[^0-9]/g, '');
-}
-
-/**
- * Extract provider message ID or reference from PDU if present
- * (receipted_message_id, message_id, user_message_reference, etc.)
- */
-function extractProviderMsgId(pdu) {
-  if (!pdu) return '';
-  const rid = safeStr(pdu.receipted_message_id || pdu.message_id).trim();
-  if (rid) return rid;
-  if (pdu.user_message_reference != null) {
-    const umr = String(pdu.user_message_reference).trim();
-    if (umr && umr !== '0') return umr;
-  }
-  if (pdu.sm_default_msg_id && pdu.sm_default_msg_id !== '0') {
-    return String(pdu.sm_default_msg_id).trim();
-  }
-  return '';
 }
 
 /* ------------------------------------------------------------------ *
@@ -239,46 +176,47 @@ function stateOf(id) {
   if (!runtime.has(id)) {
     runtime.set(id, {
       id,
-      sessionId: '',
       session: null,
       server: null,
       sessions: new Set(),     // server mode: bound peer sessions
       status: 'stopped',
       reconnectTimer: null,
       enquireTimer: null,
-      bindTimeout: null,
       attempt: 0,
       stopping: false,
-      lastDisconnectAtMs: 0,
-      lastConnectedAtMs: 0,
       parts: new Map(),        // concatenated SMS reassembly
-      inboundQueue: [],        // in-memory FIFO queue for inbound messages
-      drainingInbound: false,
-      recentDeliveries: new Map(), // content fingerprint -> timestamp ms (cross-reconnect deduplication)
     });
   }
   return runtime.get(id);
 }
 
 /* ------------------------------------------------------------------ *
- * Inbound message handling & Deduplication
+ * Inbound message handling (shared by client and server modes)
  * ------------------------------------------------------------------ */
 
 /**
- * Reassemble a concatenated (multipart) SMS using SAR TLVs or UDH.
+ * Reassemble a concatenated (multipart) SMS.
  * Returns the full text once the last part arrives, otherwise null.
  */
-function reassemble(st, key, pdu, text) {
-  const sar = extractSarInfo(pdu);
-  if (!sar || sar.total < 2) return text;   // not concatenated
+function reassemble(st, key, udh, text) {
+  // UDH 0x00 = 8-bit reference, 0x08 = 16-bit reference
+  let ref = null, total = 0, seq = 0;
+  for (const el of udh || []) {
+    const id = Number(el.id);
+    const data = el.value;
+    if (!Buffer.isBuffer(data)) continue;
+    if (id === 0x00 && data.length >= 3) { ref = data[0]; total = data[1]; seq = data[2]; break; }
+    if (id === 0x08 && data.length >= 4) { ref = data.readUInt16BE(0); total = data[2]; seq = data[3]; break; }
+  }
+  if (ref === null || total < 2) return text;   // not concatenated
 
-  const bucket = `${key}:${sar.ref}:${sar.total}`;
+  const bucket = `${key}:${ref}:${total}`;
   let entry = st.parts.get(bucket);
   if (!entry) {
-    entry = { total: sar.total, parts: new Map(), at: Date.now() };
+    entry = { total, parts: new Map(), at: Date.now() };
     st.parts.set(bucket, entry);
   }
-  entry.parts.set(sar.seq, text);
+  entry.parts.set(seq, text);
 
   // Drop stale half-assembled messages so the map cannot grow unbounded.
   if (st.parts.size > 500) {
@@ -286,291 +224,121 @@ function reassemble(st, key, pdu, text) {
     for (const [k, v] of st.parts) if (v.at < cutoff) st.parts.delete(k);
   }
 
-  if (entry.parts.size < sar.total) return null;    // still waiting
+  if (entry.parts.size < total) return null;    // still waiting
   st.parts.delete(bucket);
   let out = '';
-  for (let i = 1; i <= sar.total; i++) out += (entry.parts.get(i) || '');
+  for (let i = 1; i <= total; i++) out += (entry.parts.get(i) || '');
   return out;
 }
 
-/**
- * Deduplication key generator:
- * - If provider provides a unique message identifier (receipted_message_id, message_id, user_message_reference):
- *   key = 'mid:' + rid. This is globally unique per provider transaction.
- * - Otherwise: Deterministic SHA1 fingerprint bucketed to 5 seconds.
- *   Catches rapid duplicate wire packets (< 5s), while allowing legitimate user OTP resends
- *   (even with identical text) once the cooldown window passes.
- */
 function dedupKeyFor(pdu, src, dst, text) {
-  const rid = extractProviderMsgId(pdu);
+  const rid = safeStr(pdu && (pdu.receipted_message_id || pdu.message_id)).trim();
   if (rid) return 'mid:' + rid;
-  const bucket = Math.floor(Date.now() / 5000);
-  const cleanDst = cleanPhone(dst);
+  // No id from the peer: deterministic fingerprint, bucketed to 10s so a
+  // genuine repeat of the same text minutes later is still stored.
+  const bucket = Math.floor(Date.now() / 10000);
   return 'fp:' + crypto.createHash('sha1')
-    .update([String(src || '').toLowerCase(), cleanDst, String(text || '').trim(), bucket].join('|'))
+    .update([src, dst, text, bucket].join('|'))
     .digest('hex').slice(0, 24);
 }
 
 /**
- * FAST INBOUND PDU HANDLER (Called immediately on deliver_sm / data_sm / submit_sm)
- *
- * Sequence of events:
- * 1. Extract session identity and sequence number.
- * 2. Check if sequence number was already received on this active session (wire retry).
- * 3. Acknowledge IMMEDIATELY to peer with matching sequence number.
- * 4. Enqueue message into FIFO queue for safe asynchronous ingestion.
- */
-function handleInboundPdu(conn, st, session, pdu, peer, kind = 'deliver_sm', submitMsgId = null) {
-  const OK = 0;
-  const seq = (pdu && typeof pdu.sequence_number === 'number') ? pdu.sequence_number : 0;
-  const sessionId = (session && session.__skylineSessionId) || st.sessionId || (`c${conn.id}`);
-
-  logEvent(conn, 'deliver', 'info', `[SMPP] INBOUND_RECEIVED: seq=${seq}, session=${sessionId}, cmd=${kind}`, peer);
-  markDirty();
-
-  session.__seenSeqs = session.__seenSeqs || new Set();
-  if (seq && session.__seenSeqs.has(seq)) {
-    // WIRE RETRANSMISSION: The peer already sent this sequence number on this active link.
-    // Send ACK immediately so the peer stops retransmitting, and do not process duplicate.
-    try {
-      const respParams = { command_status: OK };
-      if (submitMsgId) respParams.message_id = submitMsgId;
-      session.send(pdu.response(respParams));
-    } catch (_) {}
-    logEvent(conn, 'deliver', 'info', `[SMPP] DEDUPLICATE_DROP: Wire duplicate PDU ignored (seq=${seq}, session=${sessionId})`, peer);
-    markDirty();
-    return OK;
-  }
-
-  if (seq) {
-    session.__seenSeqs.add(seq);
-    if (session.__seenSeqs.size > 25000) {
-      const arr = Array.from(session.__seenSeqs);
-      session.__seenSeqs = new Set(arr.slice(10000));
-    }
-  }
-
-  // FAST ACK: Send acknowledgement to SMSC IMMEDIATELY!
-  // The SMSC receives deliver_sm_resp in <1ms. Response timer never expires; retransmission never occurs.
-  try {
-    const respParams = { command_status: OK };
-    if (submitMsgId) respParams.message_id = submitMsgId;
-    session.send(pdu.response(respParams));
-    logEvent(conn, 'deliver', 'info', `[SMPP] ACK_SENT: seq=${seq}, session=${sessionId}, cmd=${kind}`, peer);
-    markDirty();
-  } catch (e) {
-    logEvent(conn, 'error', 'warn', `[SMPP] ACK failed to send: ${e.message}`, peer);
-  }
-
-  if (isDeliveryReceipt(pdu)) {
-    logEvent(conn, 'deliver', 'info', `[SMPP] delivery receipt acknowledged and skipped (seq=${seq})`, peer);
-    markDirty();
-    return OK;
-  }
-
-  // Enqueue for safe, idempotent ingestion
-  st.inboundQueue = st.inboundQueue || [];
-  st.inboundQueue.push({
-    conn,
-    st,
-    session,
-    pdu,
-    peer,
-    kind,
-    sessionId,
-    seq,
-    receivedAt: nowSql(),
-  });
-
-  drainInboundQueue(conn.id);
-  return OK;
-}
-
-/**
- * Worker queue drain: processes inbound items from FIFO queue.
- * Runs in setImmediate batches so socket I/O and ACKs are never starved.
- */
-function drainInboundQueue(connectionId) {
-  const st = stateOf(connectionId);
-  if (st.drainingInbound) return;
-  st.drainingInbound = true;
-
-  setImmediate(() => {
-    try {
-      while (st.inboundQueue && st.inboundQueue.length > 0) {
-        const item = st.inboundQueue.shift();
-        try {
-          processInboundItem(item);
-        } catch (err) {
-          deps && deps.log && deps.log.warn(`[SMPP] ${item.conn.name}: item process failed: ${err.message}`);
-          logEvent(item.conn, 'error', 'error', `[SMPP] item process failed: ${err.message}`, item.peer);
-        }
-      }
-    } finally {
-      st.drainingInbound = false;
-      if (st.inboundQueue && st.inboundQueue.length > 0) {
-        drainInboundQueue(connectionId);
-      }
-    }
-  });
-}
-
-/**
- * Process a single inbound SMPP message idempotently.
- */
-function processInboundItem(item) {
-  const { conn, st, session, pdu, peer, kind, sessionId, seq, receivedAt } = item;
-
-  const src = safeStr(pdu.source_addr).trim();
-  const dst = safeStr(pdu.destination_addr).trim();
-  let text = pduText(pdu);
-
-  // 1. Reassemble multipart SMS if applicable
-  const assembled = reassemble(st, `${src}|${dst}`, pdu, text);
-  if (assembled === null) {
-    logEvent(conn, 'deliver', 'info', `[SMPP] PARTIAL_SEGMENT_RECEIVED: seq=${seq}, waiting for remaining parts for ${dst}`, peer);
-    markDirty();
-    return;
-  }
-  text = assembled;
-
-  if (!dst) {
-    logEvent(conn, 'deliver', 'warn', `[SMPP] missing destination_addr (seq=${seq})`, peer);
-    markDirty();
-    return;
-  }
-
-  // 2. Multi-layer Deduplication Check:
-  const providerMsgId = extractProviderMsgId(pdu);
-  const dedupKey = dedupKeyFor(pdu, src, dst, text);
-
-  // 2a. Cross-reconnect redelivery safeguard:
-  // Catches redeliveries of un-ACKed packets that occurred during socket drop/reconnect,
-  // while ensuring genuine user resends (e.g. after cooldown) remain intact.
-  const nowMs = Date.now();
-  const cleanDst = cleanPhone(dst);
-  const contentFp = crypto.createHash('sha1')
-    .update([String(src || '').toLowerCase(), cleanDst, String(text || '').trim()].join('|'))
-    .digest('hex').slice(0, 24);
-
-  const hadRecentDisconnect = st.lastDisconnectAtMs && (nowMs - st.lastDisconnectAtMs < 30000);
-  if (hadRecentDisconnect && st.recentDeliveries && st.recentDeliveries.has(contentFp)) {
-    const lastSeen = st.recentDeliveries.get(contentFp);
-    if (nowMs - lastSeen < 30000) {
-      logEvent(conn, 'deliver', 'info', `[SMPP] DEDUPLICATE_DROP: Cross-reconnect redelivery ignored (seq=${seq}, dst=${dst})`, peer);
-      markDirty();
-      return;
-    }
-  }
-
-  // 2b. Database check in smpp_seen ledger:
-  const seen = db.get('SELECT id, sms_record_id FROM smpp_seen WHERE connection_id=? AND dedup_key=?', [conn.id, dedupKey]);
-  if (seen) {
-    logEvent(conn, 'deliver', 'info', `[SMPP] DEDUPLICATE_DROP: Duplicate ignored via smpp_seen (key=${dedupKey.slice(0, 32)})`, peer);
-    markDirty();
-    return;
-  }
-
-  // 3. Ingestion into Skyline SMS core:
-  logEvent(conn, 'deliver', 'info', `[SMPP] INBOUND_PROCESSING: seq=${seq}, session=${sessionId}, from=${src || '?'} to=${dst}, len=${text.length}`, peer);
-
-  const result = deps.processIncomingSmsPayload(
-    { ip: peer || 'SMPP', smpp_connection: conn.name },
-    { number: dst, cli: src, message: text },
-    `smpp:${conn.name}`,
-    { source: 'smpp', received_at: receivedAt }
-  );
-
-  const ok = result && result.status === 200;
-  const smsId = (result && result.body && result.body.id) ? result.body.id : null;
-
-  // 4. Record in smpp_seen tracking ledger
-  try {
-    db.run(
-      `INSERT OR IGNORE INTO smpp_seen (connection_id, dedup_key, session_id, sequence_number, source_addr, destination_addr, provider_message_id, sms_record_id, status, received_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [conn.id, dedupKey, sessionId, seq, src, dst, providerMsgId || '', smsId, ok ? 'processed' : 'rejected', receivedAt]
-    );
-  } catch (e) {
-    deps && deps.log && deps.log.warn(`[SMPP] smpp_seen write failed: ${e.message}`);
-  }
-
-  // Track recent delivery in memory for cross-reconnect protection
-  st.recentDeliveries = st.recentDeliveries || new Map();
-  st.recentDeliveries.set(contentFp, nowMs);
-  if (st.recentDeliveries.size > 2000) {
-    const cutoff = nowMs - 60000;
-    for (const [k, v] of st.recentDeliveries) {
-      if (v < cutoff) st.recentDeliveries.delete(k);
-    }
-  }
-
-  if (ok) {
-    db.runNoSave('UPDATE smpp_connections SET total_received=total_received+1, last_activity_at=? WHERE id=?', [receivedAt, conn.id]);
-    logEvent(conn, 'deliver', 'info', `[SMPP] DB_INSERTED: seq=${seq}, record_id=${smsId}, from=${src || '?'} to=${dst}`, peer);
-    logEvent(conn, 'deliver', 'info', `[SMPP] DB_SUCCESS: seq=${seq}, dst=${dst}`, peer);
-    try { deps.clearApiReadCache && deps.clearApiReadCache(); } catch (_) {}
-  } else {
-    const why = (result && result.body && result.body.error) || 'rejected';
-    logEvent(conn, 'deliver', 'warn', `[SMPP] DB_REJECTED: seq=${seq}, reason=${why} (${dst})`, peer);
-  }
-  markDirty();
-}
-
-/**
- * Backward-compatibility wrapper for ingest().
+ * Ingest one inbound SMPP message through the SAME path the HTTP carrier
+ * webhook uses. Returns an SMPP command_status.
  */
 function ingest(conn, st, pdu, peer) {
+  const smpp = smppLib;
   const OK = 0;
-  const seq = (pdu && typeof pdu.sequence_number === 'number') ? pdu.sequence_number : 0;
-  const sessionId = (st && st.sessionId) || (`c${conn.id}`);
-  processInboundItem({
-    conn,
-    st,
-    session: st && st.session,
-    pdu,
-    peer,
-    kind: 'deliver_sm',
-    sessionId,
-    seq,
-    receivedAt: nowSql(),
-  });
-  return OK;
-}
+  const ERR_SYS = (smpp && smpp.ESME_RSYSERR) || 0x00000008;
 
-/**
- * Helper to await full drainage of the inbound FIFO queue.
- */
-function flushInbound(connectionId) {
-  return new Promise((resolve) => {
-    const check = () => {
-      const st = runtime.get(connectionId);
-      if (!st || (!st.drainingInbound && (!st.inboundQueue || st.inboundQueue.length === 0))) {
-        return resolve();
-      }
-      setTimeout(check, 10);
-    };
-    check();
-  });
+  try {
+    if (isDeliveryReceipt(pdu)) {
+      // Delivery receipts are acknowledgements of OUR submit_sm, not inbound
+      // traffic. Log and accept; storing them would pollute sms_records.
+      logEvent(conn, 'deliver', 'info', 'delivery receipt ignored', peer);
+      markDirty();
+      return OK;
+    }
+
+    const src = safeStr(pdu.source_addr).trim();
+    const dst = safeStr(pdu.destination_addr).trim();
+    let text = pduText(pdu);
+
+    const udh = pduUdh(pdu);
+    if (udh && udh.length) {
+      const assembled = reassemble(st, `${src}|${dst}`, udh, text);
+      if (assembled === null) return OK;      // wait for remaining parts
+      text = assembled;
+    }
+
+    if (!dst) {
+      logEvent(conn, 'deliver', 'warn', 'missing destination_addr', peer);
+      markDirty();
+      return OK;   // never NACK: the peer would redeliver this forever
+    }
+
+    // Duplicate suppression (SMPP peers redeliver aggressively).
+    const key = dedupKeyFor(pdu, src, dst, text);
+    const seen = db.get('SELECT sms_record_id FROM smpp_seen WHERE connection_id=? AND dedup_key=?', [conn.id, key]);
+    if (seen) {
+      logEvent(conn, 'deliver', 'info', `duplicate ignored (${key.slice(0, 28)})`, peer);
+      markDirty();
+      return OK;
+    }
+
+    // ---- shared ingestion path (unchanged code) ----
+    const result = deps.processIncomingSmsPayload(
+      { ip: peer || 'SMPP', smpp_connection: conn.name },
+      { number: dst, cli: src, message: text },
+      `smpp:${conn.name}`,
+      { source: 'smpp' }
+    );
+
+    const ok = result && result.status === 200;
+    if (ok) {
+      const smsId = result.body && result.body.id ? result.body.id : null;
+      try {
+        db.run('INSERT OR IGNORE INTO smpp_seen (connection_id,dedup_key,sms_record_id,received_at) VALUES (?,?,?,?)',
+          [conn.id, key, smsId, nowSql()]);
+      } catch (_) {}
+      db.runNoSave('UPDATE smpp_connections SET total_received=total_received+1, last_activity_at=? WHERE id=?', [nowSql(), conn.id]);
+      logEvent(conn, 'deliver', 'info', `received from ${src || '?'} to ${dst}`, peer);
+      try { deps.clearApiReadCache && deps.clearApiReadCache(); } catch (_) {}
+    } else {
+      const why = (result && result.body && result.body.error) || 'rejected';
+      logEvent(conn, 'deliver', 'warn', `not stored: ${why} (${dst})`, peer);
+    }
+    markDirty();
+    // Always ACK. A NACK makes the peer redeliver a message we have already
+    // recorded in the Failed SMS queue, which is where the operator fixes it.
+    return OK;
+  } catch (e) {
+    deps.log.warn(`[SMPP] ${conn.name}: ingest failed: ${e.message}`);
+    logEvent(conn, 'error', 'error', 'ingest failed: ' + e.message, peer);
+    markDirty();
+    return ERR_SYS;
+  }
 }
 
 /* ------------------------------------------------------------------ *
- * CLIENT mode — Skyline binds OUT to the provider
+ * CLIENT mode — Power X binds OUT to the provider
  * ------------------------------------------------------------------ */
 
 function scheduleReconnect(conn) {
   const st = stateOf(conn.id);
   if (st.stopping) return;
-  if (st.reconnectTimer) return; // Prevent duplicate reconnect timers
+  if (st.reconnectTimer) return;
 
   const base = clampInt(conn.reconnect_seconds, 1, 3600, 10);
   const max = clampInt(conn.max_reconnect_seconds, base, 86400, 300);
+  // Exponential backoff with jitter: a provider that is down does not get
+  // hammered, and many connections do not all retry in the same instant.
   const backoff = Math.min(max, base * Math.pow(2, Math.min(st.attempt, 10)));
   const delay = Math.round((backoff * 0.7 + backoff * 0.3 * Math.random()) * 1000);
 
   st.status = 'reconnecting';
   markConnection(conn.id, { status: 'reconnecting' });
-  logEvent(conn, 'reconnect', 'warn', `[SMPP] RECONNECT_TRIGGERED: retry in ${Math.round(delay / 1000)}s (attempt ${st.attempt + 1})`);
+  logEvent(conn, 'reconnect', 'warn', `retry in ${Math.round(delay / 1000)}s (attempt ${st.attempt + 1})`);
   markDirty();
 
   st.reconnectTimer = setTimeout(() => {
@@ -584,19 +352,11 @@ function scheduleReconnect(conn) {
 
 function teardownClient(st) {
   if (st.enquireTimer) { clearInterval(st.enquireTimer); st.enquireTimer = null; }
-  if (st.bindTimeout) { clearTimeout(st.bindTimeout); st.bindTimeout = null; }
   if (st.session) {
-    const s = st.session;
+    try { st.session.removeAllListeners(); } catch (_) {}
+    try { st.session.close(); } catch (_) {}
+    try { st.session.destroy && st.session.destroy(); } catch (_) {}
     st.session = null;
-    try { s.removeAllListeners(); } catch (_) {}
-    if (s.socket) {
-      try { s.socket.removeAllListeners(); } catch (_) {}
-      try { s.socket.destroy(); } catch (_) {}
-    }
-    try { s.close(); } catch (_) {}
-    try { s.destroy && s.destroy(); } catch (_) {}
-    logEvent({ id: st.id, name: '' }, 'unbind', 'info', `[SMPP] SESSION_CLEANUP: session ${st.sessionId || ''} cleaned up`);
-    markDirty();
   }
 }
 
@@ -604,10 +364,6 @@ function startClient(conn) {
   const smpp = getSmpp();
   const st = stateOf(conn.id);
   st.stopping = false;
-  if (st.reconnectTimer) {
-    clearTimeout(st.reconnectTimer);
-    st.reconnectTimer = null;
-  }
   teardownClient(st);
 
   if (!conn.host) {
@@ -622,9 +378,8 @@ function startClient(conn) {
   const url = `${scheme}://${conn.host}:${port}`;
 
   st.status = 'connecting';
-  st.sessionId = `c${conn.id}_s${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
   markConnection(conn.id, { status: 'connecting', last_error: '' });
-  logEvent(conn, 'bind', 'info', `connecting to ${url} (session_id=${st.sessionId})`);
+  logEvent(conn, 'bind', 'info', `connecting to ${url}`);
   markDirty();
 
   let session;
@@ -642,12 +397,11 @@ function startClient(conn) {
     return;
   }
 
-  session.__skylineSessionId = st.sessionId;
-  session.__seenSeqs = new Set();
   st.session = session;
 
+  // Every handler is guarded: an exception inside an SMPP callback must never
+  // escape into the process and take the panel down.
   session.on('error', (e) => {
-    if (st.session !== session) return; // Ignore events from torn down sessions
     const msg = (e && e.message) || String(e);
     if (st.status !== 'reconnecting') {
       markConnection(conn.id, { status: 'error', last_error: msg, consecutive_failures: (getConnection(conn.id) || {}).consecutive_failures + 1 || 1 });
@@ -655,29 +409,33 @@ function startClient(conn) {
       markDirty();
     }
     st.attempt++;
-    st.lastDisconnectAtMs = Date.now();
     teardownClient(st);
     scheduleReconnect(conn);
   });
 
   session.on('close', () => {
     if (st.stopping) return;
-    if (st.session !== session) return; // Ignore events from torn down sessions
     markConnection(conn.id, { status: 'disconnected' });
-    logEvent(conn, 'unbind', 'warn', `connection closed by peer (session_id=${st.sessionId})`);
+    logEvent(conn, 'unbind', 'warn', 'connection closed by peer');
     markDirty();
     st.attempt++;
-    st.lastDisconnectAtMs = Date.now();
     teardownClient(st);
     scheduleReconnect(conn);
   });
 
   session.on('deliver_sm', (pdu) => {
-    handleInboundPdu(conn, st, session, pdu, conn.host, 'deliver_sm');
+    let status = 0;
+    try { status = ingest(conn, st, pdu, conn.host); }
+    catch (e) { status = (smpp.ESME_RSYSERR || 8); }
+    try { session.send(pdu.response({ command_status: status })); } catch (_) {}
   });
 
+  // Some providers push via data_sm instead of deliver_sm.
   session.on('data_sm', (pdu) => {
-    handleInboundPdu(conn, st, session, pdu, conn.host, 'data_sm');
+    let status = 0;
+    try { status = ingest(conn, st, pdu, conn.host); }
+    catch (e) { status = (smpp.ESME_RSYSERR || 8); }
+    try { session.send(pdu.response({ command_status: status })); } catch (_) {}
   });
 
   session.on('enquire_link', (pdu) => {
@@ -693,7 +451,6 @@ function startClient(conn) {
 function onClientConnected(conn, session) {
   const smpp = smppLib;
   const st = stateOf(conn.id);
-  if (st.session !== session) return;
 
   const bindFn = {
     transceiver: 'bind_transceiver',
@@ -709,25 +466,23 @@ function onClientConnected(conn, session) {
   if (conn.address_range) params.address_range = conn.address_range;
 
   let responded = false;
-  if (st.bindTimeout) clearTimeout(st.bindTimeout);
-  st.bindTimeout = setTimeout(() => {
+  const bindTimeout = setTimeout(() => {
     if (responded) return;
     responded = true;
     logEvent(conn, 'error', 'error', 'bind timed out (no response from provider)');
     markConnection(conn.id, { status: 'error', last_error: 'bind timed out' });
     markDirty();
     st.attempt++;
-    st.lastDisconnectAtMs = Date.now();
     teardownClient(st);
     scheduleReconnect(conn);
   }, clampInt(conn.connect_timeout_ms, 1000, 120000, 15000));
-  if (st.bindTimeout.unref) st.bindTimeout.unref();
+  if (bindTimeout.unref) bindTimeout.unref();
 
   try {
     session[bindFn](params, (pdu) => {
       if (responded) return;
       responded = true;
-      if (st.bindTimeout) { clearTimeout(st.bindTimeout); st.bindTimeout = null; }
+      clearTimeout(bindTimeout);
 
       if (!pdu || pdu.command_status !== 0) {
         const code = pdu ? pdu.command_status : -1;
@@ -740,7 +495,6 @@ function onClientConnected(conn, session) {
         logEvent(conn, 'bind', 'error', `bind rejected: ${name}`);
         markDirty();
         st.attempt++;
-        st.lastDisconnectAtMs = Date.now();
         teardownClient(st);
         scheduleReconnect(conn);
         return;
@@ -748,7 +502,6 @@ function onClientConnected(conn, session) {
 
       st.attempt = 0;
       st.status = 'bound';
-      st.lastConnectedAtMs = Date.now();
       markConnection(conn.id, {
         status: 'bound',
         last_error: '',
@@ -756,20 +509,20 @@ function onClientConnected(conn, session) {
         last_activity_at: nowSql(),
         consecutive_failures: 0,
       });
-      logEvent(conn, 'bind', 'info', `[SMPP] SESSION_BOUND: bound as ${bindFn.replace('bind_', '')} (session_id=${st.sessionId}, system_id=${conn.system_id})`);
+      logEvent(conn, 'bind', 'info', `bound as ${bindFn.replace('bind_', '')} (system_id=${conn.system_id})`);
       markDirty();
 
       startEnquireLink(conn, session);
+      // A link that just came up may have queued outbound messages waiting.
       setImmediate(() => { try { drainOutbox(conn.id); } catch (_) {} });
     });
   } catch (e) {
     if (!responded) {
       responded = true;
-      if (st.bindTimeout) { clearTimeout(st.bindTimeout); st.bindTimeout = null; }
+      clearTimeout(bindTimeout);
       logEvent(conn, 'error', 'error', 'bind failed: ' + e.message);
       markDirty();
       st.attempt++;
-      st.lastDisconnectAtMs = Date.now();
       teardownClient(st);
       scheduleReconnect(conn);
     }
@@ -794,26 +547,24 @@ function startEnquireLink(conn, session) {
   const secs = clampInt(conn.enquire_link_seconds, 5, 3600, 30);
 
   st.enquireTimer = setInterval(() => {
-    if (st.session !== session || !st.session) {
-      if (st.enquireTimer) { clearInterval(st.enquireTimer); st.enquireTimer = null; }
-      return;
-    }
+    if (!st.session) return;
     let answered = false;
     const t = setTimeout(() => {
       if (answered) return;
-      if (st.session !== session) return;
+      // The socket looks open but the peer is not answering: this is the
+      // classic "half-open link" that silently swallows traffic. Force a
+      // reconnect rather than sitting there believing we are bound.
       logEvent(conn, 'error', 'warn', 'enquire_link timeout — forcing reconnect');
       markConnection(conn.id, { status: 'error', last_error: 'enquire_link timeout' });
       markDirty();
       st.attempt++;
-      st.lastDisconnectAtMs = Date.now();
       teardownClient(st);
       scheduleReconnect(conn);
-    }, Math.max(secs * 1000, 30000));
+    }, Math.min(secs * 1000, 20000));
     if (t.unref) t.unref();
 
     try {
-      session.enquire_link({}, () => {
+      st.session.enquire_link({}, () => {
         answered = true;
         clearTimeout(t);
         markConnection(conn.id, { last_activity_at: nowSql() });
@@ -828,7 +579,7 @@ function startEnquireLink(conn, session) {
 }
 
 /* ------------------------------------------------------------------ *
- * SERVER mode — the carrier binds IN to Skyline
+ * SERVER mode — the carrier binds IN to Power X
  * ------------------------------------------------------------------ */
 
 function ipAllowed(conn, ip) {
@@ -863,6 +614,7 @@ function startServer(conn) {
     logEvent(conn, 'error', 'error', msg);
     markDirty();
     st.server = null;
+    // Retry: the port may free up (e.g. an old process exiting).
     st.attempt++;
     scheduleServerRetry(conn);
   });
@@ -900,14 +652,12 @@ function onPeerSession(conn, session) {
   const smpp = smppLib;
   const st = stateOf(conn.id);
   const peer = (session.socket && session.socket.remoteAddress) || '';
-  session.__skylineSessionId = `srv_${conn.id}_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
-  session.__seenSeqs = new Set();
 
   session.on('error', () => { try { session.close(); } catch (_) {} });
   session.on('close', () => {
     st.sessions.delete(session);
     markConnection(conn.id, { status: st.sessions.size ? 'bound' : 'listening' });
-    logEvent(conn, 'unbind', 'info', `[SMPP] SESSION_CLEANUP: peer disconnected (${st.sessions.size} bound)`, peer);
+    logEvent(conn, 'unbind', 'info', `peer disconnected (${st.sessions.size} bound)`, peer);
     markDirty();
   });
 
@@ -929,10 +679,10 @@ function onPeerSession(conn, session) {
         setTimeout(() => { try { session.close(); } catch (_) {} }, 50);
         return;
       }
-      session.send(pdu.response({ system_id: 'Skyline' }));
+      session.send(pdu.response({ system_id: 'GalaxySMS' }));
       st.sessions.add(session);
       markConnection(conn.id, { status: 'bound', last_error: '', last_connected_at: nowSql(), last_activity_at: nowSql(), consecutive_failures: 0 });
-      logEvent(conn, 'bind', 'info', `[SMPP] SESSION_BOUND: peer bound as ${kind} (session_id=${session.__skylineSessionId}, system_id=${okId})`, peer);
+      logEvent(conn, 'bind', 'info', `peer bound as ${kind} (system_id=${okId})`, peer);
       markDirty();
     } catch (e) {
       try { session.close(); } catch (_) {}
@@ -951,29 +701,32 @@ function onPeerSession(conn, session) {
     try { session.send(pdu.response()); session.close(); } catch (_) {}
   });
 
+  // Carrier delivering an inbound SMS to us.
   session.on('submit_sm', (pdu) => {
-    if (!st.sessions.has(session)) {
-      try { session.send(pdu.response({ command_status: smpp.ESME_RINVBNDSTS || 4 })); } catch (_) {}
-      return;
-    }
-    const msgId = 'SKY' + Date.now().toString(36) + crypto.randomBytes(2).toString('hex');
-    handleInboundPdu(conn, st, session, pdu, peer, 'submit_sm', msgId);
+    let status = 0, id = '';
+    try {
+      if (!st.sessions.has(session)) {
+        status = smpp.ESME_RINVBNDSTS || 4;    // not bound
+      } else {
+        status = ingest(conn, st, pdu, peer);
+        id = 'PX' + Date.now().toString(36);
+      }
+    } catch (e) { status = smpp.ESME_RSYSERR || 8; }
+    try { session.send(pdu.response({ command_status: status, message_id: id })); } catch (_) {}
   });
 
   session.on('deliver_sm', (pdu) => {
-    if (!st.sessions.has(session)) {
-      try { session.send(pdu.response({ command_status: smpp.ESME_RINVBNDSTS || 4 })); } catch (_) {}
-      return;
-    }
-    handleInboundPdu(conn, st, session, pdu, peer, 'deliver_sm');
+    let status = 0;
+    try { status = st.sessions.has(session) ? ingest(conn, st, pdu, peer) : (smpp.ESME_RINVBNDSTS || 4); }
+    catch (e) { status = smpp.ESME_RSYSERR || 8; }
+    try { session.send(pdu.response({ command_status: status })); } catch (_) {}
   });
 
   session.on('data_sm', (pdu) => {
-    if (!st.sessions.has(session)) {
-      try { session.send(pdu.response({ command_status: smpp.ESME_RINVBNDSTS || 4 })); } catch (_) {}
-      return;
-    }
-    handleInboundPdu(conn, st, session, pdu, peer, 'data_sm');
+    let status = 0;
+    try { status = st.sessions.has(session) ? ingest(conn, st, pdu, peer) : (smpp.ESME_RINVBNDSTS || 4); }
+    catch (e) { status = smpp.ESME_RSYSERR || 8; }
+    try { session.send(pdu.response({ command_status: status })); } catch (_) {}
   });
 }
 
@@ -1096,11 +849,10 @@ function stopConnection(id, silent) {
   stopServer(st);
   st.status = 'stopped';
   st.parts.clear();
-  st.inboundQueue = [];
   if (!silent) {
     const conn = getConnection(id);
     markConnection(id, { status: 'stopped', last_error: '' });
-    if (conn) logEvent(conn, 'unbind', 'info', `[SMPP] SESSION_CLEANUP: stopped by operator`);
+    if (conn) logEvent(conn, 'unbind', 'info', 'stopped by operator');
     markDirty();
   }
   return { ok: true };
@@ -1122,8 +874,6 @@ function statusOf(id) {
     active: !!conn.active,
     status: conn.status || 'stopped',
     live: st ? st.status : 'stopped',
-    session_id: st ? st.sessionId : '',
-    inbound_queued: st ? (st.inboundQueue ? st.inboundQueue.length : 0) : 0,
     bound_sessions: st ? (st.session ? 1 : st.sessions.size) : 0,
     last_error: conn.last_error || '',
     last_connected_at: conn.last_connected_at || '',
@@ -1208,21 +958,7 @@ module.exports = {
   statusOf,
   queueOutbound, drainOutbox,
   flushBookkeeping,
-  flushInbound,
   isLibraryAvailable() { try { getSmpp(); return true; } catch (_) { return false; } },
   libraryError() { return smppLoadError; },
-  _internal: {
-    pduText,
-    isDeliveryReceipt,
-    dedupKeyFor,
-    ipAllowed,
-    clampInt,
-    cleanPhone,
-    reassemble,
-    extractProviderMsgId,
-    handleInboundPdu,
-    processInboundItem,
-    drainInboundQueue,
-    flushInbound,
-  },
+  _internal: { pduText, isDeliveryReceipt, dedupKeyFor, ipAllowed, clampInt, reassemble },
 };

@@ -1,5 +1,5 @@
 /**
- * Skyline SMS — Background Provider Sync Service
+ * Power X SMS — Background Provider Sync Service
  * ---------------------------------------------------------------------------
  * Architecture
  *
@@ -192,7 +192,7 @@ const CONNECTORS = {
     // normal one; it can be overridden per provider if a provider requires it.
     const headers = {
       'Accept': 'application/json',
-      'User-Agent': String(cfg.user_agent || 'Mozilla/5.0 (compatible; Power XSMS-Sync/1.0)'),
+      'User-Agent': String(cfg.user_agent || 'Mozilla/5.0 (compatible; GalaxySMS-Sync/1.0)'),
     };
     const params = new URLSearchParams();
 
@@ -268,7 +268,21 @@ const CONNECTORS = {
     }
 
     const res = await fetch(full, init);
-    if (!res.ok) throw new Error(`provider HTTP ${res.status}`);
+    if (!res.ok) {
+      let bodySnippet = '';
+      try {
+        const rawText = await res.text();
+        bodySnippet = rawText
+          .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer ***')
+          .replace(/(token|key|api_key|password|secret|auth|access_token)[=:"']\s*([A-Za-z0-9._~+/-]{4,})/gi, '$1=***')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 200);
+      } catch (_) {}
+      const detail = bodySnippet ? `: ${bodySnippet}` : '';
+      throw new Error(`provider HTTP ${res.status}${detail}`);
+    }
     const json = await res.json().catch(() => null);
     if (json === null) throw new Error('provider returned non-JSON');
 

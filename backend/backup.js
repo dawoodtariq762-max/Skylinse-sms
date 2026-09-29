@@ -1,5 +1,5 @@
 /**
- * Backup service for Skyline SMS.
+ * Backup service for Power X SMS.
  * - Uses sql.js export buffer from db.js for consistent snapshots.
  * - Writes backups atomically to a dedicated folder.
  * - Retains backups for a configurable number of days.
@@ -19,7 +19,7 @@ function getBackupDir(db) {
   return process.env.BACKUP_DIR
     || (process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'backups') : null)
     // VPS-safe default: outside the application folder, so backups survive accidental app deletion.
-    || path.join(os.homedir(), 'skyline-sms-backups');
+    || path.join(os.homedir(), 'nova-sms-backups');
 }
 function ensureBackupDir(db) {
   const dir = getBackupDir(db);

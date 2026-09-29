@@ -1,67 +1,25 @@
 /* ============================================================================
-   SKYLINE SMS — UI & Component System (skyline.js)
-   Provides: icon system, tooltips, E.164 country resolution, world map,
-   error/empty states, mobile card-table helpers, export formatters.
-   Backward-compatible: binds to window.Skyline and window.GX.
+   GALAXY SMS — UI helpers (galaxy.js v1)  — ZERO business-logic changes.
+   Provides: icon system, tooltips, country resolution (E.164), dashboard map,
+   error/empty states, mobile card-table helper. Panels opt-in explicitly.
    ========================================================================== */
 (function(){
 'use strict';
-
-const Skyline = {};
-
-/* ---------------- E.164 Country Resolution Map ---------------- */
-Skyline.E164 = {
-  "1":["us","United States"],"7":["ru","Russia"],"20":["eg","Egypt"],"27":["za","South Africa"],"30":["gr","Greece"],
-  "31":["nl","Netherlands"],"32":["be","Belgium"],"33":["fr","France"],"34":["es","Spain"],"40":["ro","Romania"],
-  "41":["ch","Switzerland"],"43":["at","Austria"],"44":["gb","United Kingdom"],"45":["dk","Denmark"],"46":["se","Sweden"],
-  "47":["no","Norway"],"48":["pl","Poland"],"49":["de","Germany"],"51":["pe","Peru"],"52":["mx","Mexico"],"53":["cu","Cuba"],
-  "54":["ar","Argentina"],"55":["br","Brazil"],"56":["cl","Chile"],"57":["co","Colombia"],"58":["ve","Venezuela"],
-  "60":["my","Malaysia"],"61":["au","Australia"],"62":["id","Indonesia"],"63":["ph","Philippines"],"64":["nz","New Zealand"],
-  "65":["sg","Singapore"],"66":["th","Thailand"],"81":["jp","Japan"],"82":["kr","South Korea"],"84":["vn","Vietnam"],
-  "86":["cn","China"],"90":["tr","Turkey"],"91":["in","India"],"92":["pk","Pakistan"],"93":["af","Afghanistan"],
-  "94":["lk","Sri Lanka"],"95":["mm","Myanmar"],"98":["ir","Iran"],"212":["ma","Morocco"],"213":["dz","Algeria"],
-  "216":["tn","Tunisia"],"218":["ly","Libya"],"220":["gm","Gambia"],"221":["sn","Senegal"],"222":["mr","Mauritania"],
-  "223":["ml","Mali"],"224":["gn","Guinea"],"225":["ci","Ivory Coast"],"226":["bf","Burkina Faso"],"227":["ne","Niger"],
-  "228":["tg","Togo"],"229":["bj","Benin"],"230":["mu","Mauritius"],"231":["lr","Liberia"],"232":["sl","Sierra Leone"],
-  "233":["gh","Ghana"],"234":["ng","Nigeria"],"235":["td","Chad"],"236":["cf","Central African Republic"],"237":["cm","Cameroon"],
-  "238":["cv","Cape Verde"],"239":["st","São Tomé"],"240":["gq","Equatorial Guinea"],"241":["ga","Gabon"],"242":["cg","Congo"],
-  "243":["cd","DR Congo"],"244":["ao","Angola"],"245":["gw","Guinea-Bissau"],"248":["sc","Seychelles"],"249":["sd","Sudan"],
-  "250":["rw","Rwanda"],"251":["so","Somalia"],"252":["so","Somalia"],"253":["dj","Djibouti"],"254":["ke","Kenya"],
-  "255":["tz","Tanzania"],"256":["ug","Uganda"],"257":["bi","Burundi"],"258":["mz","Mozambique"],"260":["zm","Zambia"],
-  "261":["mg","Madagascar"],"263":["zw","Zimbabwe"],"264":["na","Namibia"],"265":["mw","Malawi"],"266":["ls","Lesotho"],
-  "267":["bw","Botswana"],"268":["sz","Eswatini"],"269":["km","Comoros"],"291":["er","Eritrea"],"350":["gi","Gibraltar"],
-  "351":["pt","Portugal"],"352":["lu","Luxembourg"],"353":["ie","Ireland"],"354":["is","Iceland"],"355":["al","Albania"],
-  "356":["mt","Malta"],"357":["cy","Cyprus"],"358":["fi","Finland"],"359":["bg","Bulgaria"],"370":["lt","Lithuania"],
-  "371":["lv","Latvia"],"372":["ee","Estonia"],"373":["md","Moldova"],"374":["am","Armenia"],"375":["by","Belarus"],
-  "376":["ad","Andorra"],"377":["mc","Monaco"],"378":["sm","San Marino"],"380":["ua","Ukraine"],"381":["rs","Serbia"],
-  "382":["me","Montenegro"],"383":["xk","Kosovo"],"385":["hr","Croatia"],"386":["si","Slovenia"],"387":["ba","Bosnia"],
-  "389":["mk","North Macedonia"],"39":["it","Italy"],"420":["cz","Czechia"],"421":["sk","Slovakia"],"423":["li","Liechtenstein"],
-  "500":["fk","Falkland Islands"],"501":["bz","Belize"],"502":["gt","Guatemala"],"503":["sv","El Salvador"],"504":["hn","Honduras"],
-  "505":["ni","Nicaragua"],"506":["cr","Costa Rica"],"507":["pa","Panama"],"509":["ht","Haiti"],"590":["gp","Guadeloupe"],
-  "594":["gf","French Guiana"],"595":["py","Paraguay"],"596":["mq","Martinique"],"597":["sr","Suriname"],"598":["uy","Uruguay"],
-  "599":["cw","Curaçao"],"670":["tl","Timor-Leste"],"673":["bn","Brunei"],"674":["nr","Nauru"],"675":["pg","Papua New Guinea"],
-  "676":["to","Tonga"],"678":["vu","Vanuatu"],"679":["fj","Fiji"],"680":["pw","Palau"],"682":["ck","Cook Islands"],
-  "685":["ws","Samoa"],"686":["ki","Kiribati"],"687":["nc","New Caledonia"],"688":["tv","Tuvalu"],"689":["pf","French Polynesia"],
-  "690":["tk","Tokelau"],"691":["fm","Micronesia"],"692":["mh","Marshall Islands"],"850":["kp","North Korea"],"852":["hk","Hong Kong"],
-  "853":["mo","Macao"],"855":["kh","Cambodia"],"856":["la","Laos"],"880":["bd","Bangladesh"],"886":["tw","Taiwan"],
-  "960":["mv","Maldives"],"961":["lb","Lebanon"],"962":["jo","Jordan"],"963":["sy","Syria"],"964":["iq","Iraq"],
-  "965":["kw","Kuwait"],"966":["sa","Saudi Arabia"],"967":["ye","Yemen"],"968":["om","Oman"],"970":["ps","Palestine"],
-  "971":["ae","UAE"],"972":["il","Israel"],"973":["bh","Bahrain"],"974":["qa","Qatar"],"975":["bt","Bhutan"],
-  "976":["mn","Mongolia"],"977":["np","Nepal"],"992":["tj","Tajikistan"],"993":["tm","Turkmenistan"],"994":["az","Azerbaijan"],
-  "995":["ge","Georgia"],"996":["kg","Kyrgyzstan"],"998":["uz","Uzbekistan"]
-};
-
-Skyline.countryOf = function(num){
+const GX = {};
+GX.E164 = {"1":["us","United States"],"7":["ru","Russia"],"20":["eg","Egypt"],"27":["za","South Africa"],"30":["gr","Greece"],"31":["nl","Netherlands"],"32":["be","Belgium"],"33":["fr","France"],"34":["es","Spain"],"40":["ro","Romania"],"41":["ch","Switzerland"],"43":["at","Austria"],"44":["gb","United Kingdom"],"45":["dk","Denmark"],"46":["se","Sweden"],"47":["no","Norway"],"48":["pl","Poland"],"49":["de","Germany"],"51":["pe","Peru"],"52":["mx","Mexico"],"53":["cu","Cuba"],"54":["ar","Argentina"],"55":["br","Brazil"],"56":["cl","Chile"],"57":["co","Colombia"],"58":["ve","Venezuela"],"60":["my","Malaysia"],"61":["au","Australia"],"62":["id","Indonesia"],"63":["ph","Philippines"],"64":["nz","New Zealand"],"65":["sg","Singapore"],"66":["th","Thailand"],"81":["jp","Japan"],"82":["kr","South Korea"],"84":["vn","Vietnam"],"86":["cn","China"],"90":["tr","Turkey"],"91":["in","India"],"92":["pk","Pakistan"],"93":["af","Afghanistan"],"94":["lk","Sri Lanka"],"95":["mm","Myanmar"],"98":["ir","Iran"],"212":["ma","Morocco"],"213":["dz","Algeria"],"216":["tn","Tunisia"],"218":["ly","Libya"],"220":["gm","Gambia"],"221":["sn","Senegal"],"222":["mr","Mauritania"],"223":["ml","Mali"],"224":["gn","Guinea"],"225":["ci","Ivory Coast"],"226":["bf","Burkina Faso"],"227":["ne","Niger"],"228":["tg","Togo"],"229":["bj","Benin"],"230":["mu","Mauritius"],"231":["lr","Liberia"],"232":["sl","Sierra Leone"],"233":["gh","Ghana"],"234":["ng","Nigeria"],"235":["td","Chad"],"236":["cf","Central African Republic"],"237":["cm","Cameroon"],"238":["cv","Cape Verde"],"239":["st","S\u00e3o Tom\u00e9"],"240":["gq","Equatorial Guinea"],"241":["ga","Gabon"],"242":["cg","Congo"],"243":["cd","DR Congo"],"244":["ao","Angola"],"245":["gw","Guinea-Bissau"],"248":["sc","Seychelles"],"249":["sd","Sudan"],"250":["rw","Rwanda"],"251":["so","Somalia"],"252":["so","Somalia"],"253":["dj","Djibouti"],"254":["ke","Kenya"],"255":["tz","Tanzania"],"256":["ug","Uganda"],"257":["bi","Burundi"],"258":["mz","Mozambique"],"260":["zm","Zambia"],"261":["mg","Madagascar"],"263":["zw","Zimbabwe"],"264":["na","Namibia"],"265":["mw","Malawi"],"266":["ls","Lesotho"],"267":["bw","Botswana"],"268":["sz","Eswatini"],"269":["km","Comoros"],"291":["er","Eritrea"],"350":["gi","Gibraltar"],"351":["pt","Portugal"],"352":["lu","Luxembourg"],"353":["ie","Ireland"],"354":["is","Iceland"],"355":["al","Albania"],"356":["mt","Malta"],"357":["cy","Cyprus"],"358":["fi","Finland"],"359":["bg","Bulgaria"],"370":["lt","Lithuania"],"371":["lv","Latvia"],"372":["ee","Estonia"],"373":["md","Moldova"],"374":["am","Armenia"],"375":["by","Belarus"],"376":["ad","Andorra"],"377":["mc","Monaco"],"378":["sm","San Marino"],"380":["ua","Ukraine"],"381":["rs","Serbia"],"382":["me","Montenegro"],"383":["xk","Kosovo"],"385":["hr","Croatia"],"386":["si","Slovenia"],"387":["ba","Bosnia"],"389":["mk","North Macedonia"],"39":["it","Italy"],"420":["cz","Czechia"],"421":["sk","Slovakia"],"423":["li","Liechtenstein"],"500":["fk","Falkland Islands"],"501":["bz","Belize"],"502":["gt","Guatemala"],"503":["sv","El Salvador"],"504":["hn","Honduras"],"505":["ni","Nicaragua"],"506":["cr","Costa Rica"],"507":["pa","Panama"],"509":["ht","Haiti"],"590":["gp","Guadeloupe"],"594":["gf","French Guiana"],"595":["py","Paraguay"],"596":["mq","Martinique"],"597":["sr","Suriname"],"598":["uy","Uruguay"],"599":["cw","Cura\u00e7ao"],"670":["tl","Timor-Leste"],"673":["bn","Brunei"],"674":["nr","Nauru"],"675":["pg","Papua New Guinea"],"676":["to","Tonga"],"678":["vu","Vanuatu"],"679":["fj","Fiji"],"680":["pw","Palau"],"682":["ck","Cook Islands"],"685":["ws","Samoa"],"686":["ki","Kiribati"],"687":["nc","New Caledonia"],"688":["tv","Tuvalu"],"689":["pf","French Polynesia"],"690":["tk","Tokelau"],"691":["fm","Micronesia"],"692":["mh","Marshall Islands"],"850":["kp","North Korea"],"852":["hk","Hong Kong"],"853":["mo","Macao"],"855":["kh","Cambodia"],"856":["la","Laos"],"880":["bd","Bangladesh"],"886":["tw","Taiwan"],"960":["mv","Maldives"],"961":["lb","Lebanon"],"962":["jo","Jordan"],"963":["sy","Syria"],"964":["iq","Iraq"],"965":["kw","Kuwait"],"966":["sa","Saudi Arabia"],"967":["ye","Yemen"],"968":["om","Oman"],"970":["ps","Palestine"],"971":["ae","UAE"],"972":["il","Israel"],"973":["bh","Bahrain"],"974":["qa","Qatar"],"975":["bt","Bhutan"],"976":["mn","Mongolia"],"977":["np","Nepal"],"992":["tj","Tajikistan"],"993":["tm","Turkmenistan"],"994":["az","Azerbaijan"],"995":["ge","Georgia"],"996":["kg","Kyrgyzstan"],"998":["uz","Uzbekistan"]};
+/* resolve E.164 number -> {iso,name} (longest prefix wins, 3->2->1 digit codes).
+   P19b: min 7 digits — shortcodes/junk ko country mat banao; 3-digit codes (353 Ireland
+   waghera) pehle miss hote the; backend map bhi isi rule par chalta hai. */
+GX.countryOf = function(num){
   const s = String(num||'').replace(/[^\d]/g,'');
   if(s.length < 7) return null;
   for(const L of [3,2,1]){
-    const hit = Skyline.E164[s.slice(0,L)];
+    const hit = GX.E164[s.slice(0,L)];
     if(hit) return {iso:hit[0], name:hit[1]};
   }
   return null;
 };
-
-/* ---------------- Inline SVG Icon Set ---------------- */
+/* ---------------- inline SVG icon set (stroke, 24-viewBox) ---------------- */
 const P = {
   allocate:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>',
   unallocate:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="11" x2="23" y2="11"/>',
@@ -87,96 +45,87 @@ const P = {
   inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
   calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  layers:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
-  skyline:'<polygon points="12,22 12,11 16,11 16,22 18,22 18,7 22,7 22,22 2,22 2,15 6,15 6,22 8,22 8,3 12,3"/><line x1="2" y1="22" x2="22" y2="22"/>'
+  layers:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>'
 };
-
-Skyline.icon = function(name, cls){
+GX.icon = function(name, cls){
   return '<svg class="'+(cls||'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[name]||'')+'</svg>';
 };
-
-Skyline.action = function(icon, tip, onclick, kind){
-  return '<button type="button" class="gx-btn '+(kind||'')+'" data-tip="'+String(tip).replace(/"/g,'&quot;')+'" aria-label="'+String(tip).replace(/"/g,'&quot;')+'" onclick="'+onclick+'">'+Skyline.icon(icon)+'</button>';
+/* compact icon action button: GX.action('trash','Delete Selected','deleteSelectedNumbers()','danger') */
+GX.action = function(icon, tip, onclick, kind){
+  return '<button type="button" class="gx-btn '+(kind||'')+'" data-tip="'+String(tip).replace(/"/g,'&quot;')+'" aria-label="'+String(tip).replace(/"/g,'&quot;')+'" onclick="'+onclick+'">'+GX.icon(icon)+'</button>';
 };
-
-Skyline.compact = function(rootSel, map){
+/* convert an existing text button row into compact icon buttons (visual only) */
+GX.compact = function(rootSel, map){
   document.querySelectorAll(rootSel+' [data-gx]').forEach(b=>{
     const key=b.getAttribute('data-gx'), spec=map[key]; if(!spec) return;
     const tip=b.getAttribute('data-gx-tip')||spec.tip||key;
-    const w=document.createElement('span'); w.innerHTML=Skyline.action(spec.icon, tip, b.getAttribute('onclick')||'', spec.kind||'');
-    b.replaceWith(w.firstElementChild);
+    const w=document.createElement('span'); w.innerHTML=GX.action(spec.icon,tip,b.getAttribute('onclick')||'',spec.kind);
+    const el=w.firstChild; [...b.attributes].forEach(a=>{ if(!['class','data-gx','data-gx-tip','onclick','style'].includes(a.name)) el.setAttribute(a.name,a.value); });
+    el.classList.add('gx-btn'); if(spec.kind) el.classList.add(spec.kind);
+    b.replaceWith(el);
   });
 };
-
-/* ---------------- States ---------------- */
-Skyline.empty = function(msg, icon){
-  return '<div class="empty-state" style="text-align:center;padding:36px 18px;color:var(--sk-muted)"><div class="es-icon" style="margin-bottom:10px;opacity:.7">'+Skyline.icon(icon||'inbox')+'</div><div style="font-size:13.5px;font-weight:600">'+(msg||'No records found')+'</div></div>';
+/* ---------------- states ---------------- */
+GX.empty = function(msg, icon){
+  return '<div class="empty-state"><div class="es-icon">'+GX.icon(icon||'inbox')+'</div><div>'+(msg||'Nothing here yet')+'</div></div>';
 };
-
-Skyline.error = function(msg, retryFnName){
-  return '<div class="error-state" style="text-align:center;padding:28px 16px;color:#fca5a5"><div style="margin-bottom:8px">'+Skyline.icon('warn')+'</div><div style="font-weight:700;font-size:14px">Request failed</div><div style="color:var(--sk-muted);font-size:12.5px;margin:4px 0 12px">'+(msg||'Something went wrong. Please try again.')+'</div>'+(retryFnName?'<button type="button" class="btn btn-blue" onclick="'+retryFnName+'">'+Skyline.icon('refresh')+' Retry</button>':'')+'</div>';
+GX.error = function(msg, retryFnName){
+  return '<div class="error-state">'+GX.icon('warn')+'<div style="margin-top:8px;font-weight:650">Search failed</div><div style="color:var(--muted);font-size:12.5px;margin-top:2px">'+(msg||'Something went wrong. Please try again.')+'</div>'+(retryFnName?'<button class="btn btn-blue" onclick="'+retryFnName+'">'+GX.icon('refresh')+' Retry</button>':'')+'</div>';
 };
-
-Skyline.loading = function(){
-  return '<div class="skeleton" style="height:120px;background:linear-gradient(90deg,rgba(56,189,248,.04) 25%,rgba(56,189,248,.10) 50%,rgba(56,189,248,.04) 75%);border-radius:12px;animation:skPulse 1.6s ease infinite"></div>';
-};
-
-Skyline.safe = function(fn, fallbackMsg){
+GX.loading = function(){ return '<div class="skeleton" style="height:120px"></div>'; };
+/* wrap an existing render fn: never let a render error blank the page */
+GX.safe = function(fn, fallbackMsg){
   return function(){
     try{ return fn.apply(this, arguments); }
-    catch(e){ console.error('[Skyline]', e);
+    catch(e){ console.error('[GX]', e);
       try{
         const host = document.querySelector('#page-cliSearch .table-wrap') || document.querySelector('.table-wrap');
-        if(host) host.innerHTML = Skyline.error((e&&e.message)||'', 'runCliSearch()');
+        if(host) host.innerHTML = GX.error((e&&e.message)||'', 'runCliSearch()');
       }catch(_){}
     }
   };
 };
-
-/* ---------------- Mobile Card Tables ---------------- */
-Skyline.applyCardLabels = function(tableSel){
-  const table = document.querySelector(tableSel); if(!table) return;
-  const heads = [...table.querySelectorAll('thead th')].map(th => th.innerText.replace(/[\u21C5\u25B2\u25BC]/g,'').trim());
-  table.querySelectorAll('tbody tr').forEach(tr => {
-    [...tr.children].forEach((td, i) => {
-      if(!td.hasAttribute('data-label') && heads[i]) td.setAttribute('data-label', heads[i]);
-    });
+/* ---------------- mobile card tables: add data-labels to a table ---------------- */
+GX.cardTable = function(tableSel, labels){
+  const t=document.querySelector(tableSel); if(!t) return;
+  t.classList.add('gx-cards');
+  t.querySelectorAll('tbody tr').forEach(tr=>{
+    [...tr.children].forEach((td,i)=>{ if(labels[i]) td.setAttribute('data-label', labels[i]); });
   });
 };
-
-/* ---------------- World Heatmap ---------------- */
-Skyline.map = async function(hostSel, data){
+/* ---------------- dashboard world map (lightweight SVG, hover tooltips) ---------------- */
+GX.map = async function(hostSel, data){
   const host=document.querySelector(hostSel); if(!host) return;
   let svg;
   try{
-    if(!Skyline.map._svg){ const r=await fetch('/assets/world.svg'); Skyline.map._svg=await r.text(); }
-    svg=Skyline.map._svg;
-  }catch(e){ host.innerHTML=Skyline.error('Map could not be loaded'); return; }
+    if(!GX.map._svg){ const r=await fetch('/assets/world.svg'); GX.map._svg=await r.text(); }
+    svg=GX.map._svg;
+  }catch(e){ host.innerHTML=GX.error('Map could not be loaded'); return; }
   const arr=(data||[]).filter(d=>d.count>0);
   const vmax=Math.max(1,...arr.map(d=>d.count));
   const names={}; arr.forEach(d=>names[d.iso]=d);
   host.innerHTML='<div class="gx-map-wrap">'+svg+'</div>'+
-    '<div class="gx-map-legend" style="display:flex;justify-content:space-between;padding:8px 12px;font-size:11.5px;color:var(--sk-muted)"><span class="k"><span class="sw" style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--sk-primary);margin-right:6px"></span> SMS volume today (darker = more)</span><span class="k" id="gxMapTop"></span></div>';
-  const infoEl=document.createElement('div');
-  infoEl.className='gx-map-info'; infoEl.id='gxMapInfo'; host.appendChild(infoEl);
-  let hideTimer=null;
+    '<div class="gx-map-legend"><span class="k"><span class="sw"></span> SMS volume today (darker = more)</span><span class="k" id="gxMapTop"></span></div>';
+  const wrap=host.querySelector('.gx-map-wrap');
+  const info=document.createElement('div');
+  info.className='gx-map-info';
+  wrap.appendChild(info);
   const showInfo=(d)=>{
-    clearTimeout(hideTimer);
-    infoEl.innerHTML='<b>'+d.name+'</b><br><span class="cnt">'+d.count.toLocaleString()+'</span> SMS today';
-    infoEl.style.display='block';
-    hideTimer=setTimeout(()=>{ infoEl.style.display='none'; },3200);
+    info.innerHTML='<b>'+d.name+'</b><br><span class="cnt">'+d.count.toLocaleString()+'</span> SMS today';
+    info.style.display='block';
+    clearTimeout(info._t); info._t=setTimeout(()=>{info.style.display='none';},2600);
   };
-  host.querySelectorAll('path[id]').forEach(p=>{
-    const id=p.id.toLowerCase();
-    const d=names[id];
+  wrap.querySelectorAll('path').forEach(p=>{
+    const iso=(p.getAttribute('id')||'').toLowerCase();
+    const d=names[iso];
     if(d){
       const t=Math.sqrt(d.count/vmax);
       p.classList.add('gx-on');
-      p.setAttribute('fill-opacity',(0.28+0.72*t).toFixed(2));
+      p.setAttribute('fill-opacity',(0.25+0.75*t).toFixed(2));
       const tip=document.createElementNS('http://www.w3.org/2000/svg','title');
-      tip.textContent=d.name+': '+d.count.toLocaleString()+' SMS today';
+      tip.textContent=d.name+': '+d.count.toLocaleString()+' SMS today'; /* desktop hover */
       p.appendChild(tip);
-      p.addEventListener('click',()=>showInfo(d));
+      p.addEventListener('click',()=>showInfo(d)); /* mobile tap */
     }
   });
   const top=[...arr].sort((a,b)=>b.count-a.count).slice(0,5);
@@ -184,16 +133,16 @@ Skyline.map = async function(hostSel, data){
   if(topEl && top.length) topEl.textContent='Top: '+top.map(d=>d.name+' '+d.count.toLocaleString()).join(' · ');
 };
 
-/* ---------------- Payment Term Formatter ---------------- */
-Skyline.payterm = function(v){
+/* payment-term display: internal enum -> industry notation (raw pass-through otherwise) */
+GX.payterm = function(v){
   if(v===null||v===undefined) return '';
   const s=String(v).trim(); if(!s) return '';
   const m={daily:'1/1','1_1':'1/1','1/1':'1/1',weekly:'7/1','7_1':'7/1','7x1':'7x1','7/1':'7/1',weekly_7_1:'7/1',weekly_7_7:'7/7','7_7':'7/7','7/7':'7/7','7x7':'7x7',monthly_30x45:'30/45','30_45':'30/45','30x45':'30x45','30/45':'30/45',monthly:'30/45'};
   return m[s.toLowerCase()]||s;
 };
-
-/* ---------------- Export Wiring (Copy / CSV / Excel) ---------------- */
-Skyline.wireExports = function(){
+/* wire every .exp-btns Copy/CSV/Excel button (current visible page of nearest table).
+   Buttons with their own onclick (e.g. background CSV export) are left alone. */
+GX.wireExports = function(){
   document.addEventListener('click', async (e)=>{
     const b=e.target.closest('.exp-btns .btn'); if(!b||b.getAttribute('onclick')) return;
     const wrap=b.closest('.exp-btns');
@@ -205,7 +154,7 @@ Skyline.wireExports = function(){
     const esc=s=>'"'+String(s||'').replace(/"/g,'""').replace(/\s+/g,' ')+'"';
     if(label==='copy'){
       const tsv=head.join('\t')+'\n'+rows.map(tr=>[...tr.children].map(td=>(td.innerText||'').trim()).join('\t')).join('\n');
-      try{ await navigator.clipboard.writeText(tsv); const old=b.textContent; b.textContent='Copied ✓'; setTimeout(()=>b.textContent=old,1200); }catch(err){ console.warn('[Skyline] copy failed',err); }
+      try{ await navigator.clipboard.writeText(tsv); const old=b.textContent; b.textContent='Copied \u2713'; setTimeout(()=>b.textContent=old,1200); }catch(err){ console.warn('[GX] copy failed',err); }
       return;
     }
     if(label==='csv'||label==='excel'){
@@ -217,11 +166,10 @@ Skyline.wireExports = function(){
     }
   });
 };
-try{ Skyline.wireExports(); }catch(e){}
-
-/* ---------------- SVG Icon Set ---------------- */
+try{ GX.wireExports(); }catch(e){}
+/* ---------------- GX ICON SYSTEM (inline SVG, koi external library nahi) ---------------- */
 const I=(p)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
-Skyline.icons={
+GX.icons={
   copy:I('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
   download:I('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'),
   upload:I('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'),
@@ -247,69 +195,326 @@ Skyline.icons={
   dollar:I('<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'),
   history:I('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>')
 };
-Skyline.svg=(k)=>Skyline.icons[k]?('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+Skyline.icons[k]+'</svg>'):'';
-
-/* Emoji icon-btns -> consistent SVG */
-Skyline.iconifyActions=function(root){
+GX.svg=(k)=>GX.icons[k]?('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+GX.icons[k]+'</svg>'):'';
+/* emoji icon-btns -> consistent SVG (dynamic tables re-render: MutationObserver) */
+GX.iconifyActions=function(root){
   const map={'\u270e':'edit','\u270f':'edit','\ud83d\uddd1':'trash','\u2699':'key','\u25b6':'play','\u27f3':'refresh','\u21c4':'shuffle','\ud83d\udc41':'eye'};
   (root||document).querySelectorAll('.icon-btn').forEach(b=>{
     const t=(b.textContent||'').trim();
     const k=map[t]||map[t.replace(/[\u270e\u270f\ud83d\uddd1\u2699\u25b6\u27f3\u21c4\ud83d\udc41]/g,'')];
-    if(k&&Skyline.icons[k]){
-      b.innerHTML=Skyline.icons[k];
+    if(k&&GX.icons[k]){
+      b.innerHTML=GX.icons[k];
       const tip=b.getAttribute('title')||b.getAttribute('data-tip')||k;
       b.setAttribute('data-tip',tip); b.setAttribute('aria-label',tip); b.setAttribute('title',tip);
     }
   });
 };
-let _skIcoT=null;
+let _gxIcoT=null;
 try{
-  new MutationObserver(()=>{ clearTimeout(_skIcoT); _skIcoT=setTimeout(()=>Skyline.iconifyActions(),120); })
+  new MutationObserver(()=>{ clearTimeout(_gxIcoT); _gxIcoT=setTimeout(()=>GX.iconifyActions(),120); })
     .observe(document.documentElement,{childList:true,subtree:true});
 }catch(e){}
+/* ---------------- LIGHT/DARK THEME TOGGLE (visual only, localStorage) ---------------- */
+// Light-only presentation; ignore retired dark preferences without touching auth storage.
+GX.theme = { apply(){document.body.classList.add('gx-light');document.body.classList.remove('ms-dark-mode');document.documentElement.classList.add('gx-light');},current(){return 'light';},init(){this.apply();} };
+GX.theme.init();
+try{ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>GX.iconifyActions()); else GX.iconifyActions(); }catch(e){}
+GX.pay3=(v)=>{let s=String(v??'').replace(/[$,\s]/g,'');const m=s.match(/-?\d+(?:\.\d+)?/);if(!m)return '0';const p=m[0].split('.');if(p.length<2)return p[0];const d=p[1].slice(0,3).replace(/0+$/,'');return d?p[0]+'.'+d:p[0];};
+GX.moneyShort=(v)=>{const n=Number(v)||0;const a=Math.abs(n);if(a>=1e9)return (n/1e9).toFixed(a%1e9?2:0)+'B';if(a>=1e6)return (n/1e6).toFixed(a%1e6?2:0)+'M';if(a>=1e4)return (n/1e3).toFixed(a%1e3?1:0)+'K';let s=String(n);if(s.includes('.'))s=s.replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');return s;};
+GX.GX=GX; window.GX=GX;
+})();
 
-/* ---------------- Light/Dark Theme Toggle ---------------- */
-Skyline.theme = {
-  apply(t){
-    const isLight = t==='light';
-    document.body.classList.toggle('gx-light', isLight);
-    document.body.classList.toggle('sk-light', isLight);
-    try{ document.documentElement.classList.toggle('gx-light', isLight); document.documentElement.classList.toggle('sk-light', isLight); }catch(e){}
-  },
-  current(){ try{ return localStorage.getItem('sk-theme')||localStorage.getItem('gx-theme')||'dark'; }catch(e){ return 'dark'; } },
-  init(){
-    this.apply(this.current());
-    const build=()=>{
-      const btn=document.createElement('button');
-      btn.type='button'; btn.className='gx-theme-btn'; btn.setAttribute('data-tip','Skyline Dark / Light mode'); btn.setAttribute('aria-label','Toggle theme');
-      const sun='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/></svg>';
-      const moon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-      const paint=()=>{ btn.innerHTML = document.body.classList.contains('sk-light')||document.body.classList.contains('gx-light') ? moon : sun; };
-      paint();
-      btn.addEventListener('click',()=>{
-        const next = (document.body.classList.contains('sk-light')||document.body.classList.contains('gx-light')) ? 'dark' : 'light';
-        this.apply(next);
-        try{ localStorage.setItem('sk-theme', next); localStorage.setItem('gx-theme', next); }catch(e){}
-        paint();
-      });
-      const tb=document.querySelector('.topbar')||document.querySelector('.tb1')||document.querySelector('.mgr-topbar');
-      if(tb){ tb.appendChild(btn); }
-      else { btn.style.cssText='position:fixed;right:14px;bottom:14px;z-index:90'; document.body.appendChild(btn); }
-    };
-    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build);
-    else build();
+/* ============================================================================
+   SEARCHABLE DROPDOWN CONTROLLER
+   Search input strictly INSIDE the opened dropdown.
+   ========================================================================== */
+window.GX_DROPDOWNS = window.GX_DROPDOWNS || {};
+
+window.toggleSearchDropdown = function(id) {
+  const dd = document.getElementById(id);
+  if (!dd) return;
+  const menu = dd.querySelector('.sd-menu');
+  if (!menu) return;
+  const isHidden = menu.style.display === 'none' || !menu.style.display;
+
+  // Close any other open dropdowns first
+  document.querySelectorAll('.sd-menu').forEach(m => {
+    if (m !== menu) m.style.display = 'none';
+  });
+
+  if (isHidden) {
+    menu.style.display = 'flex';
+    const inp = menu.querySelector('input');
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+    }
+    // Re-filter to show all options
+    window.filterSearchDropdown(id, '');
+  } else {
+    menu.style.display = 'none';
   }
 };
-try{ Skyline.theme.init(); }catch(e){}
-try{ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>Skyline.iconifyActions()); else Skyline.iconifyActions(); }catch(e){}
 
-Skyline.pay3=(v)=>{let s=String(v??'').replace(/[$,\s]/g,'');const m=s.match(/-?\d+(?:\.\d+)?/);if(!m)return '0';const p=m[0].split('.');if(p.length<2)return p[0];const d=p[1].slice(0,3).replace(/0+$/,'');return d?p[0]+'.'+d:p[0];};
-Skyline.moneyShort=(v)=>{const n=Number(v)||0;const a=Math.abs(n);if(a>=1e9)return (n/1e9).toFixed(a%1e9?2:0)+'B';if(a>=1e6)return (n/1e6).toFixed(a%1e6?2:0)+'M';if(a>=1e4)return (n/1e3).toFixed(a%1e3?1:0)+'K';let s=String(n);if(s.includes('.'))s=s.replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');return s;};
+window.filterSearchDropdown = function(id, q) {
+  const dd = document.getElementById(id);
+  if (!dd) return;
+  const opts = dd.querySelectorAll('.sd-option');
+  const term = String(q || '').toLowerCase().trim();
+  let matches = 0;
+  opts.forEach(opt => {
+    const txt = (opt.getAttribute('data-search') || opt.textContent || '').toLowerCase();
+    if (!term || txt.includes(term)) {
+      opt.style.display = 'flex';
+      matches++;
+    } else {
+      opt.style.display = 'none';
+    }
+  });
+  let noRes = dd.querySelector('.sd-no-results');
+  if (!matches) {
+    if (!noRes) {
+      const container = dd.querySelector('.sd-options');
+      if (container) {
+        noRes = document.createElement('div');
+        noRes.className = 'sd-no-results';
+        noRes.textContent = 'No matching results';
+        container.appendChild(noRes);
+      }
+    } else {
+      noRes.style.display = 'block';
+    }
+  } else if (noRes) {
+    noRes.style.display = 'none';
+  }
+};
 
-/* Export to window */
-Skyline.Skyline = Skyline;
-Skyline.GX = Skyline;
-window.Skyline = Skyline;
-window.GX = Skyline;
+window.setSearchDropdownValue = function(id, value, label) {
+  let dd = document.getElementById(id);
+  if (!dd) return;
+  let wrap = dd.classList && dd.classList.contains('searchable-dropdown') ? dd : dd.closest ? dd.closest('.searchable-dropdown') : null;
+  if (!wrap && window.GX_DROPDOWNS) {
+    const rawEntry = window.GX_DROPDOWNS[id] || window.GX_DROPDOWNS['dd_wrap_' + id];
+    if (rawEntry && rawEntry.wrapId) wrap = document.getElementById(rawEntry.wrapId);
+  }
+  const hidden = (dd && dd.tagName === 'INPUT') ? dd : (wrap ? wrap.querySelector('input[type="hidden"]') : null);
+  if (hidden) hidden.value = value;
+  const lbl = wrap ? wrap.querySelector('.sd-label') : null;
+  if (lbl) lbl.textContent = label || value || 'Select';
 
-})();
+  if (wrap) {
+    wrap.querySelectorAll('.sd-option').forEach(opt => {
+      if (opt.getAttribute('data-value') === String(value)) {
+        opt.classList.add('selected');
+      } else {
+        opt.classList.remove('selected');
+      }
+    });
+    const menu = wrap.querySelector('.sd-menu');
+    if (menu) menu.style.display = 'none';
+  }
+
+  // Trigger change event on hidden input if listeners exist
+  if (hidden) {
+    const ev = new Event('change', { bubbles: true });
+    hidden.dispatchEvent(ev);
+  }
+};
+
+// Global click outside listener to auto-close any open dropdown menu
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.searchable-dropdown')) {
+    document.querySelectorAll('.sd-menu').forEach(m => {
+      m.style.display = 'none';
+    });
+  }
+});
+
+/* ============================================================================
+   ZIP ARCHIVE BUILDER (Standard Pure JS Store ZIP)
+   Used for Sections 46, 50 (Detailed Allocation Files.zip & Numbers Only Files.zip)
+   Zero external dependencies, opens natively in all operating systems.
+   ========================================================================== */
+window.createZipArchive = function(fileList) {
+  const textEncoder = new TextEncoder();
+  const crcTable = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+    crcTable[i] = c;
+  }
+  function calcCrc(bytes) {
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) crc = crcTable[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  const entries = (fileList || []).map(f => {
+    const nameBytes = textEncoder.encode(f.name);
+    const dataBytes = typeof f.content === 'string' ? textEncoder.encode(f.content) : (f.content || new Uint8Array(0));
+    return { nameBytes, dataBytes, crc: calcCrc(dataBytes), size: dataBytes.length };
+  });
+
+  let totalSize = 0;
+  for (const f of entries) totalSize += 30 + f.nameBytes.length + f.size;
+  let cdSize = 0;
+  for (const f of entries) cdSize += 46 + f.nameBytes.length;
+  totalSize += cdSize + 22;
+
+  const buf = new Uint8Array(totalSize);
+  const view = new DataView(buf.buffer);
+  let pos = 0;
+  const offsets = [];
+
+  for (const f of entries) {
+    offsets.push(pos);
+    view.setUint32(pos, 0x04034b50, true);
+    view.setUint16(pos + 4, 20, true);
+    view.setUint16(pos + 6, 0x0800, true); // UTF-8
+    view.setUint16(pos + 8, 0, true);      // store
+    view.setUint16(pos + 10, 0, true);
+    view.setUint16(pos + 12, 0, true);
+    view.setUint32(pos + 14, f.crc, true);
+    view.setUint32(pos + 18, f.size, true);
+    view.setUint32(pos + 22, f.size, true);
+    view.setUint16(pos + 26, f.nameBytes.length, true);
+    view.setUint16(pos + 28, 0, true);
+    pos += 30;
+    buf.set(f.nameBytes, pos);
+    pos += f.nameBytes.length;
+    buf.set(f.dataBytes, pos);
+    pos += f.size;
+  }
+
+  const cdStart = pos;
+  for (let i = 0; i < entries.length; i++) {
+    const f = entries[i];
+    const offset = offsets[i];
+    view.setUint32(pos, 0x02014b50, true);
+    view.setUint16(pos + 4, 20, true);
+    view.setUint16(pos + 6, 20, true);
+    view.setUint16(pos + 8, 0x0800, true);
+    view.setUint16(pos + 10, 0, true);
+    view.setUint16(pos + 12, 0, true);
+    view.setUint16(pos + 14, 0, true);
+    view.setUint32(pos + 16, f.crc, true);
+    view.setUint32(pos + 20, f.size, true);
+    view.setUint32(pos + 24, f.size, true);
+    view.setUint16(pos + 28, f.nameBytes.length, true);
+    view.setUint16(pos + 30, 0, true);
+    view.setUint16(pos + 32, 0, true);
+    view.setUint16(pos + 34, 0, true);
+    view.setUint16(pos + 36, 0, true);
+    view.setUint32(pos + 38, 0, true);
+    view.setUint32(pos + 42, offset, true);
+    pos += 46;
+    buf.set(f.nameBytes, pos);
+    pos += f.nameBytes.length;
+  }
+
+  view.setUint32(pos, 0x06054b50, true);
+  view.setUint16(pos + 4, 0, true);
+  view.setUint16(pos + 6, 0, true);
+  view.setUint16(pos + 8, entries.length, true);
+  view.setUint16(pos + 10, entries.length, true);
+  view.setUint32(pos + 12, pos - cdStart, true);
+  view.setUint32(pos + 16, cdStart, true);
+  view.setUint16(pos + 20, 0, true);
+
+  return new Blob([buf], { type: 'application/zip' });
+};
+
+/* ============================================================================
+   renderSearchSelect HELPER
+   Renders custom searchable dropdown with search input INSIDE the menu.
+   ========================================================================== */
+window.renderSearchSelect = function(containerId, config) {
+  const container = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
+  if (!container) return;
+
+  const rawId = config.id || ('sd_' + Math.random().toString(36).substring(2, 9));
+  const wrapId = 'dd_wrap_' + rawId;
+  const inputId = config.inputName || config.id || ('input_' + rawId);
+  const placeholder = config.placeholder || 'Select Option';
+  const searchPlaceholder = config.searchPlaceholder || 'Search...';
+  const items = config.items || [];
+  const initialValue = config.value !== undefined ? String(config.value) : '';
+
+  // Sort items A-Z by label
+  items.sort((a, b) => String(a.label || '').localeCompare(String(b.label || '')));
+
+  let selectedLabel = placeholder;
+  const initialItem = items.find(it => String(it.value) === initialValue);
+  if (initialItem) selectedLabel = initialItem.label;
+
+  container.innerHTML = `
+    <div class="searchable-dropdown" id="${wrapId}" data-raw-id="${rawId}" style="${config.style || ''}">
+      <div class="sd-trigger" onclick="toggleSearchDropdown('${wrapId}')">
+        <span class="sd-label" id="${rawId}-label">${escapeHtml(selectedLabel)}</span>
+        <span class="sd-caret">▾</span>
+      </div>
+      <div class="sd-menu" id="${rawId}-menu" style="display:none">
+        <div class="sd-search-box" onclick="event.stopPropagation()">
+          <input type="text" placeholder="${escapeHtml(searchPlaceholder)}" oninput="filterSearchDropdown('${wrapId}', this.value)" autocomplete="off">
+        </div>
+        <div class="sd-options" id="${rawId}-options">
+          ${items.map(it => {
+            const isSel = String(it.value) === initialValue;
+            const searchKey = escapeHtml((it.search || it.label || '').toLowerCase());
+            return `<div class="sd-option ${isSel ? 'selected' : ''}" data-value="${escapeHtml(String(it.value))}" data-search="${searchKey}" onclick="onSelectSearchDropdownItem('${wrapId}', '${escapeHtml(String(it.value))}', '${escapeHtml(it.label)}')">
+              <span>${escapeHtml(it.label)}</span>
+              ${it.badge ? `<span class="tag" style="font-size:10px;margin-left:6px">${escapeHtml(it.badge)}</span>` : ''}
+            </div>`;
+          }).join('')}
+          ${!items.length ? '<div class="sd-no-results">No options available</div>' : ''}
+        </div>
+      </div>
+      <input type="hidden" id="${inputId}" value="${escapeHtml(initialValue)}">
+    </div>
+  `;
+
+  // Store callback under both keys for instant retrieval
+  const entry = {
+    config: config,
+    rawId: rawId,
+    wrapId: wrapId,
+    items: items,
+    onChange: config.onChange,
+    onSelect: config.onSelect
+  };
+  window.GX_DROPDOWNS[wrapId] = entry;
+  window.GX_DROPDOWNS[rawId] = entry;
+};
+
+window.onSelectSearchDropdownItem = function(wrapId, val, label) {
+  const meta = window.GX_DROPDOWNS[wrapId] || {};
+  if (meta.onSelect) {
+    const item = (meta.items || []).find(it => String(it.value) === String(val)) || { value: val, label: label };
+    meta.onSelect(item);
+    if (meta.config && meta.config.keepOpenOnSelect) {
+      const menu = document.getElementById(meta.rawId + '-menu');
+      if (menu) {
+        const inp = menu.querySelector('input');
+        if (inp) inp.value = '';
+        window.filterSearchDropdown(wrapId, '');
+      }
+      return;
+    }
+  }
+
+  window.setSearchDropdownValue(wrapId, val, label);
+  if (meta.onChange) {
+    const item = (meta.items || []).find(it => String(it.value) === String(val)) || { value: val, label: label };
+    meta.onChange(val, item);
+  }
+};
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>'"]/g, tag => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[tag] || tag));
+}

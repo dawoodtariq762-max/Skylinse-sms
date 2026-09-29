@@ -3,7 +3,7 @@
  * Uses localStorage token, adds Authorization header, redirects on 401.
  */
 (function () {
-  const AUTH_KEYS = ['ms_token','ms_role','ms_user','ms_name'];
+  const AUTH_KEYS = ['ms_token','ms_role','ms_user','ms_name','gx_chat_unlock_token','gx_agent_sec_unlocked'];
   function clearAuthStorage(){
     try{ AUTH_KEYS.forEach(k=>{ sessionStorage.removeItem(k); localStorage.removeItem(k); }); }catch(e){}
   }
@@ -21,6 +21,8 @@
     const opt = { method, headers: { 'Content-Type': 'application/json' } };
     const t = TOKEN();
     if (t) opt.headers['Authorization'] = 'Bearer ' + t;
+    const unlock = sessionStorage.getItem('gx_chat_unlock_token') || localStorage.getItem('gx_chat_unlock_token');
+    if (unlock) opt.headers['X-Chat-Unlock-Token'] = unlock;
     if (body !== undefined) opt.body = JSON.stringify(body);
     const r = await fetch('/api' + path, opt);
     if (r.status === 401) { clearAuthStorage(); location.href = '/panel-login'; throw new Error('Session expired'); }
@@ -31,9 +33,11 @@
 
   // PHASE-2: multipart upload helper (large CSV imports without JSON body)
   async function upload(path, formData) {
-    const opt = { method: 'POST', body: formData };
+    const opt = { method: 'POST', body: formData, headers: {} };
     const t = TOKEN();
     if (t) opt.headers['Authorization'] = 'Bearer ' + t;
+    const unlock = sessionStorage.getItem('gx_chat_unlock_token') || localStorage.getItem('gx_chat_unlock_token');
+    if (unlock) opt.headers['X-Chat-Unlock-Token'] = unlock;
     const r = await fetch('/api' + path, opt);
     if (r.status === 401) { clearAuthStorage(); location.href = '/panel-login'; throw new Error('Session expired'); }
     const data = await r.json().catch(() => ({}));
@@ -98,40 +102,27 @@
     panel.id='msSettingsPanel'; panel.className='ms-notif-panel'; panel.style.top='68px';
     panel.innerHTML=`<div class="ms-notif-head"><b>Panel Settings</b><div class="ms-notif-actions"><button id="msCloseSettings">×</button></div></div>
       <div class="ms-notif-list" style="padding:14px 16px">
-        <label class="ms-switch" style="justify-content:space-between"><span>Dark mode</span><input type="checkbox" id="msSetDark"></label>
+        <div class="ms-switch">Appearance: Light · Skyline SMS</div>
       </div>`;
     document.body.appendChild(panel);
     document.getElementById('msCloseSettings').onclick=()=>panel.classList.remove('show');
-    document.getElementById('msSetDark').onchange=(e)=>setDarkMode(e.target.checked);
   }
 
-  function setDarkMode(on){
-    document.body.classList.toggle('ms-dark-mode', !!on);
-    localStorage.setItem('ms_dark_mode', on?'1':'0');
-  }
+
   function ensureThemeCSS(){
     if(document.getElementById('msThemeCss')) return;
     const st=document.createElement('style');st.id='msThemeCss';
     st.textContent=`
-      /* Skyline SMS — runtime UI polish (motion + injected widgets). */
+      /* Skyline SMS runtime motion and widgets; palette in galaxy.css. */
       .page.active{animation:msPageFade .24s cubic-bezier(.22,.9,.3,1) both}.card,.table-wrap,.toolbar,.stat-card{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background-color .18s ease}button,.btn,.tb-btn,.nav-item,.sub-item,.tab,.ritem,.rsubitem,.navtab,.dropitem{transition:transform .14s ease,box-shadow .14s ease,background-color .14s ease,color .14s ease,opacity .14s ease}button:active,.btn:active{transform:translateY(1px) scale(.99)}tbody tr{transition:background-color .14s ease}@keyframes msPageFade{from{opacity:.55;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-      .ms-progress{position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#2563eb,#38bdf8,#60a5fa);z-index:20000;transform-origin:left;animation:msProgress .7s ease both}.ms-working{box-shadow:0 0 0 4px rgba(37,99,235,.25)!important;filter:brightness(1.04)}@keyframes msProgress{0%{transform:scaleX(0)}70%{transform:scaleX(.82)}100%{transform:scaleX(1);opacity:0}}
-      .ms-toast{position:fixed;right:22px;bottom:22px;background:linear-gradient(135deg,#0c1322,#142038);border:1px solid rgba(56,189,248,.35);color:#fff;border-radius:12px;padding:11px 16px;font-weight:700;font-size:13px;box-shadow:0 20px 50px rgba(10,18,36,.65);z-index:20001;opacity:0;transform:translateY(8px);animation:msToast .95s ease both}@keyframes msToast{15%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(8px)}}
-      [data-page]{position:relative}.ms-page-link-overlay{position:absolute;inset:0;z-index:3;background:transparent!important;color:inherit!important;text-decoration:none!important}.ms-page-link-overlay:focus{outline:2px solid rgba(37,99,235,.65);outline-offset:2px;border-radius:inherit}
-      /* Contrast Boost: optional higher-contrast variant of the Skyline dark theme. */
-      body.ms-dark-mode{background:#070b14!important}
-      body.ms-dark-mode .card,body.ms-dark-mode .toolbar,body.ms-dark-mode .table-wrap,body.ms-dark-mode .modal,body.ms-dark-mode .modal-box,body.ms-dark-mode .ms-modal,body.ms-dark-mode .ms-notif-panel,body.ms-dark-mode .ms-profile-menu{background:#0d1527!important;border-color:rgba(59,130,246,.25)!important}
-      body.ms-dark-mode .topbar,body.ms-dark-mode .tb1,body.ms-dark-mode .appbar{background:rgba(8,12,22,.94)!important}
-      body.ms-dark-mode .sidebar,body.ms-dark-mode .rail{background:#060a12!important}
-      body.ms-dark-mode table th{background:#070b14!important}
-      body.ms-dark-mode tbody tr:nth-child(even) td{background:rgba(59,130,246,.03)!important}
-      body.ms-dark-mode input,body.ms-dark-mode select,body.ms-dark-mode textarea,body.ms-dark-mode .ms-field input{background:#090e1a!important}
+      .ms-progress{position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#007acc,#6db9df,#0054b8);z-index:20000;transform-origin:left;animation:msProgress .7s ease both}.ms-working{box-shadow:0 0 0 4px rgba(0,122,204,.20)!important;filter:brightness(1.04)}@keyframes msProgress{0%{transform:scaleX(0)}70%{transform:scaleX(.82)}100%{transform:scaleX(1);opacity:0}}
+      .ms-toast{position:fixed;right:22px;bottom:22px;background:linear-gradient(96deg,#eef8ff,#ffffff);border:1px solid rgba(0,122,204,.34);color:#333;border-radius:12px;padding:11px 14px;font-weight:700;font-size:13px;box-shadow:0 20px 50px rgba(0,70,110,.14);z-index:20001;opacity:0;transform:translateY(8px);animation:msToast .95s ease both}@keyframes msToast{15%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(8px)}}
+      [data-page]{position:relative}.ms-page-link-overlay{position:absolute;inset:0;z-index:3;background:transparent!important;color:inherit!important;text-decoration:none!important}.ms-page-link-overlay:focus{outline:2px solid rgba(232,21,26,.55);outline-offset:2px;border-radius:inherit}
     `
     document.head.appendChild(st);
   }
   async function openSettings(){
     ensureSettingsUI();
-    document.getElementById('msSetDark').checked=localStorage.getItem('ms_dark_mode')==='1';
     document.getElementById('msSettingsPanel').classList.add('show');
   }
 
@@ -382,22 +373,25 @@
     setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);
   }
   function findExportTable(btn){
-    const page=btn.closest('.page') || document;
+    const page=btn.closest('.page') || btn.closest('main') || document;
     let wrap=btn.closest('.table-wrap');
     if(wrap){
       let n=wrap.nextElementSibling;
       while(n){ const t=n.querySelector&&n.querySelector('table'); if(t) return t; n=n.nextElementSibling; }
       const t=wrap.querySelector('table'); if(t) return t;
     }
-    const card=btn.closest('.card');
-    if(card){ const t=[...card.querySelectorAll('table')].find(x=>x.offsetParent!==null && x.querySelector('tbody')); if(t) return t; }
-    const tables=[...page.querySelectorAll('table')].filter(t=>t.offsetParent!==null && t.querySelector('tbody'));
+    const card=btn.closest('.card') || btn.closest('.two-col') || btn.closest('section');
+    if(card){
+      const t=[...card.querySelectorAll('table')].find(x=>(x.offsetParent!==null || !document.body.offsetParent) && x.querySelector('tbody'));
+      if(t) return t;
+    }
+    const tables=[...page.querySelectorAll('table')].filter(t=>(t.offsetParent!==null || !document.body.offsetParent) && t.querySelector('tbody'));
     return tables[0] || page.querySelector('table');
   }
   function exportTable(btn, mode){
     const table=findExportTable(btn); if(!table){ alert('No table found to export.'); return; }
     const data=tableToMatrix(table); if(!data.length){ alert('No rows to export.'); return; }
-    const title=(document.querySelector('.page.active h2')?.textContent||document.title||'skyline-export').trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'') || 'skyline-export';
+    const title=(document.querySelector('.page.active h2')?.textContent||document.title||'powerx-export').trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'') || 'powerx-export';
     const csv=data.map(r=>r.map(csvEscape).join(',')).join('\n');
     if(mode==='copy'){
       const copyText=data.map(r=>r.join('\t')).join('\n');
@@ -455,10 +449,20 @@
     }catch(e){}
   }
   function exportModeFromButton(btn){
-    const label=(btn.textContent||btn.value||'').toLowerCase();
+    if(!btn) return '';
+    const label=[
+      btn.getAttribute('data-mode'),
+      btn.getAttribute('data-tip'),
+      btn.getAttribute('title'),
+      btn.getAttribute('aria-label'),
+      btn.textContent,
+      btn.value,
+      btn.className
+    ].filter(Boolean).join(' ').toLowerCase();
+
     if(label.includes('copy')) return 'copy';
     if(label.includes('csv')) return 'csv';
-    if(label.includes('excel')) return 'excel';
+    if(label.includes('excel') || label.includes('xls')) return 'excel';
     if(label.includes('pdf')) return 'pdf';
     if(label.includes('print')) return 'print';
     return '';
@@ -466,7 +470,14 @@
   function removePdfPrintButtons(root=document){
     const scope = root && root.querySelectorAll ? root : document;
     scope.querySelectorAll('.exp-btns button').forEach(btn=>{
-      const label=(btn.textContent||'').trim().toLowerCase();
+      const label=[
+        btn.getAttribute('data-mode'),
+        btn.getAttribute('data-tip'),
+        btn.getAttribute('title'),
+        btn.getAttribute('aria-label'),
+        btn.textContent,
+        btn.value
+      ].filter(Boolean).join(' ').trim().toLowerCase();
       if(label==='pdf' || label==='print') btn.remove();
     });
   }
@@ -476,10 +487,13 @@
       if(btn.dataset.msExportBound) return;
       btn.dataset.msExportBound='1';
       btn.type='button';
+      if(btn.getAttribute('onclick')) return; // allow custom onclick handler
       btn.addEventListener('click',(e)=>{
-        e.preventDefault(); e.stopPropagation();
         const mode=exportModeFromButton(btn);
-        if(mode) exportTable(btn,mode);
+        if(mode) {
+          e.preventDefault(); e.stopPropagation();
+          exportTable(btn,mode);
+        }
       });
     });
   }
@@ -489,9 +503,12 @@
     mo.observe(document.body,{childList:true,subtree:true});
     document.addEventListener('click',(e)=>{
       const btn=e.target.closest('.exp-btns button'); if(!btn) return;
-      e.preventDefault(); e.stopPropagation();
+      if(btn.getAttribute('onclick')) return; // allow custom inline handlers like exportNumbersCsv()
       const mode=exportModeFromButton(btn);
-      if(mode) exportTable(btn,mode);
+      if(mode) {
+        e.preventDefault(); e.stopPropagation();
+        exportTable(btn,mode);
+      }
     }, true);
   }
   function initActionFeedback(){
@@ -625,9 +642,7 @@
 
   function initTopbarControls(){
     ensureThemeCSS();
-    if(localStorage.getItem('ms_dark_mode')==='1') document.body.classList.add('ms-dark-mode');
-    const themeBtns=[...document.querySelectorAll('[title="Theme"]')];
-    themeBtns.forEach(b=>{b.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();setDarkMode(!document.body.classList.contains('ms-dark-mode'));});});
+    document.body.classList.remove('ms-dark-mode');
     const settingsBtns=[...document.querySelectorAll('[title="Settings"]')];
     settingsBtns.forEach(b=>{b.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();openSettings();});});
     document.querySelectorAll('.avatar,.who').forEach(a=>a.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();openProfileMenu();}));
@@ -644,16 +659,16 @@
       const ov=document.createElement('div');
       ov.id='gxLegalGate';
       ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
-      ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(5,7,12,.82);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:14px;';
-      ov.innerHTML = '<div style="background:#0e172a;color:#f8fafc;max-width:620px;width:100%;max-height:94vh;overflow:auto;border-radius:18px;border:1px solid rgba(56,189,248,.25);box-shadow:0 30px 90px rgba(0,0,0,.75);padding:24px 22px;font-family:inherit">'
-        + '<h2 style="margin:0 0 4px;font-size:19px;line-height:1.3;color:#ffffff">SKYLINE SMS &mdash; Legal &amp; Acceptable Use Policy</h2>'
-        + '<p style="margin:12px 0;color:#cbd5e1;font-size:13.5px;line-height:1.65"><b style="color:#ffffff">About SKYLINE SMS:</b> SKYLINE SMS is an enterprise carrier messaging platform where authorized users manage phone number pools, inbound/outbound SMS routing, reporting, allocations, and carrier settlement services.</p>'
-        + '<p style="margin:10px 0;color:#cbd5e1;font-size:13.5px;line-height:1.65">By continuing, you confirm that you will use the numbers and SMS services provided through SKYLINE SMS solely for lawful and legitimate purposes.</p>'
-        + '<p style="margin:10px 0;color:#cbd5e1;font-size:13.5px;line-height:1.65">You must not use these numbers for fake accounts, fraud, scams, abuse, spam, impersonation, unauthorized access, or any unlawful activity. You are solely responsible for ensuring compliance with applicable telecommunications laws.</p>'
-        + '<p style="margin:10px 0 14px;color:#cbd5e1;font-size:13.5px;line-height:1.65">By clicking Accept, you agree to these enterprise terms.</p>'
-        + '<label style="display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#f8fafc;cursor:pointer;padding:11px;border:1px solid rgba(56,189,248,.22);border-radius:12px;background:rgba(14,22,40,.6)"><input type="checkbox" id="gxLegalChk" style="width:18px;height:18px;accent-color:#2563eb;margin-top:1px;flex:none"><span>I agree to use SKYLINE SMS services only for lawful and legitimate purposes.</span></label>'
-        + '<div style="display:flex;justify-content:flex-end;margin-top:16px"><button id="gxLegalBtn" disabled style="opacity:.45;pointer-events:none;background:linear-gradient(135deg,#1d4ed8,#2563eb 55%,#38bdf8);color:#fff;border:0;border-radius:12px;padding:11px 24px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 8px 24px rgba(37,99,235,.35)">Accept &amp; Continue</button></div>'
-        + '<div id="gxLegalErr" style="color:#fca5a5;font-size:12.5px;margin-top:8px;display:none"></div>'
+      ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(210,215,220,.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:14px;';
+      ov.innerHTML = '<div style="background:#fff;color:#333;max-width:620px;width:100%;max-height:94vh;overflow:auto;border-radius:18px;border:1px solid rgba(190,195,205,.22);box-shadow:0 30px 90px rgba(0,0,0,.12);padding:24px 22px;font-family:inherit">'
+        + '<h2 style="margin:0 0 4px;font-size:19px;line-height:1.3">Skyline SMS &mdash; Legal Use &amp; Acceptable Use</h2>'
+        + '<p style="margin:12px 0;color:#555;font-size:13.5px;line-height:1.65"><b style="color:#333">About Skyline SMS:</b> Skyline SMS is an SMS management platform where authorized users can manage numbers, SMS activity, reports, allocations and related services.</p>'
+        + '<p style="margin:10px 0;color:#555;font-size:13.5px;line-height:1.65">By continuing, you confirm that you will use the numbers and SMS services provided through Skyline SMS only for lawful and legitimate purposes.</p>'
+        + '<p style="margin:10px 0;color:#555;font-size:13.5px;line-height:1.65">You must not use these numbers for fake accounts, fraud, scams, abuse, spam, impersonation, unauthorized access, or any other illegal activity. You are responsible for ensuring that your use complies with applicable laws and the rules of the services you use.</p>'
+        + '<p style="margin:10px 0 14px;color:#555;font-size:13.5px;line-height:1.65">By clicking Accept, you agree to these terms.</p>'
+        + '<label style="display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#333;cursor:pointer;padding:11px;border:1px solid rgba(190,195,205,.28);border-radius:12px"><input type="checkbox" id="gxLegalChk" style="width:18px;height:18px;accent-color:#30ABED;margin-top:1px;flex:none"><span>I agree to use Skyline SMS services only for lawful and legitimate purposes.</span></label>'
+        + '<div style="display:flex;justify-content:flex-end;margin-top:16px"><button id="gxLegalBtn" disabled style="opacity:.45;pointer-events:none;background:#007acc;color:#fff;border:0;border-radius:12px;padding:11px 24px;font-weight:700;font-size:14px;cursor:pointer">Accept &amp; Continue</button></div>'
+        + '<div id="gxLegalErr" style="color:#b42318;font-size:12.5px;margin-top:8px;display:none"></div>'
         + '</div>';
       document.body.appendChild(ov);
       try{ document.body.style.overflow='hidden'; }catch(e){}
@@ -703,36 +718,4 @@
   }
   document.addEventListener('DOMContentLoaded', ()=>{ initExportButtons(); initActionFeedback(); initPanelHistory(); initIdleLogout(); initTopbarControls(); initRoutePersistence(); initTimeLocalization(); initLengthSelectObserver(); });
 
-  /* ============ P12: AI ASSISTANT WIDGET (admin/manager/agent; client par status 403 -> render nahi) ============ */
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(async () => {
-      if (document.getElementById('gxAssistantBtn')) return;
-      try {
-        const st = await req('GET', '/assistant/status');
-        if (!st || !st.enabled || !st.can_use) return;
-        const css = document.createElement('style');
-        css.textContent = '#gxAssistantBtn{position:fixed;right:18px;bottom:18px;z-index:9999;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,#1d4ed8,#2563eb 50%,#38bdf8);color:#fff;font-size:22px;box-shadow:0 8px 24px rgba(37,99,235,.45);display:flex;align-items:center;justify-content:center;transition:transform .18s ease}#gxAssistantBtn:hover{transform:scale(1.06)}#gxAssistantWin{position:fixed;right:18px;bottom:80px;z-index:9999;width:min(92vw,350px);max-height:min(70vh,520px);display:none;flex-direction:column;background:#0d1527;color:#f8fafc;border:1px solid rgba(56,189,248,.25);border-radius:16px;overflow:hidden;box-shadow:0 18px 45px rgba(0,0,0,.65);font-family:inherit}#gxAssistantWin.open{display:flex}#gxHead{padding:12px 16px;background:rgba(37,99,235,.15);border-bottom:1px solid rgba(56,189,248,.2);font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:center;color:#38bdf8}#gxHead button{background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer}#gxHead button:hover{color:#fff}#gxMsgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.45}.gxA{align-self:flex-start;background:rgba(37,99,235,.14);border:1px solid rgba(56,189,248,.25);padding:8px 12px;border-radius:12px 12px 12px 3px;max-width:85%;white-space:pre-wrap;word-wrap:break-word;color:#f8fafc}.gxU{align-self:flex-end;background:linear-gradient(135deg,#1d4ed8,#2563eb 50%,#38bdf8);padding:8px 12px;border-radius:12px 12px 3px 12px;max-width:85%;white-space:pre-wrap;word-wrap:break-word;color:#fff}#gxForm{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(56,189,248,.15);background:#090e1b}#gxIn{flex:1;background:#0f172a;border:1px solid rgba(56,189,248,.2);border-radius:8px;color:#f8fafc;padding:8px 12px;font-size:13.5px;outline:none}#gxIn:focus{border-color:#2563eb}#gxSend{background:linear-gradient(135deg,#1d4ed8,#2563eb 50%,#38bdf8);border:none;border-radius:8px;color:#fff;padding:8px 14px;cursor:pointer;font-weight:700}@media(max-width:480px){#gxAssistantWin{right:10px;bottom:74px}}';
-        document.head.appendChild(css);
-        const btn = document.createElement('button');
-        btn.id = 'gxAssistantBtn'; btn.type = 'button'; btn.title = 'Skyline SMS Assistant'; btn.textContent = '\u{1F916}';
-        const win = document.createElement('div'); win.id = 'gxAssistantWin';
-        win.innerHTML = '<div id="gxHead"><span>Skyline SMS Assistant</span><button type="button" id="gxClose">\u2715</button></div><div id="gxMsgs"></div><form id="gxForm"><input id="gxIn" autocomplete="off" placeholder="Ask Skyline Assistant..."><button type="submit" id="gxSend">Send</button></form>';
-        document.body.appendChild(btn); document.body.appendChild(win);
-        const msgs = win.querySelector('#gxMsgs');
-        const add = (t, who) => { const d = document.createElement('div'); d.className = who === 'u' ? 'gxU' : 'gxA'; d.textContent = t; msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; };
-        btn.onclick = () => { win.classList.toggle('open'); if (win.classList.contains('open') && !msgs.children.length) add('Hello! How can I help you? Main Skyline SMS assistant hoon \u2014 rates, ranges, ya numbers ke liye poochein.', 'a'); };
-        win.querySelector('#gxClose').onclick = () => win.classList.remove('open');
-        let busy = false;
-        win.querySelector('#gxForm').onsubmit = async (e) => {
-          e.preventDefault(); if (busy) return;
-          const inp = win.querySelector('#gxIn'); const text = inp.value.trim(); if (!text) return;
-          inp.value = ''; add(text, 'u'); busy = true;
-          try { const r = await req('POST', '/assistant/message', { text }); add(r.reply || '...', 'a'); }
-          catch (err) { add('\u26A0 ' + err.message, 'a'); }
-          busy = false; msgs.scrollTop = msgs.scrollHeight;
-        };
-      } catch (_) { /* client role ya disabled \u2014 koi widget nahi */ }
-    }, 400);
-  });
-
-})();
+  })();

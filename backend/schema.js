@@ -41,25 +41,6 @@ function createTables() {
     created_at  TEXT DEFAULT (datetime('now'))
   )`);
 
-  /* ============ RATE INHERITANCE & OVERRIDES ============ */
-  db.run(`CREATE TABLE IF NOT EXISTS user_range_rates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    range_id INTEGER NOT NULL,
-    rate TEXT NOT NULL,
-    rate_1_1 TEXT DEFAULT '',
-    rate_7_1 TEXT DEFAULT '',
-    rate_7_7 TEXT DEFAULT '',
-    rate_30_45 TEXT DEFAULT '',
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (range_id) REFERENCES ranges(id),
-    UNIQUE(user_id, range_id)
-  )`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_user_range_rates_user ON user_range_rates(user_id)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_user_range_rates_range ON user_range_rates(range_id)`);
-
 
 
   db.run(`CREATE TABLE IF NOT EXISTS range_test_numbers (
@@ -79,6 +60,9 @@ function createTables() {
     rate       TEXT DEFAULT '',
     payterm    TEXT DEFAULT 'Weekly',
     payout     TEXT DEFAULT '0',
+    manager_rate TEXT DEFAULT '',
+    agent_rate   TEXT DEFAULT '',
+    client_rate  TEXT DEFAULT '',
     -- ownership chain (kisi bhi level par assigned ho sakta hai)
     manager_id INTEGER,
     agent_id   INTEGER,
@@ -235,6 +219,9 @@ function createTables() {
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   )`);
+  try { db.run("ALTER TABLE sharing_users ADD COLUMN connection_type TEXT DEFAULT 'activity'"); } catch(_) {}
+  try { db.run("ALTER TABLE sharing_users ADD COLUMN http_config TEXT DEFAULT ''"); } catch(_) {}
+  try { db.run("ALTER TABLE sharing_users ADD COLUMN smpp_connection_id INTEGER DEFAULT NULL"); } catch(_) {}
 
   db.run(`CREATE TABLE IF NOT EXISTS sharing_forward_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -244,43 +231,12 @@ function createTables() {
     status TEXT DEFAULT '',
     error TEXT DEFAULT '',
     response_preview TEXT DEFAULT '',
+    connection_type TEXT DEFAULT 'activity',
     created_at TEXT DEFAULT (datetime('now'))
   )`);
+  try { db.run("ALTER TABLE sharing_forward_logs ADD COLUMN connection_type TEXT DEFAULT 'activity'"); } catch(_) {}
 
-/* ============ P12: AI ASSISTANT TABLES (additive) ============ */
-  db.run(`CREATE TABLE IF NOT EXISTS assistant_knowledge (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    category TEXT DEFAULT 'general',
-    question TEXT NOT NULL,
-    answer TEXT NOT NULL,
-    enabled INTEGER DEFAULT 1,
-    sort_order INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-  )`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_assistant_kb_cat ON assistant_knowledge(category, enabled)`);
-  db.run(`CREATE TABLE IF NOT EXISTS assistant_settings (
-    key TEXT PRIMARY KEY,
-    value TEXT DEFAULT '',
-    updated_at TEXT DEFAULT (datetime('now'))
-  )`);
-  /* Payment knowledge section: DISABLED by default (Admin enable kare ga) */
-  if (!db.get("SELECT value FROM assistant_settings WHERE key='payment_enabled'")) db.run("INSERT INTO assistant_settings (key,value) VALUES ('payment_enabled','0')");
-  if (!db.get("SELECT value FROM assistant_settings WHERE key='general_enabled'")) db.run("INSERT INTO assistant_settings (key,value) VALUES ('general_enabled','1')");
-  /* P19: AI number-allocation limit (per range request). Default 100 (pehle hardcoded 500 tha).
-     Admin AI Assistant page se change hota hai — backend enforce karta hai. */
-  if (!db.get("SELECT value FROM assistant_settings WHERE key='alloc_max'")) db.run("INSERT INTO assistant_settings (key,value) VALUES ('alloc_max','100')");
-  if (!db.get('SELECT id FROM assistant_knowledge LIMIT 1')) {
-    const insKb = (c,q,a,e,so) => db.run('INSERT INTO assistant_knowledge (category,question,answer,enabled,sort_order) VALUES (?,?,?,?,?)',[c,q,a,e,so]);
-    insKb('general', 'What is Skyline SMS?', 'Skyline SMS ek modern carrier SMS management platform hai — panels, numbers, allocation, traffic aur rates manage karne ke liye.', 1, 1);
-    insKb('general', 'How can I get numbers?', 'Numbers page se ranges select kar ke allocate karein, ya mujhe likhen "I need numbers" — main guided allocation karwa dunga.', 1, 2);
-    insKb('payment', 'When are payments made?', 'Payments aap ke payment cycle ke mutabiq process hote hain. Exact schedule Admin panel ke payment settings me configured hai.', 0, 1);
-    insKb('payment', 'What does weekly mean?', 'Weekly cycle har Tuesday se shuru hone wale 7-din ke cycle par payments calculate hoti hain.', 0, 2);
-    insKb('payment', 'What does daily mean?', 'Daily cycle par har din ki earning agle din eligible hoti hai.', 0, 3);
-    insKb('payment', 'What does monthly mean?', 'Monthly (30x45) cycle me 30-din ka work cycle hota hai jo 30+45 din baad eligible hota hai.', 0, 4);
-  }
-
-  db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
+db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     agent_id INTEGER NOT NULL,
     request_id INTEGER,
@@ -378,11 +334,6 @@ function createTables() {
   // GALAXY: Range/Rate Management fields (additive, all optional)
   ensureColumn('ranges', 'country', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'provider', "TEXT DEFAULT ''");
-  ensureColumn('ranges', 'provider_rate', "TEXT DEFAULT '0'");
-  ensureColumn('ranges', 'provider_rate_1_1', "TEXT DEFAULT ''");
-  ensureColumn('ranges', 'provider_rate_7_1', "TEXT DEFAULT ''");
-  ensureColumn('ranges', 'provider_rate_7_7', "TEXT DEFAULT ''");
-  ensureColumn('ranges', 'provider_rate_30_45', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'currency_rate', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'cli_limit', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'range_start', "TEXT DEFAULT ''");
@@ -428,6 +379,11 @@ function createTables() {
   ensureColumn('provider_payments', 'prev_unpaid', "TEXT DEFAULT '0'");
   ensureColumn('provider_payments', 'remaining_unpaid', "TEXT DEFAULT '0'");
   ensureColumn('provider_payments', 'period', "TEXT DEFAULT ''");
+  /* P19j: Binance UID replaces USDT TRC20 wallet address in the active payment flow.
+     ADDITIVE migration — wallet_address columns/values are kept untouched (immutable history);
+     new agent saves and new payment requests store binance_uid. */
+  ensureColumn('agent_wallets', 'binance_uid', "TEXT DEFAULT ''");
+  ensureColumn('payment_requests_v2', 'binance_uid', "TEXT DEFAULT ''");
   db.run(`CREATE INDEX IF NOT EXISTS idx_provider_payments_name ON provider_payments(provider_name)`);
   ensureColumn('sms_records', 'is_test', 'INTEGER DEFAULT 0');
   ensureColumn('sms_records', 'test_batch_id', "TEXT DEFAULT ''");
@@ -445,7 +401,37 @@ function createTables() {
   ensureColumn('sms_records', 'payout_amount', "TEXT DEFAULT ''");
   ensureColumn('sms_records', 'limit_reason', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'deleted_at', "TEXT DEFAULT ''");
+  /* P19k #4: Provider Rate — admin-internal, per payment-cycle period (ranges.rate_1_1/7_1/7_7/30_45
+     wahi convention follow). Sirf Real Provider Cost (admin dashboard) use karta hai;
+     Manager/Agent/Client API responses aur public Rate Card me kabhi expose nahi hota. */
+  ensureColumn('ranges', 'provider_rate_1_1', "TEXT DEFAULT 'NA'");
+  ensureColumn('ranges', 'provider_rate_7_1', "TEXT DEFAULT 'NA'");
+  ensureColumn('ranges', 'provider_rate_7_7', "TEXT DEFAULT 'NA'");
+  ensureColumn('ranges', 'provider_rate_30_45', "TEXT DEFAULT 'NA'");
+  ensureColumn('ranges', 'self_alloc_enabled', "INTEGER DEFAULT 1");
+  ensureColumn('ranges', 'self_alloc_max', "INTEGER DEFAULT 100");
+  ensureColumn('ranges', 'self_alloc_periods', "TEXT DEFAULT 'weekly,monthly'");
 
+  /* Hierarchy Tier Allocation Rates: Admin -> Manager -> Agent -> Client */
+  ensureColumn('numbers', 'manager_rate', "TEXT DEFAULT ''");
+  ensureColumn('numbers', 'agent_rate', "TEXT DEFAULT ''");
+  ensureColumn('numbers', 'client_rate', "TEXT DEFAULT ''");
+  ensureColumn('numbers', 'alloc_source', "TEXT DEFAULT 'manual'");
+  ensureColumn('ranges', 'pattern', "TEXT DEFAULT ''");
+  ensureColumn('numbers', 'pattern', "TEXT DEFAULT ''");
+  try {
+    db.run(`UPDATE numbers SET manager_rate = rate WHERE manager_id IS NOT NULL AND (manager_rate IS NULL OR manager_rate = '') AND rate != '' AND rate IS NOT NULL`);
+    db.run(`UPDATE numbers SET agent_rate = rate WHERE agent_id IS NOT NULL AND manager_id IS NULL AND (agent_rate IS NULL OR agent_rate = '') AND rate != '' AND rate IS NOT NULL`);
+    db.run(`UPDATE numbers SET client_rate = payout WHERE client_id IS NOT NULL AND (client_rate IS NULL OR client_rate = '') AND payout != '' AND payout != '0' AND payout IS NOT NULL`);
+    db.run(`UPDATE ranges SET pattern = prefix WHERE (pattern IS NULL OR pattern = '') AND prefix IS NOT NULL AND prefix != ''`);
+    db.run(`UPDATE numbers SET pattern = prefix WHERE (pattern IS NULL OR pattern = '') AND prefix IS NOT NULL AND prefix != ''`);
+  } catch (_) {}
+
+  /* Super Manager Role & Masked Chat Identity */
+  ensureColumn('users', 'is_super_manager', 'INTEGER DEFAULT 0');
+  ensureColumn('users', 'chat_display_name', "TEXT DEFAULT ''");
+
+  /* Galaxy SMS Official Channel */
   const cs = db.get('SELECT COUNT(*) AS c FROM carrier_settings');
   if (!cs || cs.c === 0) {
     db.run(`INSERT INTO carrier_settings (integration_status,carrier_ip,http_callback_url,notes)
@@ -577,13 +563,6 @@ function createTables() {
   )`);
   db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_smpp_seen_unique ON smpp_seen(connection_id, dedup_key)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_smpp_seen_created ON smpp_seen(created_at)`);
-  ensureColumn('smpp_seen', 'session_id', "TEXT DEFAULT ''");
-  ensureColumn('smpp_seen', 'sequence_number', "INTEGER DEFAULT 0");
-  ensureColumn('smpp_seen', 'source_addr', "TEXT DEFAULT ''");
-  ensureColumn('smpp_seen', 'destination_addr', "TEXT DEFAULT ''");
-  ensureColumn('smpp_seen', 'provider_message_id', "TEXT DEFAULT ''");
-  ensureColumn('smpp_seen', 'status', "TEXT DEFAULT 'processed'");
-  db.run(`CREATE INDEX IF NOT EXISTS idx_smpp_seen_seq ON smpp_seen(connection_id, session_id, sequence_number)`);
 
   // Event log: bind/unbind/error/reconnect/received/sent. Kept small by the service.
   db.run(`CREATE TABLE IF NOT EXISTS smpp_logs (
@@ -759,8 +738,35 @@ function createTables() {
     WHERE manager_id IS NULL AND agent_id IS NULL AND client_id IS NULL`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_numbers_unallocated_number ON numbers(number)
     WHERE manager_id IS NULL AND agent_id IS NULL AND client_id IS NULL`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_numbers_mgr_avail ON numbers(manager_id, range_id, id)
+    WHERE agent_id IS NULL AND client_id IS NULL`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_numbers_agent_alloc_source ON numbers(agent_id, range_id, alloc_source)`);
 
   // 5) Version counters for cache invalidation (numbers_ver / sms_ver / users_ver)
+  /* complaints: manager/agent/client -> admin; replies = thread; status history via
+     status_updated_* + audit_logs (logAction). */
+  db.run(`CREATE TABLE IF NOT EXISTS complaints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL,
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Open',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    status_updated_at TEXT,
+    status_updated_by TEXT DEFAULT ''
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_complaints_sender ON complaints(sender_id, created_at)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status, created_at)`);
+  db.run(`CREATE TABLE IF NOT EXISTS complaint_replies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    complaint_id INTEGER NOT NULL,
+    sender_id INTEGER NOT NULL,
+    body TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_complaint_replies ON complaint_replies(complaint_id, id)`);
+
   db.run(`CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -814,6 +820,49 @@ function createTables() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status, created_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_jobs_user   ON jobs(created_by, created_at)`);
 
+
+
+  /* ============ P21: SEPARATE CHAT AUTHENTICATION & MOBILE PUSH TABLES ============ */
+  db.run(`CREATE TABLE IF NOT EXISTS chat_credentials (
+    user_id              INTEGER PRIMARY KEY,
+    chat_password_hash   TEXT NOT NULL,
+    chat_enabled         INTEGER DEFAULT 1,
+    must_change_password INTEGER DEFAULT 0,
+    failed_attempts      INTEGER DEFAULT 0,
+    locked_until         TEXT DEFAULT NULL,
+    last_login_at        TEXT DEFAULT NULL,
+    password_set_at      TEXT DEFAULT (datetime('now')),
+    created_at           TEXT DEFAULT (datetime('now')),
+    updated_at           TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_cred_status ON chat_credentials(user_id, chat_enabled)`);
+
+  /* Ensure all non-admin users have a chat_credentials entry so security locks are strictly enforced */
+  try {
+    db.run(`INSERT OR IGNORE INTO chat_credentials (user_id, chat_password_hash, chat_enabled, password_set_at)
+      SELECT id, password, 1, datetime('now') FROM users WHERE role != 'admin'`);
+  } catch (_) {}
+
+  
+
+  /* ============ MIGRATION: RE-LINK NUMBERS FROM DELETED RANGES TO ACTIVE RANGES ============ */
+  try {
+    const pairMap = [
+      { delId: 44, actName: 'Central African Republic Galaxy NX 01' },
+      { delId: 45, actName: 'Central African Republic Galaxy NX 02' },
+      { delId: 46, actName: 'Central African Republic Galaxy NX 03' },
+      { delId: 47, actName: 'Central African Republic Galaxy NX 04' }
+    ];
+    for (const p of pairMap) {
+      const activeRange = db.get(`SELECT id FROM ranges WHERE name=? AND (deleted_at IS NULL OR COALESCE(deleted_at,'')='') ORDER BY id DESC LIMIT 1`, [p.actName]);
+      if (activeRange && activeRange.id !== p.delId) {
+        db.run(`UPDATE numbers SET range_id=? WHERE range_id=?`, [activeRange.id, p.delId]);
+        db.run(`UPDATE sms_records SET range_id=? WHERE range_id=?`, [activeRange.id, p.delId]);
+        db.run(`UPDATE number_import_batches SET range_id=? WHERE range_id=?`, [activeRange.id, p.delId]);
+      }
+    }
+  } catch (e) { console.warn('Central Africa migration:', e.message); }
 }
 
 module.exports = { createTables };
