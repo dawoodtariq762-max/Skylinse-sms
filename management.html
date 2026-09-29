@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=light-20260928" />
-<title>SKYLINE SMS — Management Panel</title>
+<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png?v=light-20260928" />
+<title>GALAXY SMS — Management Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
 .page > .toolbar,.page > .table-wrap,.page > .card,.page > .grid2{position:relative!important;}
@@ -296,8 +296,8 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.png?v=light-20260928" alt="SKYLINE SMS" /></div>
-      <div><h1>SKYLINE SMS</h1><small>Management Panel</small></div>
+      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/galaxy-logo.png?v=light-20260928" alt="GALAXY SMS" /></div>
+      <div><h1>GALAXY SMS</h1><small>Management Panel</small></div>
     </div>
     <nav class="sb-nav">
       <div class="sb-section">Number Maintenance</div>
@@ -745,8 +745,8 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
         </div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-head"><div><h3>How this works</h3><div class="sub">SMPP is an additional channel. It runs alongside the HTTP callback and the API Providers sync — all three write into the same SMS records, and none of them affect the others.</div></div></div>
-          <div class="hint"><b>Client mode</b> — Skyline SMS connects out to your provider's SMPP server. You need their host, port, system&nbsp;ID and password.<br>
-          <b>Server mode</b> — Skyline SMS listens on a port and your carrier connects in. You choose the system&nbsp;ID and password and give them to the carrier, plus this server's IP and the port.<br>
+          <div class="hint"><b>Client mode</b> — Galaxy SMS connects out to your provider's SMPP server. You need their host, port, system&nbsp;ID and password.<br>
+          <b>Server mode</b> — Galaxy SMS listens on a port and your carrier connects in. You choose the system&nbsp;ID and password and give them to the carrier, plus this server's IP and the port.<br>
           Reconnection is automatic with backoff. Incoming messages are de-duplicated, so a redelivered message is never counted twice.</div>
         </div>
         <div class="table-wrap"><div class="tscroll"><table>
@@ -900,8 +900,8 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
     </div>
     <div class="form-group"><label>Mode <span class="req">*</span></label>
       <select id="smMode" onchange="smModeChange()">
-        <option value="client">Client — Skyline SMS connects out to the provider</option>
-        <option value="server">Server — the carrier connects in to Skyline SMS</option>
+        <option value="client">Client — Galaxy SMS connects out to the provider</option>
+        <option value="server">Server — the carrier connects in to Galaxy SMS</option>
       </select>
       <div class="hint" id="smModeHint"></div>
     </div>
@@ -1010,7 +1010,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
       <div class="form-group"><label>Overlap Window (seconds)</label><input type="number" id="apOverlap" value="30" min="0" max="3600" /><div class="hint">Re-checks this many seconds back so no SMS is missed. Duplicates are blocked automatically.</div></div>
       <div class="form-group"><label>Response Array Path</label><input type="text" id="apRecPath" placeholder="data" /><div class="hint">Where the records array is, e.g. <b>data</b>.</div></div>
     </div>
-    <div class="section-title" style="margin:14px 0 8px">Field Mapping <span class="muted" style="font-weight:500">(provider field → Skyline SMS field)</span></div>
+    <div class="section-title" style="margin:14px 0 8px">Field Mapping <span class="muted" style="font-weight:500">(provider field → Galaxy SMS field)</span></div>
     <div class="form-grid">
       <div class="form-group"><label>Number</label><input type="text" id="apMapNumber" placeholder="num" /></div>
       <div class="form-group"><label>CLI / Sender</label><input type="text" id="apMapCli" placeholder="cli" /></div>
@@ -1021,7 +1021,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
     </div>
     <div class="form-grid">
       <div class="form-group"><label>Payout (optional)</label><input type="text" id="apMapPayout" placeholder="payout" /><div class="hint">Used only as an indicator. Payout is always calculated from panel rate cards; a provider payout of 0 marks the SMS non-payable.</div></div>
-      <div class="form-group"><label>Unique ID (optional)</label><input type="text" id="apMapRef" placeholder="Leave empty if not provided" /><div class="hint">If the provider sends no id, Skyline SMS generates a fingerprint to prevent duplicates.</div></div>
+      <div class="form-group"><label>Unique ID (optional)</label><input type="text" id="apMapRef" placeholder="Leave empty if not provided" /><div class="hint">If the provider sends no id, Galaxy SMS generates a fingerprint to prevent duplicates.</div></div>
     </div>
     <div class="hint" id="apTestResult" style="margin-top:12px"></div>
   </div>
@@ -2878,8 +2878,8 @@ function smModeChange(){
   document.getElementById('smClientBox').style.display=isServer?'none':'';
   document.getElementById('smServerBox').style.display=isServer?'':'none';
   document.getElementById('smModeHint').textContent=isServer
-    ? 'Skyline SMS opens a port and waits. Give the carrier this server IP, the listen port, and the System ID / Password you set below.'
-    : 'Skyline SMS connects out to the provider. Enter the host, port, System ID and Password they gave you.';
+    ? 'Galaxy SMS opens a port and waits. Give the carrier this server IP, the listen port, and the System ID / Password you set below.'
+    : 'Galaxy SMS connects out to the provider. Enter the host, port, System ID and Password they gave you.';
 }
 
 function openSmppModal(id){

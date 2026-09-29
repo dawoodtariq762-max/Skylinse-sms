@@ -102,7 +102,7 @@
     panel.id='msSettingsPanel'; panel.className='ms-notif-panel'; panel.style.top='68px';
     panel.innerHTML=`<div class="ms-notif-head"><b>Panel Settings</b><div class="ms-notif-actions"><button id="msCloseSettings">×</button></div></div>
       <div class="ms-notif-list" style="padding:14px 16px">
-        <div class="ms-switch">Appearance: Light · Skyline SMS</div>
+        <div class="ms-switch">Appearance: Light · Galaxy SMS</div>
       </div>`;
     document.body.appendChild(panel);
     document.getElementById('msCloseSettings').onclick=()=>panel.classList.remove('show');
@@ -113,7 +113,7 @@
     if(document.getElementById('msThemeCss')) return;
     const st=document.createElement('style');st.id='msThemeCss';
     st.textContent=`
-      /* Skyline SMS runtime motion and widgets; palette in galaxy.css. */
+      /* Galaxy SMS runtime motion and widgets; palette in galaxy.css. */
       .page.active{animation:msPageFade .24s cubic-bezier(.22,.9,.3,1) both}.card,.table-wrap,.toolbar,.stat-card{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background-color .18s ease}button,.btn,.tb-btn,.nav-item,.sub-item,.tab,.ritem,.rsubitem,.navtab,.dropitem{transition:transform .14s ease,box-shadow .14s ease,background-color .14s ease,color .14s ease,opacity .14s ease}button:active,.btn:active{transform:translateY(1px) scale(.99)}tbody tr{transition:background-color .14s ease}@keyframes msPageFade{from{opacity:.55;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
       .ms-progress{position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#007acc,#6db9df,#0054b8);z-index:20000;transform-origin:left;animation:msProgress .7s ease both}.ms-working{box-shadow:0 0 0 4px rgba(0,122,204,.20)!important;filter:brightness(1.04)}@keyframes msProgress{0%{transform:scaleX(0)}70%{transform:scaleX(.82)}100%{transform:scaleX(1);opacity:0}}
       .ms-toast{position:fixed;right:22px;bottom:22px;background:linear-gradient(96deg,#eef8ff,#ffffff);border:1px solid rgba(0,122,204,.34);color:#333;border-radius:12px;padding:11px 14px;font-weight:700;font-size:13px;box-shadow:0 20px 50px rgba(0,70,110,.14);z-index:20001;opacity:0;transform:translateY(8px);animation:msToast .95s ease both}@keyframes msToast{15%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(8px)}}
@@ -661,12 +661,12 @@
       ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
       ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(210,215,220,.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:14px;';
       ov.innerHTML = '<div style="background:#fff;color:#333;max-width:620px;width:100%;max-height:94vh;overflow:auto;border-radius:18px;border:1px solid rgba(190,195,205,.22);box-shadow:0 30px 90px rgba(0,0,0,.12);padding:24px 22px;font-family:inherit">'
-        + '<h2 style="margin:0 0 4px;font-size:19px;line-height:1.3">Skyline SMS &mdash; Legal Use &amp; Acceptable Use</h2>'
-        + '<p style="margin:12px 0;color:#555;font-size:13.5px;line-height:1.65"><b style="color:#333">About Skyline SMS:</b> Skyline SMS is an SMS management platform where authorized users can manage numbers, SMS activity, reports, allocations and related services.</p>'
-        + '<p style="margin:10px 0;color:#555;font-size:13.5px;line-height:1.65">By continuing, you confirm that you will use the numbers and SMS services provided through Skyline SMS only for lawful and legitimate purposes.</p>'
+        + '<h2 style="margin:0 0 4px;font-size:19px;line-height:1.3">Galaxy SMS &mdash; Legal Use &amp; Acceptable Use</h2>'
+        + '<p style="margin:12px 0;color:#555;font-size:13.5px;line-height:1.65"><b style="color:#333">About Galaxy SMS:</b> Galaxy SMS is an SMS management platform where authorized users can manage numbers, SMS activity, reports, allocations and related services.</p>'
+        + '<p style="margin:10px 0;color:#555;font-size:13.5px;line-height:1.65">By continuing, you confirm that you will use the numbers and SMS services provided through Galaxy SMS only for lawful and legitimate purposes.</p>'
         + '<p style="margin:10px 0;color:#555;font-size:13.5px;line-height:1.65">You must not use these numbers for fake accounts, fraud, scams, abuse, spam, impersonation, unauthorized access, or any other illegal activity. You are responsible for ensuring that your use complies with applicable laws and the rules of the services you use.</p>'
         + '<p style="margin:10px 0 14px;color:#555;font-size:13.5px;line-height:1.65">By clicking Accept, you agree to these terms.</p>'
-        + '<label style="display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#333;cursor:pointer;padding:11px;border:1px solid rgba(190,195,205,.28);border-radius:12px"><input type="checkbox" id="gxLegalChk" style="width:18px;height:18px;accent-color:#30ABED;margin-top:1px;flex:none"><span>I agree to use Skyline SMS services only for lawful and legitimate purposes.</span></label>'
+        + '<label style="display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#333;cursor:pointer;padding:11px;border:1px solid rgba(190,195,205,.28);border-radius:12px"><input type="checkbox" id="gxLegalChk" style="width:18px;height:18px;accent-color:#30ABED;margin-top:1px;flex:none"><span>I agree to use Galaxy SMS services only for lawful and legitimate purposes.</span></label>'
         + '<div style="display:flex;justify-content:flex-end;margin-top:16px"><button id="gxLegalBtn" disabled style="opacity:.45;pointer-events:none;background:#007acc;color:#fff;border:0;border-radius:12px;padding:11px 24px;font-weight:700;font-size:14px;cursor:pointer">Accept &amp; Continue</button></div>'
         + '<div id="gxLegalErr" style="color:#b42318;font-size:12.5px;margin-top:8px;display:none"></div>'
         + '</div>';

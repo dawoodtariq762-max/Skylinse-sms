@@ -47,6 +47,7 @@
 const db = require('./db');
 const crypto = require('crypto');
 const net = require('net');
+const ident = require('./smppIdentity');
 
 let smppLib = null;
 let smppLoadError = '';
@@ -54,7 +55,42 @@ function getSmpp() {
   if (smppLib) return smppLib;
   try { smppLib = require('smpp'); }
   catch (e) { smppLoadError = e.message; throw new Error('SMPP library not installed: ' + e.message); }
+  installRawPduCapture(smppLib);
   return smppLib;
+}
+
+/**
+ * The library parses known fields and drops everything else, so a vendor TLV or
+ * a non-standard appended message_id would be invisible to us. Keep the RAW
+ * bytes of every inbound PDU on the object instead: the wrapping functions
+ * reproduce the library's own 6-line implementations exactly (verified against
+ * node_modules/smpp/lib/pdu.js:56-70) and add one property. Nothing about
+ * parsing, framing or responses changes.
+ */
+function installRawPduCapture(smpp) {
+  if (!smpp || smpp.__powerxRawCapture) return;
+  const PDU = smpp.PDU;
+  if (!PDU || typeof PDU.fromStream !== 'function') return;
+  const origFromStream = PDU.fromStream;
+  const origFromBuffer = PDU.fromBuffer;
+  PDU.fromStream = function (stream, command_length) {
+    const buffer = stream.read(command_length - 4);
+    if (!buffer) return false;
+    const head = Buffer.alloc(4);
+    head.writeUInt32BE(command_length, 0);
+    const rawBuffer = Buffer.concat([head, buffer]);
+    const pdu = new PDU(rawBuffer);
+    try { pdu.__rawBuffer = rawBuffer; } catch (_) {}
+    return pdu;
+  };
+  if (typeof origFromBuffer === 'function') {
+    PDU.fromBuffer = function (buffer) {
+      const pdu = new PDU(buffer);
+      try { pdu.__rawBuffer = Buffer.from(buffer); } catch (_) {}
+      return pdu;
+    };
+  }
+  smpp.__powerxRawCapture = true;
 }
 
 /* ------------------------------------------------------------------ *
@@ -78,20 +114,57 @@ function safeStr(v) {
  */
 function pduText(pdu) {
   const sm = pdu && pdu.short_message;
-  if (sm === null || sm === undefined || sm === '') {
-    // Some peers put long text in message_payload instead.
-    return safeStr(pdu && pdu.message_payload);
+  let text = '';
+  if (sm === null || sm === undefined || sm === '') text = '';
+  else if (typeof sm === 'string') text = sm;
+  else if (Buffer.isBuffer(sm)) text = sm.toString('utf8');
+  else if (typeof sm === 'object') {
+    if (typeof sm.message === 'string') text = sm.message;
+    else if (Buffer.isBuffer(sm.message)) text = sm.message.toString('utf8');
+    else text = '';
+  } else text = safeStr(sm);
+
+  // SMPP message_payload (0x0424): the library parses the TLV but leaves
+  // short_message empty, and it exposes the payload as an OBJECT
+  // ({message:"..."}) — the old fallback returned "" for it, so the body was
+  // stored empty and two different payload messages collided on one dedup key.
+  if (!String(text).length) {
+    const pl = payloadText(pdu);
+    if (pl) return pl;
   }
-  if (typeof sm === 'string') return sm;
-  if (Buffer.isBuffer(sm)) return sm.toString('utf8');
-  if (typeof sm === 'object') {
-    if (typeof sm.message === 'string') return sm.message;
-    if (Buffer.isBuffer(sm.message)) return sm.message.toString('utf8');
-  }
-  return safeStr(sm);
+  return text;
 }
 
-/** UDH of a concatenated message, when the library exposes it. */
+/** Text carried in the message_payload TLV (0x0424), or '' when absent. */
+function payloadText(pdu) {
+  const pl = pdu && pdu.message_payload;
+  if (pl === null || pl === undefined) return '';
+  if (typeof pl === 'string') return pl;
+  if (Buffer.isBuffer(pl)) return pl.toString('utf8');
+  if (typeof pl === 'object') {
+    if (typeof pl.message === 'string') return pl.message;
+    if (Buffer.isBuffer(pl.message)) return pl.message.toString('utf8');
+  }
+  return '';
+}
+
+/** True when this PDU's body came from the message_payload TLV. */
+function usesPayload(pdu) {
+  try {
+    if (payloadText(pdu) && !String((pdu && pdu.short_message) || '').length) {
+      const sm = pdu && pdu.short_message;
+      const smEmpty = sm === null || sm === undefined || sm === '' ||
+        (typeof sm === 'object' && !Buffer.isBuffer(sm) && !String(sm.message || '').length);
+      return !!smEmpty;
+    }
+  } catch (_) {}
+  return false;
+}
+
+/**
+ * UDH of a concatenated message, exactly as the library exposes it.
+ * (smpp@0.6.0-rc.4 returns an array of Buffers — see smppIdentity.decodeUdhElements)
+ */
 function pduUdh(pdu) {
   const sm = pdu && pdu.short_message;
   if (sm && typeof sm === 'object' && Array.isArray(sm.udh)) return sm.udh;
@@ -162,6 +235,7 @@ const runtime = new Map();   // connection id -> state
 let deps = null;             // { log, processIncomingSmsPayload, clearApiReadCache }
 let started = false;
 let flushTimer = null;
+let partsTimer = null;
 let bookkeepingDirty = false;
 
 function markDirty() { bookkeepingDirty = true; }
@@ -184,7 +258,10 @@ function stateOf(id) {
       enquireTimer: null,
       attempt: 0,
       stopping: false,
-      parts: new Map(),        // concatenated SMS reassembly
+      parts: new Map(),        // compat in-memory assembler (tooling/tests)
+      dedup: {},               // counters surfaced in the status view
+      ackPending: new Map(),   // sequence_number -> identity awaiting ack flush
+      ident: null,             // content-free identity diagnostics
     });
   }
   return runtime.get(id);
@@ -194,130 +271,357 @@ function stateOf(id) {
  * Inbound message handling (shared by client and server modes)
  * ------------------------------------------------------------------ */
 
-/**
- * Reassemble a concatenated (multipart) SMS.
- * Returns the full text once the last part arrives, otherwise null.
- */
-function reassemble(st, key, udh, text) {
-  // UDH 0x00 = 8-bit reference, 0x08 = 16-bit reference
-  let ref = null, total = 0, seq = 0;
-  for (const el of udh || []) {
-    const id = Number(el.id);
-    const data = el.value;
-    if (!Buffer.isBuffer(data)) continue;
-    if (id === 0x00 && data.length >= 3) { ref = data[0]; total = data[1]; seq = data[2]; break; }
-    if (id === 0x08 && data.length >= 4) { ref = data.readUInt16BE(0); total = data[2]; seq = data[3]; break; }
-  }
-  if (ref === null || total < 2) return text;   // not concatenated
+/* ------------------------------------------------------------------ *
+ * Inbound message handling (shared by client and server modes)
+ *
+ * DEDUP DESIGN (see smpp-fix-plan.md §3)
+ *   identity tier 1 : SMSC-provided durable id (configured TLV / verified
+ *                     appended field)  -> survives reconnect, restart,
+ *                     connection delete+recreate; never expires
+ *   identity tier 2 : multipart part, from the UDH concatenation IE
+ *   identity tier 3 : canonical body hash — OPTIONAL and off by default, be-
+ *                     cause it cannot tell a retry from a genuine identical
+ *                     message; when off, such a message is STORED (lossless).
+ *
+ * No content+time rule is ever used to drop a message.
+ * ------------------------------------------------------------------ */
 
-  const bucket = `${key}:${ref}:${total}`;
-  let entry = st.parts.get(bucket);
-  if (!entry) {
-    entry = { total, parts: new Map(), at: Date.now() };
-    st.parts.set(bucket, entry);
-  }
-  entry.parts.set(seq, text);
-
-  // Drop stale half-assembled messages so the map cannot grow unbounded.
-  if (st.parts.size > 500) {
-    const cutoff = Date.now() - 5 * 60 * 1000;
-    for (const [k, v] of st.parts) if (v.at < cutoff) st.parts.delete(k);
-  }
-
-  if (entry.parts.size < total) return null;    // still waiting
-  st.parts.delete(bucket);
-  let out = '';
-  for (let i = 1; i <= total; i++) out += (entry.parts.get(i) || '');
-  return out;
+function identityConfig() {
+  const rawTags = String(process.env.SMPP_ID_TLVS || '').split(/[\s,]+/).filter(Boolean);
+  const tags = rawTags.map(t => parseInt(String(t).replace(/^0x/i, ''), 16)).filter(n => Number.isFinite(n) && n > 0);
+  return {
+    idTlvs: tags.length ? tags : [0x001e],                    // receipted_message_id by default
+    allowAppended: String(process.env.SMPP_ID_APPENDED || '0') === '1',
+    fallbackWindow: Math.max(0, parseInt(process.env.SMPP_FALLBACK_RETRY_WINDOW_SECONDS || '0', 10) || 0),
+    partsMaxAge: Math.max(30, parseInt(process.env.SMPP_PARTS_MAX_AGE_SECONDS || '300', 10) || 300),
+  };
 }
 
-function dedupKeyFor(pdu, src, dst, text) {
-  const rid = safeStr(pdu && (pdu.receipted_message_id || pdu.message_id)).trim();
-  if (rid) return 'mid:' + rid;
-  // No id from the peer: deterministic fingerprint, bucketed to 10s so a
-  // genuine repeat of the same text minutes later is still stored.
-  const bucket = Math.floor(Date.now() / 10000);
-  return 'fp:' + crypto.createHash('sha1')
-    .update([src, dst, text, bucket].join('|'))
-    .digest('hex').slice(0, 24);
+function ageSeconds(sqlTs) {
+  try {
+    const t = Date.parse(String(sqlTs || '').replace(' ', 'T') + 'Z');
+    if (!Number.isFinite(t)) return 1e9;
+    return Math.max(0, Math.round((Date.now() - t) / 1000));
+  } catch (_) { return 1e9; }
+}
+
+/** Stable SMSC-account identity; survives row delete/re-create. */
+function connectionUid(conn) {
+  if (conn && conn.connection_uid) return conn.connection_uid;
+  const uid = ident.connectionUidOf(conn)
+    || (conn && String(conn.mode) === 'server' ? 'smpp:server:' + String(conn.listen_port || 0) : '');
+  if (uid) {
+    try {
+      db.runNoSave("UPDATE smpp_connections SET connection_uid=? WHERE id=? AND (connection_uid IS NULL OR connection_uid='')", [uid, conn.id]);
+      markDirty();
+    } catch (_) {}
+  }
+  return uid || ('smpp:conn:' + (conn ? conn.id : 0));   // last-resort legacy key
+}
+
+/* ---- durable ledger ---- */
+function ledgerFind(uid, kind, value) {
+  try {
+    return db.get('SELECT id, sms_record_id, first_seen_at, acked_at, seen_count FROM sms_dedup_ledger WHERE connection_uid=? AND identity_kind=? AND identity=?',
+      [uid, kind, value]);
+  } catch (_) { return null; }
+}
+function ledgerRecord(uid, kind, value, smsId, channel) {
+  const now = nowSql();
+  try {
+    db.run(`INSERT INTO sms_dedup_ledger (connection_uid,identity_kind,identity,channel,sms_record_id,first_seen_at,last_seen_at,acked_at,seen_count)
+            VALUES (?,?,?,?,?,?,?,'',1)
+            ON CONFLICT(connection_uid,identity_kind,identity) DO UPDATE SET
+              last_seen_at=excluded.last_seen_at,
+              seen_count=seen_count+1,
+              sms_record_id=COALESCE(excluded.sms_record_id, sms_record_id)`,
+      [uid, kind, value, channel || 'smpp', smsId || null, now, now]);
+  } catch (e) { try { deps.log.warn('[SMPP] ledger write failed: ' + e.message); } catch (_) {} }
+}
+function ledgerBump(id) {
+  try { db.runNoSave('UPDATE sms_dedup_ledger SET last_seen_at=?, seen_count=seen_count+1 WHERE id=?', [nowSql(), id]); markDirty(); } catch (_) {}
+}
+function ledgerAck(uid, kind, value) {
+  try { db.runNoSave('UPDATE sms_dedup_ledger SET acked_at=? WHERE connection_uid=? AND identity_kind=? AND identity=?', [nowSql(), uid, kind, value]); markDirty(); } catch (_) {}
+}
+function ledgerAckBySeq(st, seq) {
+  const p = st && st.ackPending ? st.ackPending.get(seq) : null;
+  if (!p) return;
+  st.ackPending.delete(seq);
+  if (p.uid && p.kind && p.value) ledgerAck(p.uid, p.kind, p.value);
+}
+
+/* ---- identity diagnostics (content-free) ---- */
+function noteIdentity(st, conn, parsed, chosen, cfg) {
+  try {
+    st.ident = st.ident || { messages: 0, idsSeen: 0, tags: {}, samples: [], reported: false, report: '' };
+    const r = st.ident;
+    r.messages++;
+    if (chosen) r.idsSeen++;
+    for (const t of (parsed && parsed.tlvs) || []) r.tags[t.tag] = (r.tags[t.tag] || 0) + 1;
+    if (r.samples.length < 3 && parsed && parsed.trailingHex) r.samples.push(parsed.trailingHex);
+    if (!r.reported && r.messages >= 3) {
+      r.reported = true;
+      const tags = Object.keys(r.tags).map(t => '0x' + Number(t).toString(16).padStart(4, '0') + 'x' + r.tags[t]).join(' ') || 'none';
+      r.report = `id on ${r.idsSeen}/${r.messages} msgs; TLVs seen: ${tags}; tlv-area hex sample: ${r.samples[0] || '(empty)'}`;
+      const level = r.idsSeen ? 'info' : 'warn';
+      logEvent(conn, 'ident', level, 'identity report: ' + r.report +
+        (r.idsSeen ? '' : ' — NO durable SMSC id found. Without one, a retry and a genuine identical message are indistinguishable, so the panel never suppresses by content (lossless default). Configure SMPP_ID_TLVS / SMPP_ID_APPENDED if the SMSC sends an id.'));
+      try { deps.log.log(`[SMPP-IDENT] ${conn.name}: ${r.report}`); } catch (_) {}
+    }
+  } catch (_) {}
+}
+
+/* ---- multipart (DB-backed: survives restart, dedups replayed parts) ---- */
+function handleMultipartPart(conn, st, ctx) {
+  const uid = ctx.uid, info = ctx.concat, cfg = identityConfig();
+  const groupKey = `${ctx.src}|${ctx.dst}|${info.ref}|${info.total}`;
+  const partIdentity = ctx.strong ? ('id:' + ctx.strong.kind + ':' + ctx.strong.value)
+    : ident.multipartPartIdentity(uid, ctx.src, ctx.dst, info, ctx.text);
+  const existing = db.get('SELECT text FROM smpp_parts WHERE connection_uid=? AND group_key=? AND seq=?', [uid, groupKey, info.seq]);
+  if (existing) {
+    if (existing.text === ctx.text) {
+      st.dedup.multipartPartsRetry = (st.dedup.multipartPartsRetry || 0) + 1;
+      logEvent(conn, 'multipart', 'info', `part retry suppressed (ref=${info.ref} seq=${info.seq}/${info.total})`);
+      return asIngest(0, ctx.strong, 'part-retry');
+    }
+    // Same slot, different content → the reference is being reused by a NEW
+    // message. Never merge the two: supersede the stale group and start over.
+    const pend = db.get('SELECT COUNT(*) c FROM smpp_parts WHERE connection_uid=? AND group_key=?', [uid, groupKey]);
+    logEvent(conn, 'multipart', 'warn', `concat reference reused with different content (ref=${info.ref}) — superseding ${pend ? pend.c : 0} pending part(s), starting a new group`);
+    db.run('DELETE FROM smpp_parts WHERE connection_uid=? AND group_key=?', [uid, groupKey]);
+  }
+  db.run(`INSERT OR REPLACE INTO smpp_parts (connection_uid,group_key,seq,total,part_identity,part_strong,text,received_at)
+          VALUES (?,?,?,?,?,?,?,?)`,
+    [uid, groupKey, info.seq, info.total, partIdentity, ctx.strong ? 1 : 0, ctx.text, nowSql()]);
+  st.dedup.multipartParts = (st.dedup.multipartParts || 0) + 1;
+  logEvent(conn, 'multipart', 'info', `part ${info.seq}/${info.total} received (ref=${info.ref}, hasId=${ctx.strong ? 1 : 0})`);
+
+  const rows = db.all('SELECT seq,text,part_identity,part_strong FROM smpp_parts WHERE connection_uid=? AND group_key=? ORDER BY seq ASC', [uid, groupKey]);
+  if (new Set(rows.map(r => r.seq)).size < info.total) return asIngest(0, ctx.strong, 'part-waiting');
+
+  db.run('DELETE FROM smpp_parts WHERE connection_uid=? AND group_key=?', [uid, groupKey]);
+  const fullText = rows.map(r => r.text).join('');
+  const allStrong = rows.every(r => Number(r.part_strong) === 1);
+  st.dedup.multipartCompleted = (st.dedup.multipartCompleted || 0) + 1;
+  logEvent(conn, 'multipart', 'info', `multipart completed: ${rows.length}/${info.total} parts, ${fullText.length} chars (ref=${info.ref})`);
+  const identity = allStrong
+    ? { kind: 'mpc', value: ident.sha1(rows.map(r => r.part_identity).join('|')).slice(0, 40) }
+    : { kind: 'mp', value: ident.multipartMessageIdentity(uid, ctx.src, ctx.dst, info, rows.map(r => r.text)) };
+  return storeMessage(conn, st, Object.assign({}, ctx, {
+    text: fullText,
+    identity,
+    strongIdentity: allStrong,
+    strong: null,
+    multipart: { parts: rows.length, total: info.total, ref: info.ref },
+  }));
+}
+
+/* ---- single store path (used for single-part and completed multipart) ---- */
+function storeMessage(conn, st, ctx) {
+  const cfg = identityConfig();
+  const uid = ctx.uid;
+  let identity = ctx.identity || ctx.strong || null;
+  let strong = ctx.strongIdentity !== undefined ? !!ctx.strongIdentity : !!ctx.strong;
+
+  // Tier 3 (weak) is only ever consulted when explicitly enabled.
+  if (!identity && !strong && cfg.fallbackWindow > 0 && ctx.raw) {
+    const wv = ident.weakPduIdentity(uid, ctx.raw);
+    if (wv) { identity = { kind: 'pdu', value: wv }; strong = false; }
+  }
+
+  // Opt-in cross-channel equivalence (see server.js): when the operator has
+  // declared that the API/provider reference and the SMPP id share one
+  // namespace, a message already recorded by another channel is the same
+  // physical SMS. Off by default — identical content alone is never evidence.
+  if (identity && strong && String(process.env.SMPP_CROSS_CHANNEL_IDENTITY || '0') === '1') {
+    try {
+      const cross = db.get("SELECT sms_record_id FROM sms_dedup_ledger WHERE identity=? AND identity_kind='api' LIMIT 1", [identity.value]);
+      if (cross) {
+        st.dedup.crossChannel = (st.dedup.crossChannel || 0) + 1;
+        logEvent(conn, 'dedup', 'info', `duplicate suppressed across channels (${identity.kind}:${String(identity.value).slice(0, 12)}… already stored by the API channel)`);
+        return asIngest(0, identity, 'duplicate-cross-channel', cross.sms_record_id);
+      }
+    } catch (_) {}
+  }
+
+  if (identity) {
+    const prev = ledgerFind(uid, identity.kind, identity.value);
+    if (prev) {
+      const age = ageSeconds(prev.first_seen_at);
+      const weak = (identity.kind === 'pdu');
+      if (!weak || age <= cfg.fallbackWindow) {
+        ledgerBump(prev.id);
+        st.dedup.duplicates = (st.dedup.duplicates || 0) + 1;
+        logEvent(conn, 'dedup', 'info',
+          `duplicate suppressed [${identity.kind}:${String(identity.value).slice(0, 12)}…] first seen ${prev.first_seen_at}, age ${age}s, ack ${prev.acked_at ? 'confirmed' : 'UNCONFIRMED'}${weak ? ' (fallback window — weak identity)' : ''}`);
+        return asIngest(0, identity, 'duplicate', prev.sms_record_id, { weak, age });
+      }
+      // weak identity outside the window → treated as a genuinely new message
+      logEvent(conn, 'dedup', 'warn', `weak identity outside the ${cfg.fallbackWindow}s window (age ${age}s) — storing as a NEW message`);
+    }
+  }
+
+  if (!strong) {
+    st.dedup.noId = (st.dedup.noId || 0) + 1;
+    if (!identity) {
+      logEvent(conn, 'ident', 'warn', `no durable id on this PDU (${ctx.src || '?'} -> ${ctx.dst || '?'}) — stored without content-based suppression`);
+    }
+  }
+
+  const dedupColumn = strong && identity
+    ? 'smpp:' + ident.sha1(uid + '|' + identity.kind + '|' + identity.value).slice(0, 40)
+    : '';
+
+  const result = deps.processIncomingSmsPayload(
+    { ip: ctx.peer || 'SMPP', smpp_connection: conn.name },
+    { number: ctx.dst, cli: ctx.src, message: ctx.text },
+    `smpp:${conn.name}`,
+    { source: 'smpp', dedupIdentity: dedupColumn }
+  );
+
+  const ok = result && result.status === 200;
+  const smsId = ok && result.body ? (result.body.id || null) : null;
+  const duplicate = !!(ok && result.body && result.body.duplicate);
+
+  if (ok) {
+    if (identity) ledgerRecord(uid, identity.kind, identity.value, smsId, 'smpp');
+    if (!duplicate) {
+      db.runNoSave('UPDATE smpp_connections SET total_received=total_received+1, last_activity_at=? WHERE id=?', [nowSql(), conn.id]);
+      if (ctx.multipart) {
+        logEvent(conn, 'deliver', 'info', `received multipart ${ctx.multipart.parts}/${ctx.multipart.total} (ref=${ctx.multipart.ref}) from ${ctx.src || '?'} to ${ctx.dst || '?'}`);
+      } else {
+        logEvent(conn, 'deliver', 'info', `received from ${ctx.src || '?'} to ${ctx.dst || '?'}${ctx.payloadUsed ? ' (message_payload)' : ''}`);
+      }
+      try { deps.clearApiReadCache && deps.clearApiReadCache(); } catch (_) {}
+    } else {
+      st.dedup.crossChannel = (st.dedup.crossChannel || 0) + 1;
+      logEvent(conn, 'dedup', 'info', 'duplicate ignored by the shared ingest path (dedup_identity already present)');
+    }
+    markDirty();
+    return asIngest(0, identity, duplicate ? 'duplicate' : 'stored', smsId, { strong });
+  }
+
+  const why = (result && result.body && result.body.error) || 'rejected';
+  const persistenceFailed = !result || Number(result.status) >= 500;
+  if (persistenceFailed) {
+    // We do NOT have this message. Claiming success would make the SMSC drop it
+    // for good; a negative ack is the only way it can ever be stored. Nothing
+    // was written to the ledger, so the SMSC's retry inserts it exactly once.
+    logEvent(conn, 'error', 'error', `not stored (persistence failure: ${why}) — negative ack, expecting SMSC retry`);
+    markDirty();
+    return asIngest((smppLib && smppLib.ESME_RDELIVERYFAILURE) || 0x00000045, identity, 'storage-failed', null, { strong });
+  }
+  // Evaluation rejection (unknown number, unparseable payload): parked in the
+  // operator's Failed SMS queue. Acked 0 on purpose — the SMSC retrying cannot
+  // fix it and would only multiply rows.
+  logEvent(conn, 'deliver', 'warn', `not stored: ${why}${ctx.dst ? ' (' + ctx.dst + ')' : ''}`);
+  markDirty();
+  return asIngest(0, identity, 'rejected', null, { strong });
+}
+
+/** Normalised ingest outcome carried back to the ACK code. */
+function asIngest(status, identity, outcome, smsId, extra) {
+  return { status: status | 0, identity: identity || null, outcome: outcome || '', sms_record_id: smsId || null, extra: extra || {} };
 }
 
 /**
- * Ingest one inbound SMPP message through the SAME path the HTTP carrier
- * webhook uses. Returns an SMPP command_status.
+ * Ingest one inbound PDU. Returns the SMPP command_status for the response:
+ *   ESME_ROK (0)          — stored, suppressed as a duplicate, or parked in the
+ *                           Failed SMS queue for an operator (never re-requested
+ *                           from the SMSC: the SMSC retrying cannot fix a bad
+ *                           number and would only multiply rows)
+ *   ESME_RSYSERR (0x08)   — only when the message could NOT be evaluated at all
+ *                           (a genuine exception). A post-insert bookkeeping
+ *                           failure no longer lands here — see storeMessage().
+ *   ESME_RDELIVERYFAILURE — the store itself failed (DB error). The message is
+ *                           NOT on disk and the SMSC must retry it; nothing was
+ *                           written to the ledger, so that retry stores once.
  */
 function ingest(conn, st, pdu, peer) {
-  const smpp = smppLib;
-  const OK = 0;
-  const ERR_SYS = (smpp && smpp.ESME_RSYSERR) || 0x00000008;
-
+  const ERR_SYS = (smppLib && smppLib.ESME_RSYSERR) || 0x00000008;
   try {
     if (isDeliveryReceipt(pdu)) {
-      // Delivery receipts are acknowledgements of OUR submit_sm, not inbound
-      // traffic. Log and accept; storing them would pollute sms_records.
       logEvent(conn, 'deliver', 'info', 'delivery receipt ignored', peer);
       markDirty();
-      return OK;
+      return 0;
     }
+
+    const cfg = identityConfig();
+    const parsed = pdu.__rawBuffer ? ident.parseRawPdu(pdu.__rawBuffer) : null;
+    const candidates = ident.identityCandidates(parsed, cfg);
+    const strong = candidates.length ? candidates[0] : null;
 
     const src = safeStr(pdu.source_addr).trim();
     const dst = safeStr(pdu.destination_addr).trim();
-    let text = pduText(pdu);
+    const text = pduText(pdu);
 
-    const udh = pduUdh(pdu);
-    if (udh && udh.length) {
-      const assembled = reassemble(st, `${src}|${dst}`, udh, text);
-      if (assembled === null) return OK;      // wait for remaining parts
-      text = assembled;
-    }
+    noteIdentity(st, conn, parsed, strong, cfg);
 
     if (!dst) {
       logEvent(conn, 'deliver', 'warn', 'missing destination_addr', peer);
       markDirty();
-      return OK;   // never NACK: the peer would redeliver this forever
+      return 0;   // never NACK: the peer would redeliver this forever
     }
 
-    // Duplicate suppression (SMPP peers redeliver aggressively).
-    const key = dedupKeyFor(pdu, src, dst, text);
-    const seen = db.get('SELECT sms_record_id FROM smpp_seen WHERE connection_id=? AND dedup_key=?', [conn.id, key]);
-    if (seen) {
-      logEvent(conn, 'deliver', 'info', `duplicate ignored (${key.slice(0, 28)})`, peer);
-      markDirty();
-      return OK;
-    }
+    const ctx = {
+      uid: connectionUid(conn),
+      src, dst, text,
+      strong, raw: pdu.__rawBuffer || null,
+      peer, payloadUsed: usesPayload(pdu),
+    };
 
-    // ---- shared ingestion path (unchanged code) ----
-    const result = deps.processIncomingSmsPayload(
-      { ip: peer || 'SMPP', smpp_connection: conn.name },
-      { number: dst, cli: src, message: text },
-      `smpp:${conn.name}`,
-      { source: 'smpp' }
-    );
+    const udhElements = ident.decodeUdhElements(pduUdh(pdu));
+    const concat = ident.concatInfo(udhElements);
 
-    const ok = result && result.status === 200;
-    if (ok) {
-      const smsId = result.body && result.body.id ? result.body.id : null;
-      try {
-        db.run('INSERT OR IGNORE INTO smpp_seen (connection_id,dedup_key,sms_record_id,received_at) VALUES (?,?,?,?)',
-          [conn.id, key, smsId, nowSql()]);
-      } catch (_) {}
-      db.runNoSave('UPDATE smpp_connections SET total_received=total_received+1, last_activity_at=? WHERE id=?', [nowSql(), conn.id]);
-      logEvent(conn, 'deliver', 'info', `received from ${src || '?'} to ${dst}`, peer);
-      try { deps.clearApiReadCache && deps.clearApiReadCache(); } catch (_) {}
+    let out;
+    if (concat, concat && Number(concat.total) > 1) {
+      out = handleMultipartPart(conn, st, Object.assign({}, ctx, { concat }));
     } else {
-      const why = (result && result.body && result.body.error) || 'rejected';
-      logEvent(conn, 'deliver', 'warn', `not stored: ${why} (${dst})`, peer);
+      out = storeMessage(conn, st, ctx);
     }
-    markDirty();
-    // Always ACK. A NACK makes the peer redeliver a message we have already
-    // recorded in the Failed SMS queue, which is where the operator fixes it.
-    return OK;
+
+    // Remember which identity this sequence number produced so the ACK path can
+    // record "the SMSC was told" — retry evidence, useful in the logs.
+    if (out && out.identity) {
+      st.ackPending.set(pdu.sequence_number, { uid: ctx.uid, kind: out.identity.kind, value: out.identity.value });
+      if (st.ackPending.size > 500) {
+        const first = st.ackPending.keys().next().value;
+        st.ackPending.delete(first);
+      }
+    }
+    return out && out.status ? out.status : 0;
   } catch (e) {
-    deps.log.warn(`[SMPP] ${conn.name}: ingest failed: ${e.message}`);
+    try { deps.log.warn(`[SMPP] ${conn.name}: ingest failed: ${e.message}`); } catch (_) {}
     logEvent(conn, 'error', 'error', 'ingest failed: ' + e.message, peer);
+    st.dedup.errors = (st.dedup.errors || 0) + 1;
     markDirty();
     return ERR_SYS;
   }
+}
+
+/**
+ * Compatibility helper kept for tooling/tests: an in-memory UDH-aware
+ * assembler over the SAME primitives the DB-backed path uses.
+ */
+function reassemble(st, key, udh, text) {
+  st.parts = st.parts || new Map();
+  const elements = ident.decodeUdhElements(udh);
+  const info = ident.concatInfo(elements);
+  if (!info || Number(info.total) < 2) return text;
+  const bucket = `${key}:${info.ref}:${info.total}`;
+  let entry = st.parts.get(bucket);
+  if (!entry) { entry = { total: info.total, parts: new Map(), at: Date.now() }; st.parts.set(bucket, entry); }
+  entry.parts.set(info.seq, text);
+  if (st.parts.size > 500) {
+    const cutoff = Date.now() - 5 * 60 * 1000;
+    for (const [k, v] of st.parts) if (v.at < cutoff) st.parts.delete(k);
+  }
+  if (entry.parts.size < info.total) return null;
+  st.parts.delete(bucket);
+  let out = '';
+  for (let i = 1; i <= info.total; i++) out += (entry.parts.get(i) || '');
+  return out;
 }
 
 /* ------------------------------------------------------------------ *
@@ -427,7 +731,13 @@ function startClient(conn) {
     let status = 0;
     try { status = ingest(conn, st, pdu, conn.host); }
     catch (e) { status = (smpp.ESME_RSYSERR || 8); }
-    try { session.send(pdu.response({ command_status: status })); } catch (_) {}
+    try {
+      // The success/failure response is unchanged; the write callback only
+      // records that the SMSC was actually told (retry evidence for the log).
+      session.send(pdu.response({ command_status: status }), null,
+        () => ledgerAckBySeq(st, pdu.sequence_number),
+        () => {});
+    } catch (_) {}
   });
 
   // Some providers push via data_sm instead of deliver_sm.
@@ -435,7 +745,11 @@ function startClient(conn) {
     let status = 0;
     try { status = ingest(conn, st, pdu, conn.host); }
     catch (e) { status = (smpp.ESME_RSYSERR || 8); }
-    try { session.send(pdu.response({ command_status: status })); } catch (_) {}
+    try {
+      session.send(pdu.response({ command_status: status }), null,
+        () => ledgerAckBySeq(st, pdu.sequence_number),
+        () => {});
+    } catch (_) {}
   });
 
   session.on('enquire_link', (pdu) => {
@@ -712,21 +1026,30 @@ function onPeerSession(conn, session) {
         id = 'PX' + Date.now().toString(36);
       }
     } catch (e) { status = smpp.ESME_RSYSERR || 8; }
-    try { session.send(pdu.response({ command_status: status, message_id: id })); } catch (_) {}
+    try {
+      session.send(pdu.response({ command_status: status, message_id: id }), null,
+        () => ledgerAckBySeq(st, pdu.sequence_number), () => {});
+    } catch (_) {}
   });
 
   session.on('deliver_sm', (pdu) => {
     let status = 0;
     try { status = st.sessions.has(session) ? ingest(conn, st, pdu, peer) : (smpp.ESME_RINVBNDSTS || 4); }
     catch (e) { status = smpp.ESME_RSYSERR || 8; }
-    try { session.send(pdu.response({ command_status: status })); } catch (_) {}
+    try {
+      session.send(pdu.response({ command_status: status }), null,
+        () => ledgerAckBySeq(st, pdu.sequence_number), () => {});
+    } catch (_) {}
   });
 
   session.on('data_sm', (pdu) => {
     let status = 0;
     try { status = st.sessions.has(session) ? ingest(conn, st, pdu, peer) : (smpp.ESME_RINVBNDSTS || 4); }
     catch (e) { status = smpp.ESME_RSYSERR || 8; }
-    try { session.send(pdu.response({ command_status: status })); } catch (_) {}
+    try {
+      session.send(pdu.response({ command_status: status }), null,
+        () => ledgerAckBySeq(st, pdu.sequence_number), () => {});
+    } catch (_) {}
   });
 }
 
@@ -882,6 +1205,10 @@ function statusOf(id) {
     total_received: conn.total_received || 0,
     total_sent: conn.total_sent || 0,
     queued: (db.get('SELECT COUNT(*) c FROM smpp_outbox WHERE connection_id=? AND status=?', [id, 'queued']) || {}).c || 0,
+    connection_uid: conn.connection_uid || '',
+    dedup: st && st.dedup ? Object.assign({}, st.dedup) : {},
+    identity_report: (st && st.ident && st.ident.report) ? st.ident.report : '',
+    pending_parts: (() => { try { return (db.get('SELECT COUNT(*) c FROM smpp_parts WHERE connection_uid=?', [conn.connection_uid || '']) || {}).c || 0; } catch (_) { return 0; } })(),
   };
 }
 
@@ -932,6 +1259,11 @@ function start(d) {
   }, 30000);
   if (outboxTimer.unref) outboxTimer.unref();
 
+  // Incomplete multipart messages: never silently lost — after the staleness
+  // window the parts we actually received are stored and logged.
+  partsTimer = setInterval(() => { try { sweepStaleParts(); } catch (_) {} }, 60000);
+  if (partsTimer.unref) partsTimer.unref();
+
   deps.log.log(`• SMPP service active: ${list.length} connection(s) configured`);
 }
 
@@ -940,6 +1272,7 @@ function stop() {
     try { stopConnection(id, true); } catch (_) {}
   }
   if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+  if (partsTimer) { clearInterval(partsTimer); partsTimer = null; }
   flushBookkeeping();
   started = false;
 }
@@ -951,6 +1284,41 @@ process.once('SIGINT', onExit);
 process.once('SIGTERM', onExit);
 process.once('beforeExit', () => { try { flushBookkeeping(); } catch (_) {} });
 
+/**
+ * Flush multipart groups older than the staleness window. The parts that did
+ * arrive are stored as one row (logged as incomplete) so a missing part can
+ * never silently lose the message.
+ */
+function sweepStaleParts() {
+  const cfg = identityConfig();
+  let conns = [];
+  try { conns = listConnections(true); } catch (_) { return; }
+  for (const conn of conns) {
+    const uid = connectionUid(conn);
+    let groups = [];
+    try {
+      groups = db.all('SELECT group_key, COUNT(*) c, MAX(received_at) last FROM smpp_parts WHERE connection_uid=? GROUP BY group_key', [uid]);
+    } catch (_) { continue; }
+    for (const g of groups) {
+      if (!g.last || ageSeconds(g.last) < cfg.partsMaxAge) continue;
+      const parts = db.all('SELECT seq, text FROM smpp_parts WHERE connection_uid=? AND group_key=? ORDER BY seq ASC', [uid, g.group_key]);
+      db.run('DELETE FROM smpp_parts WHERE connection_uid=? AND group_key=?', [uid, g.group_key]);
+      const bits = String(g.group_key).split('|');
+      const text = parts.map(pp => pp.text).join('');
+      logEvent(conn, 'multipart', 'warn', `incomplete multipart timed out: ${parts.length}/${Number(bits[3]) || '?'} parts, ${text.length} chars (ref=${bits[2] || '?'}) — storing the received part(s)`);
+      try {
+        storeMessage(conn, stateOf(conn.id), {
+          uid, src: bits[0] || '', dst: bits[1] || '', text,
+          strong: null, raw: null, identity: null, peer: conn.host,
+          partial: true, multipart: { parts: parts.length, total: Number(bits[3]) || 0, ref: bits[2] || '', incomplete: true },
+        });
+      } catch (e) {
+        deps.log.warn(`[SMPP] ${conn.name}: incomplete multipart store failed: ${e.message}`);
+      }
+    }
+  }
+}
+
 module.exports = {
   start, stop,
   listConnections, getConnection,
@@ -960,5 +1328,9 @@ module.exports = {
   flushBookkeeping,
   isLibraryAvailable() { try { getSmpp(); return true; } catch (_) { return false; } },
   libraryError() { return smppLoadError; },
-  _internal: { pduText, isDeliveryReceipt, dedupKeyFor, ipAllowed, clampInt, reassemble },
+  _internal: {
+    pduText, payloadText, usesPayload, pduUdh, isDeliveryReceipt, ipAllowed, clampInt, reassemble,
+    identityConfig, connectionUid, ledgerFind, ledgerRecord, storeMessage, handleMultipartPart, sweepStaleParts,
+    asIngest, ident,
+  },
 };
