@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-1" />
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-20260929" />
 <title>SKYLINE SMS — Management Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
@@ -289,20 +289,20 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
 
 <link rel="stylesheet" href="/assets/galaxy.css?v=light-20260928"/><script src="/assets/galaxy.js?v=light-20260928" defer></script>
-<link rel="stylesheet" href="/assets/lamix-light.css?v=20260928-implementation"/>
+<link rel="stylesheet" href="/assets/lamix-light.css?v=20260929-skyline"/>
 </head>
 <body class="gx-light gx-lamix">
 <div class="layout">
   <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-1" alt="Skyline SMS" /></div>
+      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.png?v=skyline-20260929" alt="SKYLINE SMS" /></div>
       <div><h1>SKYLINE SMS</h1><small>Management Panel</small></div>
     </div>
     <nav class="sb-nav">
       <div class="sb-section">Number Maintenance</div>
       <div class="nav-item" data-page="import"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Import Numbers</span></div>
-      <!-- SKYLINE: Import Test Numbers nav removed per spec -->
+      <!-- GALAXY: Import Test Numbers nav removed per spec -->
 
       <div class="sb-section">Pricing</div>
       <div class="nav-item active" data-page="rates"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Rate Management</span></div>
@@ -379,7 +379,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
           <button class="btn btn-purple" onclick="bulkImportTxtFiles()">Import Selected TXT Files</button>
           <div class="hint" id="bulkTxtInfo" style="margin-top:10px">Example: <b>Nigeria.txt</b> will import all numbers inside it into range <b>Nigeria</b>.</div>
         </div>
-          <!-- SKYLINE: Upload Ranges File card removed per spec (backend untouched) -->
+          <!-- GALAXY: Upload Ranges File card removed per spec (backend untouched) -->
         </div>
 
         </section>
@@ -422,7 +422,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       <!-- ========== RATE MANAGEMENT ========== -->
             <section class="page active" id="page-rates">
         <div class="page-head"><div><h2>Rate Management</h2><div class="breadcrumb"><b>Pricing</b> › Ranges &amp; Rates</div></div>
-          <div class="head-actions"><!-- SKYLINE: Import Ranges button removed per spec (import page remains via sidebar) --><button class="btn btn-purple" onclick="openRateModal(-1)">+ Add Range</button></div>
+          <div class="head-actions"><!-- GALAXY: Import Ranges button removed per spec (import page remains via sidebar) --><button class="btn btn-purple" onclick="openRateModal(-1)">+ Add Range</button></div>
         </div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-head"><div><h3>Bulk Range Creation</h3><div class="sub">Enter one range name per line. Existing ranges will be skipped automatically.</div></div><button class="btn btn-green" onclick="bulkCreateRanges()">Create Ranges</button></div>
@@ -436,7 +436,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
             <div><div class="form-group"><label>Default Currency</label><select id="bulkRangeCurrency"><option value="USD">USD</option><option value="EUR">EUR</option><option value="PKR">PKR</option></select></div><div class="form-group"><label>Payment Type</label><select id="bulkRangePaymentType"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly_30x45">Monthly (30x45)</option></select></div><button class="btn btn-purple" style="width:100%;margin-top:10px" onclick="bulkCreateRanges()">Create All</button></div>
           </div>
         </div>
-        <!-- SKYLINE: combined Range+Test bulk import UI removed per spec (backend endpoint untouched) -->
+        <!-- GALAXY: combined Range+Test bulk import UI removed per spec (backend endpoint untouched) -->
 
         <div class="table-wrap" style="padding:16px 18px;margin-top:0">
           <div class="table-controls">
@@ -634,7 +634,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
           <div class="stat-card dash-metric d-pink"><div class="stat-info"><p>Database File</p><h3 id="bkDbFile">—</h3><span>Active database path</span></div><div class="dash-go">●</div></div>
         </div>
         <div class="card" style="margin-bottom:16px">
-          <div class="card-head"><div><h3>VPS Backup Settings</h3><div class="sub">Current VPS setup stores automatic backups outside the app folder. Recommended: <b>BACKUP_DIR=/root/powerx-sms-backups</b>.</div></div></div>
+          <div class="card-head"><div><h3>VPS Backup Settings</h3><div class="sub">Current VPS setup stores automatic backups outside the app folder. Recommended: <b>BACKUP_DIR=/root/skyline-sms-backups</b>.</div></div></div>
           <div class="hint">Automatic backups run every <b>BACKUP_INTERVAL_HOURS</b> hours and old backups are removed after <b>BACKUP_RETENTION_DAYS</b> days.</div>
         </div>
         <div class="table-wrap"><div class="tscroll"><table>
@@ -2182,7 +2182,7 @@ async function loadCarrierSettings(){
     await loadCarrierWebhookLogs();
   }catch(e){ if(String(e.message||'').includes('locked')||String(e.message||'').includes('Locked')){localStorage.removeItem('carrier_integration_lock');updateCarrierLockView();alert('❌ Wrong carrier integration password.');} else console.warn(e); }
 }
-/* ===== SKYLINE P7: HTTP Integration IPs + Provider Management (manual) ===== */
+/* ===== GALAXY P7: HTTP Integration IPs + Provider Management (manual) ===== */
 function pay3(v){ if(window.GX&&GX.pay3) return GX.pay3(v); let s=String(v??'').replace(/[$,\s]/g,'');const mm=s.match(/-?\d+(?:\.\d+)?/);if(!mm)return'0';const p=mm[0].split('.');if(p.length<2)return p[0];const d=p[1].slice(0,3).replace(/0+$/,'');return d?p[0]+'.'+d:p[0]; }
 async function fillProvDatalists(){
   try{
@@ -2467,7 +2467,7 @@ async function downloadLatestBackup(){
     const res=await fetch('/api/backups/latest/download',{headers:{Authorization:'Bearer '+token}});
     if(!res.ok) throw new Error((await res.json().catch(()=>({error:'Download failed'}))).error||'Download failed');
     const blob=await res.blob();
-    const name=(res.headers.get('content-disposition')||'').match(/filename="?([^";]+)"?/)?.[1]||'powerx-sms-latest-backup.sqlite';
+    const name=(res.headers.get('content-disposition')||'').match(/filename="?([^";]+)"?/)?.[1]||'skyline-sms-latest-backup.sqlite';
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);
   }catch(e){alert('❌ '+e.message)}
 }
@@ -3214,7 +3214,7 @@ if(typeof applyPanelSplitUi==='function') applyPanelSplitUi();
 // Default Management page is Rate Management. Heavy daily reports/dashboard are not loaded here.
 loadRates();
 setTimeout(()=>{Promise.allSettled([ensureAdminManagers(), loadImportBatches(), refreshNumberDbTools()]);},500);
-/* SKYLINE P7: khali .content div flex:1 se bara khali gap banata tha (pages section-level hain) */
+/* GALAXY P7: khali .content div flex:1 se bara khali gap banata tha (pages section-level hain) */
 document.querySelectorAll('.content').forEach(c=>{ if(!c.querySelector('*')) c.remove(); });
 </script>
 </body>

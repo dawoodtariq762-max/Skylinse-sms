@@ -391,7 +391,7 @@
   function exportTable(btn, mode){
     const table=findExportTable(btn); if(!table){ alert('No table found to export.'); return; }
     const data=tableToMatrix(table); if(!data.length){ alert('No rows to export.'); return; }
-    const title=(document.querySelector('.page.active h2')?.textContent||document.title||'powerx-export').trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'') || 'powerx-export';
+    const title=(document.querySelector('.page.active h2')?.textContent||document.title||'skyline-export').trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'') || 'skyline-export';
     const csv=data.map(r=>r.map(csvEscape).join(',')).join('\n');
     if(mode==='copy'){
       const copyText=data.map(r=>r.join('\t')).join('\n');

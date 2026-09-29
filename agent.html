@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-1" />
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-20260929" />
 <title>SKYLINE SMS — Agent Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .rail{width:76px!important;}
@@ -314,8 +314,8 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
 <link rel="stylesheet" href="/assets/galaxy.css?v=light-20260928"/><script src="/assets/galaxy.js?v=light-20260928" defer></script><script src="/assets/credit-notes.js?v=light-20260928" defer></script>
 
-<link rel="stylesheet" href="/assets/lamix-light.css?v=20260928-implementation"/>
-<script src="/assets/dashboard-ui.js?v=20260928-implementation"></script>
+<link rel="stylesheet" href="/assets/lamix-light.css?v=20260929-skyline"/>
+<script src="/assets/dashboard-ui.js?v=20260929-skyline"></script>
 
 <script src="/assets/number-copy.js?v=20260928-final"></script>
 </head>
@@ -323,7 +323,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 <div class="layout">
   <!-- ===== ICON RAIL ===== -->
   <aside class="rail" id="rail">
-    <div class="logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-1" alt="Skyline SMS" /></div>
+    <div class="logo"><img class="powerx-logo-img" src="/assets/skyline-logo.png?v=skyline-20260929" alt="SKYLINE SMS" /></div>
     <div class="brand-text"><h1>SKYLINE SMS</h1><small>Agent Panel</small></div>
     <nav class="rail-nav">
       <div class="ritem active" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg><span class="lbl">Dashboard</span></div>
@@ -337,7 +337,6 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       </div>
 
       <div class="rsec">Communication</div>
-      <div class="ritem" data-page="complaints"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span class="lbl">Complaints</span><span class="gx-nav-badge" id="gxCompBadge" style="display:none"></span></div>
       <div class="ritem" data-page="clients"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg><span class="lbl">Client Management</span></div>
 
       <div class="ritem" id="pCdr" onclick="toggleSub('sCdr','pCdr')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg><span class="lbl">SMS CDR Stats</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -379,7 +378,6 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       <div class="grid2 dash-row">
         <div class="card dash-note-card"><div class="card-head"><div><h3>Last 7 Days SMS & Payouts</h3><div class="sub">My clients stats & reports</div></div><span class="chip">Live</span></div><div class="chart" id="wk"></div></div>
         <div class="card dash-note-card dashboard-recent"><div class="card-head"><div><h3>Recent Activity</h3></div><span class="chip">Live</span></div><div class="muted" style="padding:18px">No recent activity yet</div></div>
-            <div class="card dash-note-card gx-map-card" style="margin-top:14px"><div class="card-head"><div><h3>SMS by Country — Today</h3><div class="sub">My SMS by country (tap a country)</div></div><span class="chip">Live</span></div><div id="gxMap"></div></div>
 </div>
     </section>
 
@@ -511,8 +509,6 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
           <div class="table-foot"><div class="info" id="baInfo"></div></div></div>
       </section>
 
-      <!-- P19e: INTERNAL CHAT + COMPLAINTS (GXChat builds UI at runtime) -->
-      <section class="page" id="page-complaints"></section>
 
       <!-- CLIENTS -->
       <section class="page" id="page-clients"></section>
@@ -576,6 +572,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       <div class="form-group">
         <label>Selected Range <span class="req">*</span></label>
         <select id="saModalRange" onchange="saOnRangeChange()" style="width:100%"></select>
+        <div id="saModalRangeStatic" style="display:none;width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:9px;font-weight:700;background:rgba(255,255,255,.05)"></div>
       </div>
 
       <div class="form-group">
@@ -687,7 +684,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   </div>
 </div>
 
-<script src="/api.js?v=light-20260928"></script><script src="/assets/chat.js?v=gxchat4"></script>
+<script src="/api.js?v=light-20260928"></script>
 <script>
 if(window.API){ API.guard('agent'); }
 /* P21: Security Lock for Chat and Payment */
@@ -1134,7 +1131,6 @@ tfoot.gx-tot td{position:sticky;bottom:0;border-top:2px solid #ddd;font-weight:7
   <div class="page-head"><div><h2>SMS Detailed Report</h2><div class="breadcrumb"><b>CDR Stats</b> › Detailed</div></div></div>
   <div class="toolbar">
     <div class="filter-row"><label><input type="checkbox" id="sdUseDate" checked style="width:auto" onchange="renderSmsDetail()"> Date</label><input type="date" id="sdDateFrom" title="From date" onchange="renderSmsDetail()" /> <span class="muted" style="align-self:center">to</span> <input type="date" id="sdDateTo" title="To date" onchange="renderSmsDetail()" />
-    <label><input type="checkbox" id="sdUseTime" style="width:auto" onchange="sdToggleTime()"> Time</label><input type="time" id="sdTimeFrom" title="From time (UK)" disabled onchange="renderSmsDetail()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="sdTimeTo" title="To time (UK)" disabled onchange="renderSmsDetail()"/>
     <label>Number</label><input type="text" id="sdNumSearch" placeholder="Search number…" style="min-width:150px" oninput="clearTimeout(window.__sdNT);window.__sdNT=setTimeout(renderSmsDetail,450)"/>
     <label>CLI</label><input type="text" id="sdCliSearch" placeholder="Search CLI…" style="min-width:120px" oninput="clearTimeout(window.__sdCT);window.__sdCT=setTimeout(renderSmsDetail,450)"/>
     <button class="btn btn-blue" onclick="renderSmsDetail()">Apply Filter</button><button type="button" class="gx-btn"  onclick="sdReset()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button></div>
@@ -1160,12 +1156,6 @@ tfoot.gx-tot td{position:sticky;bottom:0;border-top:2px solid #ddd;font-weight:7
 /* ---- P20 report state/helpers (agent) ---- */
 function sdDims(){ return {hour:'Hour',day:'Day',month:'Month',range:'Range',number:'Number',cli:'CLI',client:'Client',currency:'Currency'}; }
 function sdSelAll(){ return {cli:'',number:'',range:'',client:''}; }
-function sdToggleTime(){
-  const on=document.getElementById('sdUseTime').checked;
-  document.getElementById('sdTimeFrom').disabled=!on;
-  document.getElementById('sdTimeTo').disabled=!on;
-  renderSmsDetail();
-}
 function sdSelPick(dim,val){
   const sel=(window.__sdSel=window.__sdSel||sdSelAll());
   sel[dim]=String(val||'');
@@ -1200,13 +1190,10 @@ function sdReset(){
   sdUseDate.checked=true;
   var _f2=document.getElementById('sdDateFrom'),_t2=document.getElementById('sdDateTo');
   if(_f2){_f2.value='';_f2.dataset.gxAuto='';} if(_t2){_t2.value='';_t2.dataset.gxAuto='';}
-  sdUseTime.checked=false;
-  var _tf2=document.getElementById('sdTimeFrom'),_tt2=document.getElementById('sdTimeTo');
-  if(_tf2)_tf2.value=''; if(_tt2)_tt2.value='';
   const nsd=document.getElementById('sdSearch'); if(nsd) nsd.value='';
+  if (window.setSearchDropdownValue) window.setSearchDropdownValue('sdSelRange', '', 'All Ranges');
   const _nsr=document.getElementById('sdNumSearch'),_csr=document.getElementById('sdCliSearch');
   if(_nsr)_nsr.value=''; if(_csr)_csr.value='';
-  sdToggleTime();
 }
 /* P20: group-by column formatting */
 function sdFmtDim(d,v){
@@ -1231,10 +1218,18 @@ function gxSdGroupSort(k){
 async function fillSdFilterSelects(){
   const escOpt=(v)=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   try{
-    const rsel=document.getElementById('sdSelRange');
-    if(rsel&&rsel.options.length<=1){
-      const ranges=await API.get('/ranges');
-      rsel.innerHTML='<option value="">All Ranges</option>'+((ranges||[]).map(r=>`<option value="${escOpt(r.name)}">${escOpt(r.name)}</option>`).join(''));
+    if (window.renderSearchSelect && document.getElementById('sdSelRangeContainer') && !window.GX_DROPDOWNS['sdSelRange']) {
+      const rangesForDd = await API.get('/ranges').catch(() => []);
+      window.renderSearchSelect('sdSelRangeContainer', {
+        id: 'sdSelRange',
+        name: 'sdSelRange',
+        placeholder: 'All Ranges',
+        searchPlaceholder: 'Search ranges...',
+        style: 'width:100%',
+        items: ((rangesForDd || []).map(r => ({ value: String(r.name), label: String(r.name), search: String(r.name) }))),
+        value: ((window.__sdSel && window.__sdSel.range) || ''),
+        onChange: function(val){ sdSelPick('range', val); }
+      });
     }
     const cll=document.getElementById('sdSelClient');
     if(cll&&cll.options.length<=1){
@@ -1365,7 +1360,7 @@ function money(v){return '$ '+cleanDec(v);}
 function todayStr(){return (window.API&&API.ukToday)?API.ukToday():new Date().toISOString().slice(0,10);}function ukDateOf(v){return (window.API&&API.ukDate)?API.ukDate(v):String(v||'').slice(0,10);}
 function uniqueVals(arr){return [...new Set((arr||[]).filter(Boolean))];}
 async function loadProfile(){try{const me=await API.get('/me');AGT=me.name||me.username||AGT;document.querySelectorAll('.nm').forEach(e=>e.textContent=AGT);document.querySelectorAll('.av').forEach(e=>e.textContent=(AGT[0]||'A').toUpperCase());}catch(e){}}
-async function loadDashboard(){try{const d=await API.get('/dashboard').catch(e=>{window.GXDashboard && GXDashboard.error();throw e;});const cards=document.querySelectorAll('#page-dashboard .stat-card .stat-info h3');[(d.otp_today||d.sms_today||0),(d.sms_yesterday||0),(d.sms_7d||0),'$ '+pay3(d.payout_month)].forEach((v,i)=>{if(cards[i])cards[i].textContent=String(v)});const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];drawWeek((d.daily7||[]).map(x=>({l:days[new Date(x.date).getDay()]||'',v:x.count||0})));window.GX&&GX.map('#gxMap',(d.sms_by_country||[]));
+async function loadDashboard(){try{const d=await API.get('/dashboard').catch(e=>{window.GXDashboard && GXDashboard.error();throw e;});const cards=document.querySelectorAll('#page-dashboard .stat-card .stat-info h3');[(d.otp_today||d.sms_today||0),(d.sms_yesterday||0),(d.sms_7d||0),'$ '+pay3(d.payout_month)].forEach((v,i)=>{if(cards[i])cards[i].textContent=String(v)});const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];drawWeek((d.daily7||[]).map(x=>({l:days[new Date(x.date).getDay()]||'',v:x.count||0})));
     window.GXDashboard && GXDashboard.render(d, 'agent');
     window.GXDashboard && GXDashboard.refreshExtras('agent');const recentCard=document.querySelector('#page-dashboard .dashboard-recent');if(recentCard){const head=recentCard.querySelector('.card-head')?.outerHTML||'';recentCard.innerHTML=head+((d.recent||[]).map(r=>`<div class="li"><div class="l"><div><div class="t1">SMS received — ${r.number||'—'}</div><div class="t2">${(r.received_at||'').slice(0,19)} · ${r.cli||'—'}</div></div></div></div>`).join('')||'<div class="muted" style="padding:18px">No recent activity yet</div>');}}catch(e){console.warn(e)}}
 function pxPickRate(r){
@@ -1465,7 +1460,6 @@ async function loadAgentPageData(page){
     if(page==='numbers'){ loadNumbers(); return Promise.allSettled([loadRateCard(), loadClients()]).then(refreshAgentNumbersFilters); }
     if(page==='bulkAlloc'){ await Promise.allSettled([loadClients(), loadNumberSummaryForBulk()]); return; }
     if(page==='clients'){ buildClients(); return loadClients(); }
-    if(page==='complaints') return window.GXChat?GXChat.open('complaints'):null;
     if(page==='smsReport'){ if(!document.getElementById('srBody')) buildSmsReport(); return loadSms(); }
     if(page==='smsDetail'){ if(!document.getElementById('sdBody')) buildSmsDetail(); fillSdFilterSelects(); return loadSms(); }
     if(page==='clientStats'){ if(!document.getElementById('csBody')) buildClientStats(); return loadSms(); }
@@ -1509,7 +1503,7 @@ async function renderSmsReport(){if(!document.getElementById('srBody'))return;gx
 async function renderSmsDetail(){if(!document.getElementById('sdBody'))return;
   const chips=document.getElementById('sdChips'); if(chips) chips.innerHTML=sdChipsHtml();
   const _sdF=(document.getElementById('sdDateFrom')?.value)||'',_sdT=(document.getElementById('sdDateTo')?.value)||'';let dateFrom=_sdF,dateTo=_sdT;if(!dateFrom&&!dateTo){dateFrom=todayStr();dateTo=todayStr();}else if(dateFrom&&!dateTo){dateTo='2099-12-31';}else if(!dateFrom&&dateTo){dateFrom='1970-01-01';}if(dateFrom>dateTo){const _s=dateFrom;dateFrom=dateTo;dateTo=_s;}
-  const tfVal=sdUseTime?.checked?(document.getElementById('sdTimeFrom')?.value||''):'',ttVal=sdUseTime?.checked?(document.getElementById('sdTimeTo')?.value||''):'',search=(sdSearch?.value||'').trim(),len=sdLen?.value||'25';
+  const search=(sdSearch?.value||'').trim(),len=sdLen?.value||'25';
   /* P20 FIX: text searches ko pick-state me sync (warna typed value kabhi query me nahi jata) */
   const sel=window.__sdSel=window.__sdSel||sdSelAll();
   const _nsI=document.getElementById('sdNumSearch'), _csI=document.getElementById('sdCliSearch');
@@ -1517,7 +1511,7 @@ async function renderSmsDetail(){if(!document.getElementById('sdBody'))return;
   sdSyncFilterSelects();
   /* P20: text searches => contains params; dropdown picks => exact */
   const base=new URLSearchParams({from:dateFrom,to:dateTo});
-  if(tfVal)base.set('tfrom',tfVal); if(ttVal)base.set('tto',ttVal); if(search)base.set('search',search);
+  if(search)base.set('search',search);
   if(sel.number)base.set('number_like',sel.number);
   if(sel.cli)base.set('cli_like',sel.cli);
   for(const k of ['range','client']) if(sel[k]) base.set(k,sel[k]);
@@ -1777,6 +1771,17 @@ async function openSelfAlloc(preselectedRangeName){
   if (sel) {
     sel.innerHTML = saRangesData.map(r => `<option value="${r.id}" ${preselectedRangeName && r.name === preselectedRangeName ? 'selected' : ''}>${r.name} (${r.currency})</option>`).join('');
   }
+  /* Skyline SMS: when the request already carries a range (Rate Card row etc.),
+     show the selected range directly — no redundant range dropdown to pick again. */
+  const matched = preselectedRangeName ? saRangesData.find(r => r.name === preselectedRangeName) : null;
+  const staticBox = document.getElementById('saModalRangeStatic');
+  if (matched) {
+    if (sel) sel.style.display = 'none';
+    if (staticBox) { staticBox.style.display = 'block'; staticBox.textContent = matched.name + ' (' + (matched.currency || '') + ')'; }
+  } else {
+    if (sel) sel.style.display = '';
+    if (staticBox) { staticBox.style.display = 'none'; staticBox.textContent = ''; }
+  }
   saOnRangeChange();
   document.getElementById('selfAllocModal').classList.add('show');
 }
@@ -1834,7 +1839,7 @@ function saOnRangeChange(){
       alertBox.style.background = 'rgba(239,68,68,.14)';
       alertBox.style.border = '1px solid rgba(239,68,68,.35)';
       alertBox.style.color = '#fca5a5';
-      alertBox.innerHTML = `⚠️ <b>No Numbers Available:</b> No numbers are currently available in the pool for this range. Please contact your Manager: <b>${saManagerName}</b> ${saManagerContact ? '· ' + saManagerContact : ''} to request inventory.`;
+      alertBox.innerHTML = `⚠️ <b>No Number Available, Contact Your Manager</b>`;
       btn.disabled = true;
     } else {
       alertBox.style.display = 'none';

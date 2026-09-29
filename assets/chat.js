@@ -1,5 +1,5 @@
 /**
- * assets/chat.js — SKYLINE SMS COMPLAINTS & TICKETING SYSTEM
+ * assets/chat.js — GALAXY SMS COMPLAINTS & TICKETING SYSTEM
  * (The separate Chat System / Chat App has been discontinued and removed).
  */
 (function () {

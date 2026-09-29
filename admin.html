@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-1" />
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-20260929" />
 <title>SKYLINE SMS — Admin Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
@@ -290,8 +290,8 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
 <link rel="stylesheet" href="/assets/galaxy.css?v=light-20260928"/><script src="/assets/galaxy.js?v=light-20260928" defer></script><script src="/assets/credit-notes.js?v=light-20260928" defer></script>
 
-<link rel="stylesheet" href="/assets/lamix-light.css?v=20260928-implementation"/>
-<script src="/assets/dashboard-ui.js?v=20260928-implementation"></script>
+<link rel="stylesheet" href="/assets/lamix-light.css?v=20260929-skyline"/>
+<script src="/assets/dashboard-ui.js?v=20260929-skyline"></script>
 
 <script src="/assets/number-copy.js?v=20260928-final"></script>
 </head>
@@ -300,7 +300,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-1" alt="Skyline SMS" /></div>
+      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.png?v=skyline-20260929" alt="SKYLINE SMS" /></div>
       <div><h1>SKYLINE SMS</h1><small>Admin Panel</small></div>
     </div>
     <nav class="sb-nav">
@@ -318,7 +318,6 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
       <div class="sb-section">Communication</div>
       <div class="nav-item" data-page="chatAccounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Agent Account PIN</span></div>
-      <div class="nav-item" data-page="complaints"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Complaints</span><span class="gx-nav-badge" id="gxCompBadge" style="display:none"></span></div>
 
       <div class="sb-section">Users</div>
       <div class="nav-item" id="userParent" onclick="toggleSub('userSub','userParent')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>User Management</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -373,7 +372,6 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       <div class="gx-dash-sub" id="gxProvCostRow" style="display:none"></div>
       <div class="grid2 dash-row">
         <div class="card dash-note-card"><div class="card-head"><div><h3>Last 7 Days SMS & Payouts</h3><div class="sub">Summarized stats & reports</div></div><span class="chip">Live</span></div><div class="chart" id="weekChart"></div></div>
-        <div class="card dash-note-card gx-map-card"><div class="card-head"><div><h3>SMS by Country — Today</h3><div class="sub">Hover a country for today's SMS count</div></div><span class="chip">Live</span></div><div id="gxMap"></div></div>
       </div>
     </section>
 
@@ -515,9 +513,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
         <div id="payMgmtWrap" style="display:grid;gap:16px"></div>
       </section>
 
-      <!-- P19e: INTERNAL CHAT + COMPLAINTS (GXChat builds UI at runtime) -->
       <section class="page" id="page-chatAccounts"></section>
-      <section class="page" id="page-complaints"></section>
 
       <section class="page" id="page-test">
         <div class="page-head"><div><h2>SMS Test Panel</h2><div class="breadcrumb"><b>Home</b> › SMS Test Panel</div></div>
@@ -558,14 +554,14 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
                 <div class="exp-btns"><button type="button" class="gx-btn gx-blue"  data-tip="Copy" title="Copy" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button type="button" class="gx-btn gx-blue"  data-tip="Download CSV" title="Download CSV" aria-label="Download CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button type="button" class="gx-btn gx-green"  data-tip="Download Excel" title="Download Excel" aria-label="Download Excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
               <div class="tc-right"><label>Range:</label><div id="testNumRangeContainer" style="display:inline-block;min-width:150px"></div><label>Search:</label><input type="text" id="testNumSearch" oninput="renderTest()" placeholder="Search..."/></div>
             </div></div>
-            <div class="bulk-bar" id="testNumBulkBar">
-              <span class="info" id="testNumSelInfo">0 selected</span>
-              <button type="button" class="gx-btn gx-amber" onclick="testNumMoveBackSelected()" data-tip="Move selected test numbers back to live SMS Numbers" title="Move selected test numbers back to live SMS Numbers" aria-label="Move selected test numbers back to live SMS Numbers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><line x1="10" y1="3" x2="10" y2="9"/><line x1="14" y1="3" x2="14" y2="9"/><path d="M10 9L4.6 18a2 2 0 0 0 1.7 3h11.4a2 2 0 0 0 1.7-3L14 9"/></svg><span>Move back to Numbers</span></button>
-              <button type="button" class="gx-btn danger" onclick="testNumDeleteSelected()" data-tip="Delete selected test numbers" title="Delete selected test numbers" aria-label="Delete selected test numbers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Delete selected</span></button>
-              <button type="button" class="gx-btn danger" id="testNumRangeDeleteBtn" style="display:none" onclick="testNumDeleteRange()" data-tip="Delete every test number of the selected range" title="Delete every test number of the selected range" aria-label="Delete every test number of the selected range"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span id="testNumRangeDeleteLbl">Delete whole range</span></button>
+            <div id="tnActionBar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 10px">
+              <button type="button" class="btn btn-purple btn-sm" onclick="tnMoveBack()" title="Move selected test numbers back to live SMS Numbers (ownership and range preserved)">↩ Move Back to SMS Numbers</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="tnDeleteChecked()" title="Delete the checked test numbers" style="border-color:rgba(239,68,68,.45);color:#ef4444">🗑 Delete Selected</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="tnDeleteRange()" title="Delete ALL test numbers of the range selected above" style="border-color:rgba(239,68,68,.45);color:#ef4444">🗑 Delete Entire Range</button>
+              <span class="muted" id="tnSelCount" style="font-size:12px;margin-left:auto">0 selected</span>
             </div>
             <div class="table-wrap"><div class="tscroll"><table>
-              <thead><tr><th style="width:34px"><input type="checkbox" id="testNumAll" onclick="testNumToggleAll(this)" title="Select all rows on this page" aria-label="Select all rows on this page"/></th><th>Range</th><th>Test Number</th><th style="width:70px">Action</th></tr></thead>
+              <thead><tr><th style="width:34px"><input type="checkbox" id="testNumAll" style="width:auto" onchange="tnToggleAll(this.checked)" title="Select all on page" aria-label="Select all on page"></th><th>Range</th><th>Test Number</th></tr></thead>
               <tbody id="testNumBody"></tbody>
             </table></div><div class="table-foot"><div class="info" id="testNumInfo"></div><div class="pagination"></div></div></div>
           </div>
@@ -688,12 +684,12 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 </div></div>
 
 
-<script src="/api.js?v=light-20260928"></script><script src="/assets/chat.js?v=gxchat4"></script>
+<script src="/api.js?v=light-20260928"></script>
 <script>
 /* auth guard — admin only */
 if(window.API){ API.guard('admin'); }
 window.PX_PANEL_MODE='admin_ops';
-const ADMIN_ALLOWED_PAGES=new Set(['creditNotes','dashboard','allocation','numbers','managers','agents','clients','smsReport','cliSearch','smsDetail','clientStats','agentStats','managerStats','rangeStats','numberStats','test','payMgmt','chatAccounts','complaints']);
+const ADMIN_ALLOWED_PAGES=new Set(['creditNotes','dashboard','allocation','numbers','managers','agents','clients','smsReport','cliSearch','smsDetail','clientStats','agentStats','managerStats','rangeStats','numberStats','test','payMgmt','chatAccounts']);
 function normalizePanelPage(id){ id=String(id||'dashboard'); return ADMIN_ALLOWED_PAGES.has(id)?id:'dashboard'; }
 function applyPanelSplitUi(){
   if(window.PX_PANEL_MODE!=='admin_light') return;
@@ -1450,8 +1446,6 @@ tfoot.gx-tot td{position:sticky;bottom:0;border-top:2px solid #ddd;font-weight:7
     <div class="filter-row">
       <label><input type="checkbox" id="sdUseDate" checked style="width:auto" onchange="renderSmsDetail()"> Date</label>
       <input type="date" id="sdDateFrom" title="From date" onchange="renderSmsDetail()" /> <span class="muted" style="align-self:center">to</span> <input type="date" id="sdDateTo" title="To date" onchange="renderSmsDetail()" />
-      <label><input type="checkbox" id="sdUseTime" style="width:auto" onchange="sdToggleTime()"> Time</label>
-      <input type="time" id="sdTimeFrom" title="From time (UK)" disabled onchange="renderSmsDetail()"/> <span class="muted" style="align-self:center">–</span> <input type="time" id="sdTimeTo" title="To time (UK)" disabled onchange="renderSmsDetail()"/>
       <label>Number</label><input type="text" id="sdNumSearch" placeholder="Search number…" style="min-width:150px" oninput="clearTimeout(window.__sdNT);window.__sdNT=setTimeout(renderSmsDetail,450)"/>
       <label>CLI</label><input type="text" id="sdCliSearch" placeholder="Search CLI…" style="min-width:120px" oninput="clearTimeout(window.__sdCT);window.__sdCT=setTimeout(renderSmsDetail,450)"/>
     </div>
@@ -1484,12 +1478,6 @@ tfoot.gx-tot td{position:sticky;bottom:0;border-top:2px solid #ddd;font-weight:7
 /* ---- P20 report state/helpers (sab roles same pattern) ---- */
 function sdDims(){ return {hour:'Hour',day:'Day',month:'Month',range:'Range',number:'Number',cli:'CLI',client:'Client',agent:'Agent',manager:'Manager',currency:'Currency',provider:'Provider'}; }
 function sdSelAll(){ return {cli:'',number:'',range:'',manager:'',agent:'',client:'',provider:''}; }
-function sdToggleTime(){
-  const on=document.getElementById('sdUseTime').checked;
-  document.getElementById('sdTimeFrom').disabled=!on;
-  document.getElementById('sdTimeTo').disabled=!on;
-  renderSmsDetail();
-}
 function sdSelPick(dim,val){
   const sel=(window.__sdSel=window.__sdSel||sdSelAll());
   sel[dim]=String(val||'');
@@ -1529,9 +1517,6 @@ function sdReset(){
   sdUseDate.checked=true;
   var _f2=document.getElementById('sdDateFrom'),_t2=document.getElementById('sdDateTo');
   if(_f2){_f2.value='';_f2.dataset.gxAuto='';} if(_t2){_t2.value='';_t2.dataset.gxAuto='';}
-  sdUseTime.checked=false;
-  var _tf2=document.getElementById('sdTimeFrom'),_tt2=document.getElementById('sdTimeTo');
-  if(_tf2)_tf2.value=''; if(_tt2)_tt2.value='';
   const nsd=document.getElementById('sdSearch'); if(nsd) nsd.value='';
   const _nsr=document.getElementById('sdNumSearch'),_csr=document.getElementById('sdCliSearch');
   if(_nsr)_nsr.value=''; if(_csr)_csr.value='';
@@ -1577,8 +1562,6 @@ async function renderSmsDetail(){
   else if(dateFrom && !dateTo){ dateTo='2099-12-31'; }
   else if(!dateFrom && dateTo){ dateFrom='1970-01-01'; }
   if(dateFrom>dateTo){ const _s=dateFrom; dateFrom=dateTo; dateTo=_s; }
-  const tfVal=document.getElementById('sdUseTime')?.checked?(document.getElementById('sdTimeFrom')?.value||''):'';
-  const ttVal=document.getElementById('sdUseTime')?.checked?(document.getElementById('sdTimeTo')?.value||''):'';
   const search=(document.getElementById('sdSearch')?.value||'').trim();
   const len=document.getElementById('sdLen')?.value||'25';
   /* P20 FIX: text searches ko pick-state me sync (warna typed value kabhi query me nahi jata) */
@@ -1588,7 +1571,6 @@ async function renderSmsDetail(){
   sdSyncFilterSelects();
   /* text searches => contains params (number_like/cli_like); dropdown picks => exact */
   const base=new URLSearchParams({from:dateFrom,to:dateTo});
-  if(tfVal)base.set('tfrom',tfVal); if(ttVal)base.set('tto',ttVal);
   if(search)base.set('search',search);
   if(sel.number)base.set('number_like',sel.number);
   if(sel.cli)base.set('cli_like',sel.cli);
@@ -1809,78 +1791,6 @@ async function renderTest(){
   await Promise.all([renderTestNumbersTable(), renderTestRecentTable()]);
 }
 
-/* ============ TEST PANEL NUMBERS: selection + manual management ============
-   Selection survives paging (Map keyed by pool-row id). Actions call the existing
-   number/range ownership rules on the server — this UI never allocates by itself. */
-let testNumSel=new Map();     // id -> {id, number, range_name}
-let testNumPageRows=[];       // rows of the currently rendered page
-let testNumLast={total:0, rangeName:''};
-function testNumToggle(id, cb, row){
-  if(cb.checked) testNumSel.set(id, row); else testNumSel.delete(id);
-  testNumUpdateSelUI();
-}
-function testNumToggleAll(cb){
-  testNumPageRows.forEach(r=>{ if(cb.checked) testNumSel.set(r.id, r); else testNumSel.delete(r.id); });
-  renderTestNumbersTable();
-}
-function testNumUpdateSelUI(){
-  const info=document.getElementById('testNumSelInfo'); if(info) info.textContent=testNumSel.size+' selected';
-  const all=document.getElementById('testNumAll');
-  if(all) all.checked=testNumPageRows.length>0 && testNumPageRows.every(r=>testNumSel.has(r.id));
-}
-function testNumSelDescription(max=10){
-  const rows=[...testNumSel.values()]; const nums=rows.map(r=>r.number);
-  const shown=nums.slice(0,max).join(', ');
-  return shown+(nums.length>max?' … (+'+(nums.length-max)+' more)':'');
-}
-function testNumEsc(s){ return String(s||'').replace(/[^0-9A-Za-z+*#_-]/g,''); }
-async function testNumDeleteSelected(){
-  const rows=[...testNumSel.values()];
-  if(!rows.length){ alert('Please select test numbers first.'); return; }
-  if(!confirm(`Delete ${rows.length} test number(s) from the Test Panel?\n\nThey are removed from the Test Panel list and from their range's test-number list.\nLive SMS Numbers and SMS history are NOT affected.\n\nThis cannot be undone.`)) return;
-  if(rows.length>5 && !confirm(`Please confirm again: permanently delete ${rows.length} test numbers?\n\n${testNumSelDescription()}`)) return;
-  try{
-    const r=await API.post('/test-numbers/delete',{ids:rows.map(x=>x.id)});
-    alert(`✅ Deleted ${r.deleted||0} test number(s).`);
-    await afterTestNumberChange();
-  }catch(e){ alert('❌ '+e.message); }
-}
-async function testNumDeleteRange(){
-  const name=testNumLast.rangeName||''; if(!name){ alert('Choose a Range filter first.'); return; }
-  const n=testNumLast.total||0;
-  if(!confirm(`Delete ALL ${n} test number(s) of range "${name}"?\n\nEvery test number of this range is removed from the Test Panel and from the range's test-number list.\nLive SMS Numbers and SMS history are NOT affected.`)) return;
-  if(!confirm(`Please confirm again: permanently delete all ${n} test numbers of range "${name}"?`)) return;
-  try{
-    const r=await API.post('/test-numbers/delete',{range_name:name});
-    alert(`✅ Deleted ${r.deleted||0} test number(s) from "${name}".`);
-    await afterTestNumberChange();
-  }catch(e){ alert('❌ '+e.message); }
-}
-async function testNumDeleteOne(id, number){
-  if(!confirm(`Delete test number ${number} from the Test Panel?\n\nIt is removed from the Test Panel list and from its range's test-number list.\nLive SMS Numbers and SMS history are NOT affected.`)) return;
-  try{
-    const r=await API.post('/test-numbers/delete',{ids:[id]});
-    alert(`✅ Deleted ${r.deleted||0} test number.`);
-    await afterTestNumberChange();
-  }catch(e){ alert('❌ '+e.message); }
-}
-async function testNumMoveBackSelected(){
-  const rows=[...testNumSel.values()];
-  if(!rows.length){ alert('Please select test numbers first.'); return; }
-  if(!confirm(`Move ${rows.length} selected test number(s) back to live SMS Numbers?\n\nThey leave the Test Panel and become normal SMS Numbers of their range (unallocated, so the usual allocation rules apply).\nSMS history is not changed.`)) return;
-  try{
-    const r=await API.post('/test-numbers/move-to-numbers',{ids:rows.map(x=>x.id)});
-    alert(`✅ Moved ${r.moved||0} test number(s) back to SMS Numbers. Skipped: ${r.skipped||0}${r.duplicates_in_live?` (already in Numbers: ${r.duplicates_in_live})`:''}`);
-    await afterTestNumberChange();
-  }catch(e){ alert('❌ '+e.message); }
-}
-async function afterTestNumberChange(){
-  testNumSel.clear();
-  try{ if(typeof refreshNumberDependentViews==='function') await refreshNumberDependentViews(); }catch(e){}
-  try{ if(typeof loadRates==='function') await loadRates(); }catch(e){}
-  try{ await renderTest(); }catch(e){}
-}
-
 async function renderTestNumbersTable(){
   const body=document.getElementById('testNumBody'); if(!body) return;
   const info=document.getElementById('testNumInfo');
@@ -1899,20 +1809,51 @@ async function renderTestNumbersTable(){
   try{ data=await API.get('/test-numbers?'+params.toString()); }catch(e){ console.warn('test numbers load failed',e); }
   state.page=data.page||1; state.totalPages=data.totalPages||1;
   const rows=data.rows||[];
-  testNumPageRows=rows; testNumLast={total:data.total||0, rangeName:rangeF};
-  body.innerHTML=rows.map(r=>`<tr><td><input type="checkbox" class="testNumChk" data-id="${r.id}" ${testNumSel.has(r.id)?'checked':''} onclick="testNumToggle(${r.id},this,{id:${r.id},number:'${testNumEsc(r.number)}',range_name:'${String(r.range_name||'').replace(/'/g,'')}'})" title="Select ${testNumEsc(r.number)}" aria-label="Select ${testNumEsc(r.number)}"/></td><td>${r.range_name||''}</td><td class="mono">${r.number||''}</td><td><button type="button" class="icon-btn btn-red" onclick="testNumDeleteOne(${r.id},'${testNumEsc(r.number)}')" title="Delete this test number" aria-label="Delete this test number"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td></tr>`).join('')
-    ||`<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">No test numbers found</td></tr>`;
-  /* Range-wise delete is offered only while a Range filter is active (it then covers
-     exactly the rows the admin is looking at). */
-  const rangeBtn=document.getElementById('testNumRangeDeleteBtn');
-  if(rangeBtn){
-    const show=!!rangeF && (data.total||0)>0;
-    rangeBtn.style.display=show?'':'none';
-    const lbl=document.getElementById('testNumRangeDeleteLbl');
-    if(lbl) lbl.textContent=`Delete all in "${rangeF}" (${(data.total||0).toLocaleString()})`;
-  }
-  testNumUpdateSelUI();
+  body.innerHTML=rows.map(r=>`<tr><td><input type="checkbox" class="tnChk" value="${r.id}" style="width:auto" onchange="tnUpdateSelCount()" aria-label="Select test number ${r.number||''}"></td><td>${r.range_name||''}</td><td class="mono">${r.number||''}</td></tr>`).join('')
+    ||`<tr><td colspan="3" class="muted" style="text-align:center;padding:24px">No test numbers found</td></tr>`;
+  const allBox=document.getElementById('testNumAll'); if(allBox) allBox.checked=false;
+  tnUpdateSelCount();
   if(info){ info.textContent=`Showing ${smsShownCount(data.page,data.limit,rows.length,data.total)} of ${(data.total||0).toLocaleString()} test numbers`; setServerFoot(info,state,renderTestNumbersTable); }
+}
+
+/* ---- Skyline SMS: admin test-number bulk actions (checkbox driven) ---- */
+function tnToggleAll(on){ document.querySelectorAll('#testNumBody .tnChk').forEach(c=>{ c.checked=!!on; }); tnUpdateSelCount(); }
+function tnSelectedIds(){ return [...document.querySelectorAll('#testNumBody .tnChk:checked')].map(c=>parseInt(c.value,10)).filter(x=>Number.isFinite(x)&&x>0); }
+function tnUpdateSelCount(){ const el=document.getElementById('tnSelCount'); if(el) el.textContent = tnSelectedIds().length+' selected'; }
+async function tnMoveBack(){
+  const ids=tnSelectedIds();
+  if(!ids.length){ alert('Please check one or more test numbers first.'); return; }
+  if(!confirm(`Move ${ids.length} test number(s) BACK to live SMS Numbers?\nThey will return to their original range and previous owner (manager/agent/client), removed from the Test Panel.`)) return;
+  try{
+    const r=await API.post('/test-numbers/move-back',{ids});
+    alert(`✅ Moved back ${r.moved||0} number(s) to SMS Numbers. Skipped: ${r.skipped||0}`);
+    renderTest();
+  }catch(e){ alert('❌ '+e.message); }
+}
+async function tnDeleteChecked(){
+  const ids=tnSelectedIds();
+  if(!ids.length){ alert('Please check one or more test numbers first.'); return; }
+  if(!confirm(`DELETE ${ids.length} checked test number(s)?\nThis permanently removes them from the Test Panel.`)) return;
+  try{
+    const r=await API.post('/test-numbers/delete-bulk',{ids});
+    alert(`✅ Deleted ${r.deleted||0} test number(s).`);
+    renderTest();
+  }catch(e){ alert('❌ '+e.message); }
+}
+async function tnDeleteRange(){
+  const range=(document.getElementById('testNumRange')?.value||'').trim();
+  if(!range){ alert('Choose a range in the Range dropdown first — only that range\'s test numbers will be deleted.'); return; }
+  const shown=(document.getElementById('testNumInfo')?.textContent.match(/of ([\d,]+) test numbers/)?.[1]||'0').replace(/,/g,'');
+  if(!confirm(`DELETE ALL ${shown} test number(s) of range "${range}"?\nThis permanently removes every test number belonging to "${range}" only — other ranges are not affected.`)) return;
+  try{
+    const ranges=window.__testRanges||[];
+    const rr=await API.get('/ranges');
+    const match=(rr||[]).find(x=>String(x.name)===range);
+    if(!match){ alert('Range not found: '+range); return; }
+    const r=await API.post('/test-numbers/delete-range',{range_id:match.id});
+    alert(`✅ Deleted ${r.deleted||0} test number(s) from "${range}".`);
+    renderTest();
+  }catch(e){ alert('❌ '+e.message); }
 }
 
 async function renderTestRecentTable(){
@@ -2026,7 +1967,7 @@ function money(v){return '$ '+cleanDec(v);}
 async function loadDashboard(){
   try{
     const d=await API.get('/dashboard').catch(e=>{window.GXDashboard && GXDashboard.error();throw e;});
-    /* SKYLINE dashboard: verified /api/dashboard fields (backend meaning):
+    /* GALAXY dashboard: verified /api/dashboard fields (backend meaning):
        "Today SMS" == "SMS Received Today" in current backend (same pre-agg source,
        both = today's received count) — so ONE card per spec's verify-first rule. */
     const cards=[
@@ -2069,8 +2010,8 @@ async function loadDashboard(){
       } else { pcr.style.display='none'; pcr.innerHTML=''; }
     }
     const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    buildBarChart('weekChart',(d.daily7||[]).slice().reverse().map(x=>({l:days[new Date(x.date).getDay()]||'',v:x.count||0}))); /* SKYLINE: aaj hamesha LEFT */
-    window.GX&&GX.map('#gxMap',(d.sms_by_country||[]));
+    buildBarChart('weekChart',(d.daily7||[]).slice().reverse().map(x=>({l:days[new Date(x.date).getDay()]||'',v:x.count||0}))); /* GALAXY: aaj hamesha LEFT */
+    
     window.GXDashboard && GXDashboard.render(d, 'admin');
     window.GXDashboard && GXDashboard.refreshExtras('admin');
   }catch(e){ console.warn(e); }
@@ -2319,7 +2260,7 @@ async function downloadLatestBackup(){
     const res=await fetch('/api/backups/latest/download',{headers:{Authorization:'Bearer '+token}});
     if(!res.ok) throw new Error((await res.json().catch(()=>({error:'Download failed'}))).error||'Download failed');
     const blob=await res.blob();
-    const name=(res.headers.get('content-disposition')||'').match(/filename="?([^";]+)"?/)?.[1]||'powerx-sms-latest-backup.sqlite';
+    const name=(res.headers.get('content-disposition')||'').match(/filename="?([^";]+)"?/)?.[1]||'skyline-sms-latest-backup.sqlite';
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);
   }catch(e){alert('❌ '+e.message)}
 }
@@ -2596,8 +2537,21 @@ async function fillSmsDetailLiteFilters(){
      (users), CLI (existing /api/sms/clis — wide window taake all-time CLIs aayen),
      Provider (existing Provider Management /api/providers-info — koi duplicate list nahi). */
   const escOpt=(v)=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  const rsel=document.getElementById('sdSelRange');
-  if(rsel && rsel.options.length<=1) rsel.innerHTML='<option value="">All Ranges</option>'+((ratesData||[]).map(r=>`<option value="${escOpt(r.name)}">${escOpt(r.name)}</option>`).join(''));
+  /* Skyline SMS: Range filter — searchable dropdown (was never instantiated before,
+     leaving the sdSelRangeContainer empty on the Detail Report page). */
+  const rselExists = document.getElementById('sdSelRangeContainer');
+  if (window.renderSearchSelect && rselExists && !window.GX_DROPDOWNS['sdSelRange']) {
+    window.renderSearchSelect('sdSelRangeContainer', {
+      id: 'sdSelRange',
+      name: 'sdSelRange',
+      placeholder: 'All Ranges',
+      searchPlaceholder: 'Search ranges...',
+      style: 'width:100%',
+      items: ((ratesData || []).map(r => ({ value: String(r.name), label: String(r.name), search: String(r.name) }))),
+      value: ((window.__sdSel && window.__sdSel.range) || ''),
+      onChange: function(val){ sdSelPick('range', val); }
+    });
+  }
   const msel=document.getElementById('sdSelManager');
   if(msel && msel.options.length<=1) msel.innerHTML='<option value="">All Managers</option>'+((usersData.manager||[]).map(m=>`<option value="${escOpt(m.username)}">${escOpt(m.username)}</option>`).join(''));
   /* P20: Agent/Client filter selects bhi (users API — scope-safe; CLI ab free-text
@@ -3067,7 +3021,6 @@ async function loadAdminPageData(page){
     if(page==='test'){ await ensureAdminRates(); await loadTestNumbers(); return renderTest(); }
     if(page==='payMgmt') return loadPayMgmt();
     if(page==='chatAccounts') return buildChatAccounts();
-    if(page==='complaints') return window.GXChat?GXChat.open('complaints'):null;
         if(page==='managers') return buildUserPage('manager');
     if(page==='agents') return buildUserPage('agent');
     if(page==='clients') return buildUserPage('client');

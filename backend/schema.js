@@ -52,6 +52,14 @@ function createTables() {
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (range_id) REFERENCES ranges(id)
   )`);
+  /* Skyline SMS: a number moved to the Test Panel keeps its previous live-number
+     ownership chain here, so "Move back to SMS Numbers" can restore it to the
+     original owner (manager/agent/client/payterm) instead of orphaning it. */
+  ensureColumn('range_test_numbers', 'prev_number_id', 'INTEGER');
+  ensureColumn('range_test_numbers', 'prev_manager_id', 'INTEGER');
+  ensureColumn('range_test_numbers', 'prev_agent_id', 'INTEGER');
+  ensureColumn('range_test_numbers', 'prev_client_id', 'INTEGER');
+  ensureColumn('range_test_numbers', 'prev_payterm', "TEXT DEFAULT ''");
   db.run(`CREATE TABLE IF NOT EXISTS numbers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     range_id   INTEGER NOT NULL,
@@ -400,38 +408,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   ensureColumn('sms_records', 'payout_rate', "TEXT DEFAULT ''");
   ensureColumn('sms_records', 'payout_amount', "TEXT DEFAULT ''");
   ensureColumn('sms_records', 'limit_reason', "TEXT DEFAULT ''");
-  /* SMPP dedup v2 (additive; see backend/smppIdentity.js).
-     The ledger table itself is created further down in this same function, so
-     these ALTERs are guarded: on a brand-new database there is nothing to add
-     (the CREATE already carries the final shape), on an existing database that
-     predates a column this adds it. */
-  if (db.all("SELECT name FROM sqlite_master WHERE type='table' AND name='sms_dedup_ledger'").length) {
-    ensureColumn('sms_dedup_ledger', 'acked_at', "TEXT DEFAULT ''");
-    ensureColumn('sms_dedup_ledger', 'seen_count', 'INTEGER DEFAULT 1');
-    ensureColumn('sms_dedup_ledger', 'channel', "TEXT DEFAULT 'smpp'");
-    ensureColumn('sms_dedup_ledger', 'last_seen_at', "TEXT DEFAULT ''");
-  }
-  /* smpp_connections is created further down in this function (same reasoning
-     as the ledger above): only ALTER when the table already exists. */
-  if (db.all("SELECT name FROM sqlite_master WHERE type='table' AND name='smpp_connections'").length) {
-    ensureColumn('smpp_connections', 'connection_uid', "TEXT DEFAULT ''");
-  }
-  ensureColumn('sms_records', 'dedup_identity', "TEXT DEFAULT ''");
-  /* Explicit per-message marking of where the identity came from:
-       'strong'    — durable provider/SMSC id
-       'multipart' — concatenated message rebuilt from UDH parts
-       'weak'      — only with the armed content-suppression window
-       'no-id'     — no physical identity existed; STORED ANYWAY (lossless)
-       ''          — legacy / non-SMPP rows (nothing inferred) */
-  ensureColumn('sms_records', 'identity_state', "TEXT NOT NULL DEFAULT ''");
-  ensureColumn('failed_sms_queue', 'dedup_identity', "TEXT DEFAULT ''");
-  ensureColumn('failed_sms_queue', 'sms_record_id', 'INTEGER');
-  /* Partial UNIQUE index: only STRONG identities (SMSC message ids, completed
-     multipart ids) ever populate sms_records.dedup_identity, so a content-only
-     duplicate can never be rejected by the database. */
-  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_sms_records_dedup_strong ON sms_records(dedup_identity) WHERE dedup_identity <> ''`);
-  /* Replay/no-id statistics: cheap COUNTs over the marked rows only. */
-  db.run(`CREATE INDEX IF NOT EXISTS idx_sms_records_identity_state ON sms_records(identity_state, received_at) WHERE identity_state <> ''`);
   ensureColumn('ranges', 'deleted_at', "TEXT DEFAULT ''");
   /* P19k #4: Provider Rate — admin-internal, per payment-cycle period (ranges.rate_1_1/7_1/7_7/30_45
      wahi convention follow). Sirf Real Provider Cost (admin dashboard) use karta hai;
@@ -578,7 +554,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     consecutive_failures INTEGER NOT NULL DEFAULT 0,
     total_received INTEGER NOT NULL DEFAULT 0,
     total_sent INTEGER NOT NULL DEFAULT 0,
-    connection_uid TEXT DEFAULT '',           -- stable SMSC-account identity (host|port|system_id)
 
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
@@ -596,46 +571,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   )`);
   db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_smpp_seen_unique ON smpp_seen(connection_id, dedup_key)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_smpp_seen_created ON smpp_seen(created_at)`);
-
-  /* ------------------------------------------------------------------ *
-   * DURABLE DEDUP LEDGER (v2) + restart-safe multipart assembly
-   *
-   * smpp_seen above is keyed by the mutable smpp_connections row id and was
-   * wiped whenever a connection was deleted, so replay protection did not
-   * survive connection edits. sms_dedup_ledger is keyed by a STABLE account
-   * identity (connection_uid = host|port|system_id) plus the identity of the
-   * physical message itself, and is never deleted by connection edits.
-   *
-   * Purely additive: smpp_seen is kept as history and simply no longer used
-   * by the new ingest path. No existing row is rewritten.
-   * ------------------------------------------------------------------ */
-  db.run(`CREATE TABLE IF NOT EXISTS sms_dedup_ledger (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    connection_uid TEXT NOT NULL,
-    identity_kind TEXT NOT NULL,
-    identity TEXT NOT NULL,
-    channel TEXT DEFAULT 'smpp',
-    sms_record_id INTEGER,
-    first_seen_at TEXT NOT NULL,
-    last_seen_at TEXT DEFAULT '',
-    acked_at TEXT DEFAULT '',
-    seen_count INTEGER DEFAULT 1
-  )`);
-  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_sms_dedup_unique ON sms_dedup_ledger(connection_uid, identity_kind, identity)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_sms_dedup_sms ON sms_dedup_ledger(sms_record_id)`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS smpp_parts (
-    connection_uid TEXT NOT NULL,
-    group_key TEXT NOT NULL,
-    seq INTEGER NOT NULL,
-    total INTEGER NOT NULL DEFAULT 0,
-    part_identity TEXT DEFAULT '',
-    part_strong INTEGER DEFAULT 0,
-    text TEXT NOT NULL DEFAULT '',
-    received_at TEXT NOT NULL,
-    PRIMARY KEY (connection_uid, group_key, seq)
-  )`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_smpp_parts_age ON smpp_parts(received_at)`);
 
   // Event log: bind/unbind/error/reconnect/received/sent. Kept small by the service.
   db.run(`CREATE TABLE IF NOT EXISTS smpp_logs (
@@ -938,105 +873,4 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   } catch (e) { console.warn('Central Africa migration:', e.message); }
 }
 
-/* ------------------------------------------------------------------ *
- * Dedup v2 migration
- * ---------------------------------------------------------------------------
- * - additive only: creates the ledger/parts tables, adds columns, backfills
- *   smpp_connections.connection_uid from the account config
- * - takes ONE consistent snapshot of the database file before the first run
- *   (VACUUM INTO; falls back to a byte copy) so the change can be rolled back
- * - seeds the new ledger ONLY from strong (mid:*) keys already present in
- *   smpp_seen. Fingerprint keys (fp:*) are deliberately NOT seeded: they are
- *   content-based and could suppress a genuine future identical SMS.
- * - never rewrites or deletes sms_records.
- * Reversal: backend/scripts/rollback-dedup-v2.js
- * ------------------------------------------------------------------ */
-function migrateDedupV2(log = console) {
-  const meta = (k, v) => {
-    try {
-      if (v === undefined) {
-        const r = db.get('SELECT value FROM meta WHERE key=?', [k]);
-        return r ? r.value : null;
-      }
-      db.run('INSERT INTO meta (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', [k, String(v)]);
-      return String(v);
-    } catch (_) { return null; }
-  };
-  try {
-    const done = meta('dedup_v2_migrated');
-    if (done === '1') return { ok: true, already: true };
-
-    // ---- one-time backup (only when there is something to back up) -------
-    let backupPath = '';
-    try {
-      const hasRows = (db.get('SELECT COUNT(*) c FROM sms_records') || {}).c || 0;
-      if (hasRows > 0 && typeof db.getDbFile === 'function') {
-        const fs = require('fs');
-        const path = require('path');
-        const file = db.getDbFile();
-        const stamp = new Date().toISOString().slice(0, 10);
-        backupPath = `${file}.pre-dedup-v2-${stamp}`;
-        if (!fs.existsSync(backupPath)) {
-          try {
-            db.runNoSave(`VACUUM INTO '${String(backupPath).replace(/'/g, "''")}'`);
-          } catch (e) {
-            fs.copyFileSync(file, backupPath);
-          }
-          log.log(`• [DEDUP-V2] pre-migration backup: ${path.basename(backupPath)}`);
-        } else {
-          log.log(`• [DEDUP-V2] pre-migration backup already exists: ${path.basename(backupPath)}`);
-        }
-        meta('dedup_v2_backup', backupPath);
-      }
-    } catch (e) { log.warn('[DEDUP-V2] backup skipped: ' + e.message); }
-
-    // ---- backfill connection_uid from the SMSC account config ------------
-    try {
-      const { connectionUidOf } = require('./smppIdentity');
-      const conns = db.all('SELECT id,name,mode,host,port,system_id,listen_port,connection_uid FROM smpp_connections');
-      for (const c of conns) {
-        if (c.connection_uid) continue;
-        const uid = connectionUidOf(c) || (c.mode === 'server' ? ('smpp:server:' + String(c.listen_port || 0)) : '');
-        if (uid) db.run('UPDATE smpp_connections SET connection_uid=? WHERE id=?', [uid, c.id]);
-      }
-    } catch (e) { log.warn('[DEDUP-V2] connection_uid backfill: ' + e.message); }
-
-    // ---- seed the ledger with STRONG identities only ---------------------
-    try {
-      const seen = db.all("SELECT connection_id, dedup_key, sms_record_id, received_at FROM smpp_seen WHERE dedup_key LIKE 'mid:%'");
-      let seeded = 0;
-      for (const r of seen) {
-        const conn = db.get('SELECT connection_uid FROM smpp_connections WHERE id=?', [r.connection_id]);
-        const uid = (conn && conn.connection_uid) || ('smpp:legacy:' + r.connection_id);
-        const info = db.run(
-          'INSERT OR IGNORE INTO sms_dedup_ledger (connection_uid,identity_kind,identity,channel,sms_record_id,first_seen_at,last_seen_at) VALUES (?,?,?,?,?,?,?)',
-          [uid, 'mid', String(r.dedup_key).slice(4), 'smpp', r.sms_record_id || null, r.received_at || '', r.received_at || '']
-        );
-        seeded += (info && info.changes) || 0;
-      }
-      log.log(`• [DEDUP-V2] ledger seeded from strong keys: ${seeded} (fp:* fingerprint keys intentionally NOT seeded)`);
-    } catch (e) { log.warn('[DEDUP-V2] seed: ' + e.message); }
-
-    // ---- mark rows that already carry a durable identity ----------------
-    // Additive and guarded by its OWN meta key, so a database where the first
-    // migration already ran still gets it. Rows WITHOUT an id are deliberately
-    // left alone: nothing is inferred and no SMS record is rewritten.
-    if (meta('dedup_v2_identity_state') !== '1') {
-      try {
-        const r = db.run(`UPDATE sms_records SET identity_state='strong' WHERE COALESCE(identity_state,'')='' AND COALESCE(dedup_identity,'')<>''`);
-        const n = (r && r.changes) || 0;
-        if (n) log.log(`• [DEDUP-V2] marked ${n} existing row(s) identity_state='strong' (no row rewritten)`);
-        meta('dedup_v2_identity_state', '1');
-      } catch (e) { log.warn('[DEDUP-V2] identity_state backfill: ' + e.message); }
-    }
-
-    meta('dedup_v2_migrated', '1');
-    log.log('• [DEDUP-V2] migration complete' + (backupPath ? ' (backup ready)' : ''));
-    return { ok: true, backup: backupPath };
-  } catch (e) {
-    log.warn('[DEDUP-V2] migration failed (continuing with old behaviour): ' + e.message);
-    return { ok: false, error: e.message };
-  }
-}
-
-module.exports = { createTables, migrateDedupV2 };
+module.exports = { createTables };

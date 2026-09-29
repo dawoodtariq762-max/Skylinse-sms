@@ -13,9 +13,7 @@ try { require('dotenv').config({ path: path.join(__dirname, '..', '.env') }); re
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
-const { createTables, migrateDedupV2 } = require('./schema');
-const dayWindow = require('./dayWindow');
-const smppIdentity = require('./smppIdentity');
+const { createTables } = require('./schema');
 const { seed } = require('./seed');
 const { sign, authRequired, chatAuthRequired, requireRole, descendantIds, SECRET } = require('./auth');
 const backup = require('./backup');
@@ -87,18 +85,7 @@ function bumpNumbersVer() { bumpMetaVer('numbers_ver'); }
 /* =========================================================================
  * PHASE-1 Step 4: pre-aggregated daily SMS stats
  * ========================================================================= */
-/**
- * Bucket date for CARRIER SMS STATISTICS — UTC.
- *
- * The carrier's CDR timestamps, the reference panel's day boundary and the
- * stored received_at are all UTC. Counting by a Europe/London day made "Today"
- * disagree with the carrier by up to an hour of traffic (measured: 27 rows in
- * the 23:00Z hour on 2026-09-29) and did not match the UTC timestamps the UI
- * displays. Raw received_at is untouched; only the derived day key changes.
- * Payments/payout scheduling keep their own UK helpers below — unchanged.
- */
-function statDateUtc(ts) { return dayWindow.statDateUtc(ts); }
-function ukStatDateLegacyUk(ts) {
+function ukStatDate(ts) {
   try {
     if (!ts) return ukTodayDateStr(0);
     const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(String(ts));
@@ -115,7 +102,7 @@ function recordSmsStats(o) {
             VALUES (?,?,?,?,?,1,?)
             ON CONFLICT(stat_date,manager_id,agent_id,client_id,cli)
             DO UPDATE SET sms_count = sms_count + 1, payout_sum = payout_sum + excluded.payout_sum`,
-      [statDateUtc(o.ts), o.m ?? -1, o.a ?? -1, o.c ?? -1, String(o.cli || ''), Number(o.payout) || 0]);
+      [ukStatDate(o.ts), o.m ?? -1, o.a ?? -1, o.c ?? -1, String(o.cli || ''), Number(o.payout) || 0]);
   } catch (e) { /* stats must never break ingest */ }
 }
 function statsScope(user) {
@@ -153,7 +140,7 @@ async function backfillSmsStats(user) {
           FROM sms_records WHERE COALESCE(is_test,0)=0 AND id > ? AND id <= ?`, [last, hi]);
         const statAgg = new Map();
         for (const r of rows) {
-          const sd = statDateUtc(r.received_at);
+          const sd = ukStatDate(r.received_at);
           const k = sd + '|' + r.mgr + '|' + r.ag + '|' + r.cl + '|' + r.cli;
           const cur = statAgg.get(k);
           if (cur) { cur.c += 1; cur.pay += r.pay; }
@@ -340,7 +327,7 @@ app.get('/api/exports/:id/download', (req, res) => {
   const file = parseJsonSafe(job.result_json)?.file;
   if (!file || !fs.existsSync(file)) return res.status(410).json({ error: 'Export file expired' });
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="galaxy-${job.payload_json.includes('sms') ? 'sms' : 'numbers'}-${job.id}.csv"`);
+  res.setHeader('Content-Disposition', `attachment; filename="skyline-${job.payload_json.includes('sms') ? 'sms' : 'numbers'}-${job.id}.csv"`);
   fs.createReadStream(file).pipe(res);
 });
 
@@ -652,12 +639,6 @@ app.post('/api/smpp/connections', authRequired, requireRole('admin'), (req, res)
   const keys = Object.keys(f);
   db.run(`INSERT INTO smpp_connections (${keys.join(',')}) VALUES (${keys.map(() => '?').join(',')})`, keys.map(k => f[k]));
   const row = db.get('SELECT * FROM smpp_connections WHERE name=?', [f.name]);
-  try {
-    /* Stable SMSC-account identity (host|port|system_id): survives delete +
-       re-create of this row, so replay protection is not lost. */
-    const uid = smppIdentity.connectionUidOf(row) || (row.mode === 'server' ? ('smpp:server:' + String(row.listen_port || 0)) : '');
-    if (uid && uid !== row.connection_uid) { db.run('UPDATE smpp_connections SET connection_uid=? WHERE id=?', [uid, row.id]); row.connection_uid = uid; }
-  } catch (_) {}
   logAction(req, 'smpp_create', 'smpp_connections', { id: row.id, name: row.name, mode: row.mode });
   if (row.active) { try { smppService.startConnection(row.id); } catch (e) { /* reported via status */ } }
   res.json({ ok: true, connection: smppPublic(db.get('SELECT * FROM smpp_connections WHERE id=?', [row.id])) });
@@ -680,11 +661,6 @@ app.put('/api/smpp/connections/:id', authRequired, requireRole('admin'), (req, r
   if (keys.length) {
     db.run(`UPDATE smpp_connections SET ${keys.map(k => `${k}=?`).join(',')}, updated_at=datetime('now') WHERE id=?`, [...keys.map(k => f[k]), id]);
   }
-  try {
-    const after0 = smppService.getConnection(id);
-    const uid = smppIdentity.connectionUidOf(after0) || (after0 && after0.mode === 'server' ? ('smpp:server:' + String(after0.listen_port || 0)) : '');
-    if (uid && after0 && uid !== after0.connection_uid) db.run('UPDATE smpp_connections SET connection_uid=? WHERE id=?', [uid, id]);
-  } catch (_) {}
   logAction(req, 'smpp_update', 'smpp_connections', { id, fields: keys.filter(k => k !== 'password') });
   const after = smppService.getConnection(id);
   try {
@@ -700,11 +676,7 @@ app.delete('/api/smpp/connections/:id', authRequired, requireRole('admin'), (req
   if (!row) return res.status(404).json({ error: 'Connection not found' });
   try { smppService.stopConnection(id); } catch (_) {}
   db.run('DELETE FROM smpp_connections WHERE id=?', [id]);
-  /* The replay ledger is NO LONGER deleted here. Deleting it meant that
-     deleting and re-creating the same SMSC account forgot every message ever
-     seen, so the SMSC's next retry was stored as a brand-new SMS. The ledger is
-     keyed by the stable account identity (connection_uid), not by this row id,
-     and is retained; smpp_seen is left as historical data too. */
+  db.run('DELETE FROM smpp_seen WHERE connection_id=?', [id]);
   db.run('DELETE FROM smpp_outbox WHERE connection_id=?', [id]);
   logAction(req, 'smpp_delete', 'smpp_connections', { id, name: row.name });
   res.json({ ok: true });
@@ -763,52 +735,6 @@ app.post('/api/smpp/connections/:id/test', authRequired, requireRole('admin'), a
   res.json({ ...result, mode: 'client', host: conn.host, port: conn.port, current_status: (smppService.statusOf(conn.id) || {}).status });
 });
 
-app.get('/api/smpp/dedup-stats', authRequired, requireRole('admin'), (req, res) => {
-  const q = (sql, p = []) => { try { return db.get(sql, p) || {}; } catch (_) { return {}; } };
-  const conns = db.all('SELECT id, name, host, port, system_id, connection_uid FROM smpp_connections ORDER BY id');
-  const perConn = conns.map(c => ({
-    id: c.id, name: c.name, connection_uid: c.connection_uid || '',
-    identities: q('SELECT COUNT(*) c FROM sms_dedup_ledger WHERE connection_uid=?', [c.connection_uid || '']).c || 0,
-    duplicates_suppressed: q("SELECT COALESCE(SUM(seen_count)-COUNT(*),0) c FROM sms_dedup_ledger WHERE connection_uid=? AND seen_count>1", [c.connection_uid || '']).c || 0,
-    pending_parts: q('SELECT COUNT(*) c FROM smpp_parts WHERE connection_uid=?', [c.connection_uid || '']).c || 0,
-    status: smppService.statusOf(c.id) || null,
-  }));
-  let idcfg = { idTlvs: [0x001e], allowAppended: false, fallbackRequested: 0, fallbackArmed: false, fallbackWindow: 0 };
-  try { idcfg = smppService._internal.identityConfig() || idcfg; } catch (_) {}
-  const stCount = (state) => q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')=?", [state]).c || 0;
-  res.json({
-    identities_total: q('SELECT COUNT(*) c FROM sms_dedup_ledger').c || 0,
-    strong_identities: q("SELECT COUNT(*) c FROM sms_dedup_ledger WHERE identity_kind NOT IN ('pdu','mp')").c || 0,
-    weak_identities: q("SELECT COUNT(*) c FROM sms_dedup_ledger WHERE identity_kind IN ('pdu','mp')").c || 0,
-    /* Replay / no-id accounting. Rows marked 'no-id' had NO durable physical
-       identity and were stored anyway (lossless). They are counted here so the
-       operator can see exactly how much of the traffic cannot be told apart
-       from a retry — instead of the panel guessing by content. */
-    no_id: {
-      last_24h: q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')='no-id' AND received_at >= datetime('now','-1 day')").c || 0,
-      last_7d: q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')='no-id' AND received_at >= datetime('now','-7 days')").c || 0,
-      total: stCount('no-id'),
-    },
-    identity_states: {
-      strong: stCount('strong'),
-      multipart: stCount('multipart'),
-      weak: stCount('weak'),
-      no_id: stCount('no-id'),
-      unmarked: q("SELECT COUNT(*) c FROM sms_records WHERE COALESCE(identity_state,'')=''").c || 0,
-    },
-    dedup_mode: {
-      id_tlvs: (idcfg.idTlvs || []).map(t => '0x' + Number(t).toString(16).padStart(4, '0')).join(',') || '0x001e',
-      appended_id: !!idcfg.allowAppended,
-      fallback_retry_window_seconds: idcfg.fallbackWindow || 0,
-      content_suppression_requested_seconds: idcfg.fallbackRequested || 0,
-      content_suppression_armed: !!idcfg.fallbackArmed,
-      lossless: !(idcfg.fallbackArmed && idcfg.fallbackWindow > 0),
-      note: "lossless default: a message is NEVER suppressed because sender, destination and body look identical; messages with no physical id are stored and marked identity_state='no-id'",
-    },
-    connections: perConn,
-  });
-});
-
 app.get('/api/smpp/status', authRequired, requireRole('admin'), (req, res) => {
   const conns = smppService.listConnections();
   res.json({
@@ -852,7 +778,7 @@ app.get('/api/smpp/outbox', authRequired, requireRole('admin'), (req, res) => {
   res.json(rows);
 });
 
-app.get('/health', (req, res) => res.json({ ok: true, service: 'Galaxy SMS', time: new Date().toISOString() }));
+app.get('/health', (req, res) => res.json({ ok: true, service: 'Skyline SMS', time: new Date().toISOString() }));
 app.get('/api/health', (req, res) => {
   let dbSize = 0, walSize = 0;
   try {
@@ -861,7 +787,7 @@ app.get('/api/health', (req, res) => {
   } catch (_) {}
   const mem = process.memoryUsage();
   res.json({
-    ok: true, service: 'Galaxy SMS', time: new Date().toISOString(),
+    ok: true, service: 'Skyline SMS', time: new Date().toISOString(),
     uptime_s: Math.round(process.uptime()),
     rss_mb: +(mem.rss / 1048576).toFixed(1),
     heap_mb: +(mem.heapUsed / 1048576).toFixed(1),
@@ -955,14 +881,6 @@ function ukSqlModifier() {
 function ukDateExpr(column) { return `date(${column}, '${ukSqlModifier()}')`; }
 function ukDateNowSql(extra = '') { return `date('now','${ukSqlModifier()}'${extra ? `, '${extra}'` : ''})`; }
 function ukDateTimeExpr(column) { return `datetime(${column}, '${ukSqlModifier()}')`; }
-
-/* ---- UTC day expressions for carrier SMS counting ----------------------
-   received_at is stored in UTC, so plain date()/strftime() IS the UTC day.
-   Used by the SMS dashboard, reports and the test panel. Payout/payment
-   windows keep the UK helpers above — money rules are unchanged. */
-function utcDateExpr(column) { return `date(${column})`; }
-function utcDateNowSql(extra = '') { return `date('now'${extra ? `, '${extra}'` : ''})`; }
-function utcDateTimeExpr(column) { return `datetime(${column})`; }
 
 /* ------------------------------------------------------------------ *
  * Indexable UK-day range helpers
@@ -1153,14 +1071,9 @@ function logWebhook(status, payload, number='', matched='', cli='', message='', 
     [status, String(number||''), String(matched||''), String(cli||''), String(message||''), safeJson(payload), String(error||''), String(sourceIp||'')]); }
   catch(e){ console.warn('webhook log failed', e.message); }
 }
-function addFailedSms(payload, number='', cli='', message='', error='', opts={}){
-  try{
-    /* dedup_identity (when the caller has a strong physical-message identity)
-       lets the operator retry later WITHOUT creating a second sms_records row
-       for a message that was already stored. */
-    db.run('INSERT INTO failed_sms_queue (number,cli,message,raw_payload,error,dedup_identity) VALUES (?,?,?,?,?,?)',
-      [String(number||''),String(cli||''),String(message||''),safeJson(payload),String(error||''),String(opts.dedupIdentity||'')]);
-  }
+function addFailedSms(payload, number='', cli='', message='', error=''){
+  try{ db.run('INSERT INTO failed_sms_queue (number,cli,message,raw_payload,error) VALUES (?,?,?,?,?)',
+    [String(number||''),String(cli||''),String(message||''),safeJson(payload),String(error||'')]); }
   catch(e){ console.warn('failed sms queue failed', e.message); }
 }
 
@@ -1942,87 +1855,99 @@ app.delete('/api/test-numbers/:id', authRequired, requireRole('admin'), (req, re
   res.json({ ok: true, deleted: 1 });
 });
 
-/* ============ TEST PANEL POOL: shared helpers + bulk actions (audit fix) ============
-   ranges.test_number is a display mirror of the active test numbers of a range.
-   Every write to range_test_numbers must rebuild it (same query as the existing
-   single-row routes) so Test Panel, range dropdowns and reports stay in sync. */
-function refreshRangeTestMirror(rangeId){
-  if(!rangeId) return;
-  const joined = db.all('SELECT test_number FROM range_test_numbers WHERE range_id=? AND active=1 ORDER BY id', [rangeId]).map(x => x.test_number).join(', ');
-  db.run('UPDATE ranges SET test_number=? WHERE id=?', [joined, rangeId]);
-}
-/* Normalised phone comparison, same expression the existing number/range routes use. */
-function cleanNumExpr(col){ return `REPLACE(REPLACE(REPLACE(REPLACE(${col},'+',''),' ',''),'-',''),'_','')`; }
+/* Skyline SMS: move test numbers BACK to live SMS Numbers.
+   Restores the range plus the ownership chain captured at move-to-test time
+   (prev_manager/agent/client + payterm). Numbers that never lived in the panel
+   (directly imported as test) go back as unallocated numbers inside their
+   original range. Never orphans a number: the range must exist and the number
+   must not already exist live, otherwise it is skipped and reported. */
+app.post('/api/test-numbers/move-back', authRequired, requireRole('admin'), (req, res) => {
+  const ids = (req.body && Array.isArray(req.body.ids) ? req.body.ids : [])
+    .map(x => parseInt(x, 10)).filter(x => Number.isFinite(x) && x > 0);
+  if (!ids.length) return res.status(400).json({ error: 'ids[] required' });
+  const uniqueIds = [...new Set(ids)];
+  const ph = uniqueIds.map(() => '?').join(',');
+  const rows = db.all(`SELECT t.id, t.range_id, t.test_number, t.prev_number_id, t.prev_manager_id, t.prev_agent_id, t.prev_client_id, t.prev_payterm,
+      r.name AS range_name, r.prefix AS range_prefix
+    FROM range_test_numbers t JOIN ranges r ON r.id=t.range_id WHERE t.id IN (${ph})`, uniqueIds);
+  if (!rows.length) return res.status(404).json({ error: 'No matching test numbers found' });
 
-// Bulk delete of Test Panel numbers (single / multi / one complete range). Admin only.
-// Same rules as DELETE /api/test-numbers/:id, just batched: the pool rows are removed,
-// the range mirror is rebuilt and the action is logged. Live SMS Numbers are never touched.
-app.post('/api/test-numbers/delete', authRequired, requireRole('admin'), (req, res) => {
-  const b = req.body || {};
-  const ids = [...new Set((Array.isArray(b.ids) ? b.ids : []).map(x => parseInt(x, 10)).filter(x => Number.isFinite(x) && x > 0))];
-  const rangeId = (b.range_id != null && b.range_id !== '') ? parseInt(b.range_id, 10) : null;
-  const rangeName = String(b.range_name || '').trim();
-  if (!ids.length && !rangeId && !rangeName) return res.status(400).json({ error: 'ids[] or range required' });
-  let rows = [];
-  if (ids.length) {
-    const ph = ids.map(() => '?').join(',');
-    rows = db.all(`SELECT * FROM range_test_numbers WHERE id IN (${ph})`, ids);
-  } else if (rangeId && Number.isFinite(rangeId)) {
-    rows = db.all('SELECT * FROM range_test_numbers WHERE range_id=?', [rangeId]);
-  } else {
-    rows = db.all('SELECT t.* FROM range_test_numbers t JOIN ranges r ON r.id=t.range_id WHERE r.name=?', [rangeName]);
+  let moved = 0, skipped = 0;
+  const affectedRanges = new Set();
+  const skippedList = [];
+  if (!db.inTransaction()) db.exec('BEGIN IMMEDIATE');
+  try {
+    for (const t of rows) {
+      const cleaned = cleanPhone(t.test_number);
+      if (!cleaned || !t.range_id) { skipped++; skippedList.push(t.test_number); continue; }
+      const existsLive = db.get(`SELECT id FROM numbers
+        WHERE REPLACE(REPLACE(REPLACE(REPLACE(number,'+',''),' ',''),'-',''),'_','')=?`, [cleaned]);
+      if (existsLive) { skipped++; skippedList.push(t.test_number); continue; }
+      db.runNoSave(`INSERT INTO numbers (range_id,number,prefix,rate,payterm,payout,manager_rate,agent_rate,client_rate,manager_id,agent_id,client_id,alloc_source)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [t.range_id, t.test_number, t.range_prefix || '', '', t.prev_payterm || 'Weekly', '0', '', '', '',
+         t.prev_manager_id || null, t.prev_agent_id || null, t.prev_client_id || null, 'move_back']);
+      db.runNoSave('DELETE FROM range_test_numbers WHERE id=?', [t.id]);
+      affectedRanges.add(t.range_id);
+      moved++;
+    }
+    for (const rid of affectedRanges) {
+      const joined = db.all('SELECT test_number FROM range_test_numbers WHERE range_id=? AND active=1 ORDER BY id', [rid]).map(x => x.test_number).join(', ');
+      db.runNoSave('UPDATE ranges SET test_number=? WHERE id=?', [joined, rid]);
+    }
+    if (db.inTransaction()) db.exec('COMMIT');
+  } catch (err) {
+    if (db.inTransaction()) db.exec('ROLLBACK');
+    throw err;
   }
-  let deleted = 0; const touched = new Set();
-  for (const row of rows) { deleted += (db.run('DELETE FROM range_test_numbers WHERE id=?', [row.id]).changes || 0); touched.add(row.range_id); }
-  touched.forEach(refreshRangeTestMirror);
-  logAction(req, 'delete_test_numbers', 'test_numbers', { requested: ids.length || null, range_id: rangeId || null, range_name: rangeName || null, deleted, ranges: [...touched] });
-  res.json({ ok: true, deleted, ranges: [...touched] });
+  db.save && db.save(); clearApiReadCache();
+  logAction(req, 'move_test_numbers_back', 'test_numbers', { requested: ids.length, moved, skipped, ranges: [...affectedRanges] });
+  bumpNumbersVer();
+  if (app.broadcastSseAll) app.broadcastSseAll('allocation_update', { action: 'move_back', count: moved, timestamp: Date.now() });
+  res.json({ ok: true, moved, skipped, skipped_numbers: skippedList.slice(0, 20), ranges: [...affectedRanges] });
 });
 
-// Move selected Test Panel numbers back into live SMS Numbers (Admin only).
-// Reverse of POST /api/numbers/move-to-test. Ownership rules are unchanged: the number
-// is linked to its existing range and stays UNALLOCATED (manager/agent/client empty),
-// so it re-enters the normal allocation flow. No rate is invented: the prefix is copied
-// from the range exactly like the number-import path, payout starts at '0'.
-app.post('/api/test-numbers/move-to-numbers', authRequired, requireRole('admin'), (req, res) => {
-  const b = req.body || {};
-  const ids = [...new Set((Array.isArray(b.ids) ? b.ids : []).map(x => parseInt(x, 10)).filter(x => Number.isFinite(x) && x > 0))];
+/* Skyline SMS: bulk delete selected test numbers (checkbox-driven, admin only). */
+app.post('/api/test-numbers/delete-bulk', authRequired, requireRole('admin'), (req, res) => {
+  const ids = (req.body && Array.isArray(req.body.ids) ? req.body.ids : [])
+    .map(x => parseInt(x, 10)).filter(x => Number.isFinite(x) && x > 0);
   if (!ids.length) return res.status(400).json({ error: 'ids[] required' });
-  const ph = ids.map(() => '?').join(',');
-  const rows = db.all(`SELECT t.*, r.name AS range_name, r.prefix AS range_prefix, r.deleted_at AS range_deleted_at
-                       FROM range_test_numbers t LEFT JOIN ranges r ON r.id=t.range_id
-                       WHERE t.id IN (${ph})`, ids);
+  const uniqueIds = [...new Set(ids)];
+  const ph = uniqueIds.map(() => '?').join(',');
+  const rows = db.all(`SELECT id, range_id, test_number FROM range_test_numbers WHERE id IN (${ph})`, uniqueIds);
   if (!rows.length) return res.status(404).json({ error: 'No matching test numbers found' });
-  let moved = 0, skipped = 0, duplicatesInLive = 0;
-  const skippedRows = []; const touched = new Set();
-  for (const row of rows) {
-    const number = String(row.test_number || '').trim();
-    const cleaned = cleanPhone(number);
-    if (!number || !row.range_id || String(row.range_deleted_at || '').trim()) {
-      skipped++; skippedRows.push({ id: row.id, number, reason: !row.range_id ? 'range missing' : 'range deleted' }); continue;
-    }
-    const existsLive = db.get(`SELECT id FROM numbers WHERE number=? OR ${cleanNumExpr('number')}=?`, [number, cleaned]);
-    if (existsLive) { duplicatesInLive++; skipped++; skippedRows.push({ id: row.id, number, reason: 'already in live SMS Numbers' }); continue; }
-    db.run(`INSERT INTO numbers (range_id,number,prefix,payterm,payout,import_source,imported_by,imported_at)
-            VALUES (?,?,?,?,?,?,?,datetime('now'))`,
-      [row.range_id, number, row.range_prefix || '', 'Weekly', '0', 'test_panel_move', (req.user && req.user.id) || null]);
-    db.run('DELETE FROM range_test_numbers WHERE id=?', [row.id]);
-    touched.add(row.range_id); moved++;
+  const affectedRanges = new Set(rows.map(r => r.range_id));
+  db.run(`DELETE FROM range_test_numbers WHERE id IN (${ph})`, uniqueIds);
+  for (const rid of affectedRanges) {
+    const joined = db.all('SELECT test_number FROM range_test_numbers WHERE range_id=? AND active=1 ORDER BY id', [rid]).map(x => x.test_number).join(', ');
+    db.run('UPDATE ranges SET test_number=? WHERE id=?', [joined, rid]);
   }
-  touched.forEach(refreshRangeTestMirror);
-  logAction(req, 'move_test_numbers_to_numbers', 'numbers', { requested: ids.length, moved, skipped, duplicates_in_live: duplicatesInLive, ranges: [...touched] });
-  res.json({ ok: true, moved, skipped, duplicates_in_live: duplicatesInLive, skipped_rows: skippedRows, ranges: [...touched] });
+  logAction(req, 'delete_test_numbers_bulk', 'test_numbers', { requested: ids.length, deleted: rows.length, ranges: [...affectedRanges] });
+  res.json({ ok: true, deleted: rows.length });
+});
+
+/* Skyline SMS: delete ALL test numbers of one whole range (admin only, confirmed UI-side). */
+app.post('/api/test-numbers/delete-range', authRequired, requireRole('admin'), (req, res) => {
+  const rangeId = req.body ? parseInt(req.body.range_id, 10) : NaN;
+  if (!Number.isFinite(rangeId) || rangeId <= 0) return res.status(400).json({ error: 'range_id required' });
+  const range = db.get('SELECT id, name FROM ranges WHERE id=?', [rangeId]);
+  if (!range) return res.status(404).json({ error: 'Range not found' });
+  const c = db.get('SELECT COUNT(*) c FROM range_test_numbers WHERE range_id=?', [rangeId])?.c || 0;
+  db.run('DELETE FROM range_test_numbers WHERE range_id=?', [rangeId]);
+  db.run("UPDATE ranges SET test_number='' WHERE id=?", [rangeId]);
+  logAction(req, 'delete_test_numbers_range', 'test_numbers', { range: range.name, deleted: c });
+  res.json({ ok: true, deleted: c, range: range.name });
 });
 
 app.get('/api/test-panel/dashboard', authRequired, requireRole('admin','manager','agent','client','test'), (req, res) => {
   const nums = db.get('SELECT COUNT(*) c FROM range_test_numbers WHERE active=1')?.c || 0;
   const normalTest = 'COALESCE(is_test,0)=1';
-  const dExpr = utcDateExpr('received_at');
-  const today = db.get(`SELECT COUNT(*) c FROM sms_records WHERE ${normalTest} AND ${dExpr}=${utcDateNowSql()}`)?.c || 0;
+  const dExpr = ukDateExpr('received_at');
+  const today = db.get(`SELECT COUNT(*) c FROM sms_records WHERE ${normalTest} AND ${dExpr}=${ukDateNowSql()}`)?.c || 0;
   const daily7 = db.all(`WITH days(n,d) AS (
-      SELECT 6, ${utcDateNowSql('-6 days')} UNION ALL SELECT n-1, date(d,'+1 day') FROM days WHERE n>0
-    ) SELECT d AS date, COALESCE((SELECT COUNT(*) FROM sms_records s WHERE COALESCE(s.is_test,0)=1 AND ${utcDateExpr('s.received_at')}=d),0) AS count FROM days ORDER BY d`);
-  res.json({ today_otps: today, total_test_numbers: nums, daily7, reporting_timezone: 'UTC' });
+      SELECT 6, ${ukDateNowSql('-6 days')} UNION ALL SELECT n-1, date(d,'+1 day') FROM days WHERE n>0
+    ) SELECT d AS date, COALESCE((SELECT COUNT(*) FROM sms_records s WHERE COALESCE(s.is_test,0)=1 AND ${ukDateExpr('s.received_at')}=d),0) AS count FROM days ORDER BY d`);
+  res.json({ today_otps: today, total_test_numbers: nums, daily7, reporting_timezone: 'Europe/London' });
 });
 
 app.get('/api/test-panel/sms', authRequired, requireRole('admin','manager','agent','client','test'), (req, res) => cachedJson(req, res, 1500, () => {
@@ -2995,7 +2920,7 @@ function affectedStatsKeys(whereSql, params = []) {
     FROM sms_records WHERE COALESCE(is_test,0)=0 AND (${whereSql})`, params);
   const seen = new Map();
   for (const r of rows) {
-    const sd = statDateUtc(r.received_at); /* same conversion as recordSmsStats at ingest */
+    const sd = ukStatDate(r.received_at); /* same conversion as recordSmsStats at ingest */
     const k = sd + '|' + r.mgr + '|' + r.ag + '|' + r.cl + '|' + r.cli;
     if (!seen.has(k)) seen.set(k, { sd, mgr: r.mgr, ag: r.ag, cl: r.cl, cli: r.cli });
   }
@@ -3070,12 +2995,10 @@ function deleteNumbersFromRows(rows, req, action, details = {}, deleteSms = fals
     .map(r => ({ id: parseInt(r.id, 10), number: String(r.number || '') }))
     .filter(r => Number.isFinite(r.id) && r.id > 0);
   const count = cleanRows.length;
-  if (!count) return { deleted: 0, deleted_sms: 0, preserved_sms: 0, test_entries_removed: 0, vacuum: false };
+  if (!count) return { deleted: 0, deleted_sms: 0, preserved_sms: 0, vacuum: false };
 
   let smsCount = 0;
   let deferredRebuild = false;
-  let orphanTestEntries = 0;
-  const orphanRangeIds = new Set();
   try {
     db.execNoSave('BEGIN TRANSACTION');
     db.execNoSave('DROP TABLE IF EXISTS tmp_delete_numbers');
@@ -3106,23 +3029,6 @@ function deleteNumbersFromRows(rows, req, action, details = {}, deleteSms = fals
       /* Note: payment_ledger rows jaan-boojh kar rakhi (historical immutability) — balances Sahi rehte hain */
     }
     db.runNoSave('DELETE FROM numbers WHERE id IN (SELECT id FROM tmp_delete_numbers)');
-
-    /* Test Panel consistency (audit fix): a range_test_numbers entry whose number is
-       also present in live `numbers` becomes an orphan as soon as that live row is
-       deleted — the pool is a separate table and this delete path never touched it.
-       Remove exactly those entries and rebuild the ranges.test_number mirror after
-       the commit, so Test Panel / range dropdowns / allocation screens agree.
-       Live numbers that were never in the pool, and all SMS history, are untouched. */
-    try {
-      const orphans = db.all(`SELECT id, range_id FROM range_test_numbers
-        WHERE ${cleanNumExpr('test_number')} IN (SELECT ${cleanNumExpr('number')} FROM tmp_delete_numbers WHERE number<>'')`);
-      for (const o of orphans) {
-        db.runNoSave('DELETE FROM range_test_numbers WHERE id=?', [o.id]);
-        orphanRangeIds.add(o.range_id);
-        orphanTestEntries++;
-      }
-    } catch (e) { console.warn('[DELETE-NUMBERS] test-panel orphan cleanup failed:', e.message); }
-
     db.execNoSave('DROP TABLE IF EXISTS tmp_delete_numbers');
     db.execNoSave('COMMIT');
     db.save();
@@ -3131,17 +3037,12 @@ function deleteNumbersFromRows(rows, req, action, details = {}, deleteSms = fals
     throw e;
   }
   if (deferredRebuild) scheduleStatsFullRebuild('numbers-delete');
-  /* Mirror refresh runs outside the delete transaction so a mirror problem can never
-     roll back (or block) the number deletion itself. */
-  for (const rid of orphanRangeIds) {
-    try { refreshRangeTestMirror(rid); } catch (e) { console.warn('[DELETE-NUMBERS] test-panel mirror refresh failed:', e.message); }
-  }
 
   // Do not VACUUM after every delete; it rewrites the whole DB and makes small delete/range actions feel frozen.
   const vacuum = false;
-  logAction(req, action, 'numbers', { ...details, count, linkedSms: smsCount, deleteSms: !!deleteSms, testPanelRemoved: orphanTestEntries });
+  logAction(req, action, 'numbers', { ...details, count, linkedSms: smsCount, deleteSms: !!deleteSms });
   bumpNumbersVer();
-  return { deleted: count, deleted_sms: deleteSms ? smsCount : 0, preserved_sms: deleteSms ? 0 : smsCount, test_entries_removed: orphanTestEntries, vacuum };
+  return { deleted: count, deleted_sms: deleteSms ? smsCount : 0, preserved_sms: deleteSms ? 0 : smsCount, vacuum };
 }
 function deleteNumbersFromSelect(selectSql, params = [], req, action, details = {}, deleteSms = false) {
   const rows = db.all(selectSql, params);
@@ -3170,7 +3071,7 @@ app.post('/api/numbers/move-to-test', authRequired, requireRole('admin'), (req, 
   if (!ids.length) return res.status(400).json({ error: 'ids[] required' });
   const uniqueIds = [...new Set(ids)];
   const ph = uniqueIds.map(() => '?').join(',');
-  const rows = db.all(`SELECT n.id,n.number,n.range_id,r.name AS range_name FROM numbers n LEFT JOIN ranges r ON r.id=n.range_id WHERE n.id IN (${ph})`, uniqueIds);
+  const rows = db.all(`SELECT n.id,n.number,n.range_id,n.manager_id,n.agent_id,n.client_id,n.payterm,r.name AS range_name FROM numbers n LEFT JOIN ranges r ON r.id=n.range_id WHERE n.id IN (${ph})`, uniqueIds);
   if (!rows.length) return res.status(404).json({ error: 'No matching numbers found' });
 
   let moved = 0, skipped = 0, deletedFromLive = 0;
@@ -3184,7 +3085,8 @@ app.post('/api/numbers/move-to-test', authRequired, requireRole('admin'), (req, 
     const existsTest = db.get(`SELECT id FROM range_test_numbers
       WHERE range_id=? AND REPLACE(REPLACE(REPLACE(REPLACE(test_number,'+',''),' ',''),'-',''),'_','')=?`, [n.range_id, cleaned]);
     if (!existsTest) {
-      db.run('INSERT INTO range_test_numbers (range_id,test_number,active) VALUES (?,?,1)', [n.range_id, n.number]);
+      db.run('INSERT INTO range_test_numbers (range_id,test_number,active,prev_number_id,prev_manager_id,prev_agent_id,prev_client_id,prev_payterm) VALUES (?,?,1,?,?,?,?,?)',
+        [n.range_id, n.number, n.id, n.manager_id || null, n.agent_id || null, n.client_id || null, n.payterm || '']);
     }
     const liveCount = db.get(`SELECT COUNT(*) c FROM numbers WHERE REPLACE(REPLACE(REPLACE(REPLACE(number,'+',''),' ',''),'-',''),'_','')=?`, [cleaned])?.c || 0;
     db.run(`DELETE FROM numbers WHERE REPLACE(REPLACE(REPLACE(REPLACE(number,'+',''),' ',''),'-',''),'_','')=?`, [cleaned]);
@@ -3464,7 +3366,7 @@ function buildSmsPagedQuery(user, q = {}) {
     const HM = (v) => /^\d{1,2}:\d{2}$/.test(String(v||'').trim()) ? String(v).trim() : '';
     const tf = HM(q.tfrom), tt = HM(q.tto);
     if (tf || tt) {
-      let d0 = /^\d{4}-\d{2}-\d{2}$/.test(String(q.from||'')) ? String(q.from) : dayWindow.utcDayString(0);
+      let d0 = /^\d{4}-\d{2}-\d{2}$/.test(String(q.from||'')) ? String(q.from) : ukTodayDateStr(0);
       let d1 = /^\d{4}-\d{2}-\d{2}$/.test(String(q.to||'')) ? String(q.to) : d0;
       if (d0 > d1) { const _x = d0; d0 = d1; d1 = _x; }
       const dayMs = 86400000;
@@ -3704,7 +3606,7 @@ app.get('/api/sms/report', authRequired, (req, res) => cachedJson(req, res, 1200
   let spanA, spanB;
   const okDate = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
   if (okDate(q.from) || okDate(q.to)) {
-    const d0 = okDate(q.from) ? String(q.from) : (okDate(q.to) ? String(q.to) : dayWindow.utcDayString(0));
+    const d0 = okDate(q.from) ? String(q.from) : (okDate(q.to) ? String(q.to) : ukTodayDateStr(0));
     const d1 = okDate(q.to) ? String(q.to) : d0;
     const [a0, b0] = d0 <= d1 ? [d0, d1] : [d1, d0];
     const aSql = ukLocalDateToUtcSql(a0, 0), bSql = ukLocalDateToUtcSql(b0, 1);
@@ -3769,7 +3671,7 @@ app.get('/api/sms/clis', authRequired, (req, res) => cachedJson(req, res, 30000,
   const dq = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
   if (!dq(q.from)) delete q.from;
   if (!dq(q.to)) delete q.to;
-  if (!q.from && !q.to) { q.from = dayWindow.utcDayString(0); q.to = q.from; }
+  if (!q.from && !q.to) { q.from = ukTodayDateStr(0); q.to = q.from; }
   else if (q.from && !q.to) q.to = q.from;
   else if (!q.from && q.to) q.from = q.to;
   if (q.from > q.to) { const t = q.from; q.from = q.to; q.to = t; }
@@ -3783,7 +3685,7 @@ app.get('/api/sms/numbers', authRequired, (req, res) => cachedJson(req, res, 300
   const dq = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
   if (!dq(q.from)) delete q.from;
   if (!dq(q.to)) delete q.to;
-  if (!q.from && !q.to) { q.from = dayWindow.utcDayString(0); q.to = q.from; }
+  if (!q.from && !q.to) { q.from = ukTodayDateStr(0); q.to = q.from; }
   else if (q.from && !q.to) q.to = q.from;
   else if (!q.from && q.to) q.from = q.to;
   if (q.from > q.to) { const t = q.from; q.from = q.to; q.to = t; }
@@ -3848,7 +3750,7 @@ function hasCustomDate(q){ return !!(q.from || q.to); }
 function dateRangeWhere(q, alias='s') {
   const p = alias ? alias + '.' : '';
   const where=[]; const params=[];
-  const dExpr=utcDateExpr(`${p}received_at`);
+  const dExpr=ukDateExpr(`${p}received_at`);
   if(q.from){ where.push(`${dExpr} >= date(?)`); params.push(q.from); }
   if(q.to){ where.push(`${dExpr} <= date(?)`); params.push(q.to); }
   return { where: where.length ? where.join(' AND ') : '1=1', params };
@@ -3885,10 +3787,10 @@ app.get('/api/cli-search', authRequired, requireRole('admin','manager'), (req,re
     summary={ selected_period: countWhere(''), from:req.query.from||'', to:req.query.to||'' };
   } else {
     summary={
-      today: countWhere(`${utcDateExpr('s.received_at')}=${utcDateNowSql()}`),
-      yesterday: countWhere(`${utcDateExpr('s.received_at')}=${utcDateNowSql('-1 day')}`),
-      last7: countWhere(`${utcDateExpr('s.received_at')} >= ${utcDateNowSql('-6 days')}`),
-      month: countWhere(`strftime('%Y-%m',${utcDateTimeExpr('s.received_at')})=strftime('%Y-%m',datetime('now'))`)
+      today: countWhere(`${ukDateExpr('s.received_at')}=${ukDateNowSql()}`),
+      yesterday: countWhere(`${ukDateExpr('s.received_at')}=${ukDateNowSql('-1 day')}`),
+      last7: countWhere(`${ukDateExpr('s.received_at')} >= ${ukDateNowSql('-6 days')}`),
+      month: countWhere(`strftime('%Y-%m',${ukDateTimeExpr('s.received_at')})=strftime('%Y-%m',datetime('now','${ukSqlModifier()}'))`)
     };
   }
   let rangeRows;
@@ -3899,8 +3801,8 @@ app.get('/api/cli-search', authRequired, requireRole('admin','manager'), (req,re
       GROUP BY s.range_id, r.name ORDER BY total_count DESC`, base.params);
   } else {
     rangeRows=db.all(`SELECT COALESCE(r.name,'Unknown') AS range_name,
-      SUM(CASE WHEN ${utcDateExpr('s.received_at')}=${utcDateNowSql()} THEN 1 ELSE 0 END) AS today_count,
-      SUM(CASE WHEN ${utcDateExpr('s.received_at')}=${utcDateNowSql('-1 day')} THEN 1 ELSE 0 END) AS yesterday_count
+      SUM(CASE WHEN ${ukDateExpr('s.received_at')}=${ukDateNowSql()} THEN 1 ELSE 0 END) AS today_count,
+      SUM(CASE WHEN ${ukDateExpr('s.received_at')}=${ukDateNowSql('-1 day')} THEN 1 ELSE 0 END) AS yesterday_count
       FROM sms_records s LEFT JOIN ranges r ON r.id=s.range_id
       WHERE ${base.where}
       GROUP BY s.range_id, r.name ORDER BY today_count DESC, yesterday_count DESC`, base.params);
@@ -3965,8 +3867,8 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
   const st = statsScope(u);
   const stWhere = st.col ? ` AND ${st.col}=?` : '';
   const stP = st.params;
-  const dToday = dayWindow.utcDayString(0), dYesterday = dayWindow.utcDayString(-1);
-  const d7Start = dayWindow.utcDayString(-6);
+  const dToday = ukTodayDateStr(0), dYesterday = ukTodayDateStr(-1);
+  const d7Start = ukTodayDateStr(-6);
   const monthStart = dToday.slice(0, 7) + '-01';
   const statSum = (extra, params = []) => db.get(
     `SELECT COALESCE(SUM(sms_count),0) c FROM sms_daily_stats WHERE 1=1${stWhere}${extra}`, [...stP, ...params])?.c || 0;
@@ -3999,7 +3901,7 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
   {
     const rows = db.all(`SELECT stat_date, SUM(sms_count) c FROM sms_daily_stats WHERE 1=1${stWhere} AND stat_date BETWEEN ? AND ? GROUP BY stat_date`, [...stP, d7Start, dToday]);
     const byDate = {}; rows.forEach(r => byDate[r.stat_date] = r.c || 0);
-    for (let i = 6; i >= 0; i--) { const dayStr = dayWindow.utcDayString(-i); daily7.push({ date: dayStr, count: byDate[dayStr] || 0 }); }
+    for (let i = 6; i >= 0; i--) { const dayStr = ukTodayDateStr(-i); daily7.push({ date: dayStr, count: byDate[dayStr] || 0 }); }
   }
   const recentRows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45, n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type
     FROM sms_records s
@@ -4013,7 +3915,7 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
   let failedToday = 0, failedTotal = 0;
   try {
     if (u.role === 'admin') {
-      failedToday = db.get(`SELECT COUNT(*) c FROM failed_sms_queue WHERE ${utcDateExpr('created_at')}=${utcDateNowSql()}`)?.c || 0;
+      failedToday = db.get(`SELECT COUNT(*) c FROM failed_sms_queue WHERE ${ukDayOffsetSql('created_at', 0)}`)?.c || 0;
       failedTotal = db.get('SELECT COUNT(*) c FROM failed_sms_queue')?.c || 0;
     } else {
       // PERFORMANCE: this used to be a correlated EXISTS subquery with
@@ -4034,7 +3936,7 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
       const cleanF = `REPLACE(REPLACE(REPLACE(REPLACE(f.number,'+',''),' ',''),'-',''),'_','')`;
       failedToday = db.get(`SELECT COUNT(*) c FROM failed_sms_queue f
         JOIN numbers n ON ${cleanN}=${cleanF}
-        WHERE ${nScope.where} AND ${utcDateExpr('f.created_at')}=${utcDateNowSql()}`, nScope.params)?.c || 0;
+        WHERE ${nScope.where} AND ${ukDayOffsetSql('f.created_at', 0)}`, nScope.params)?.c || 0;
       failedTotal = db.get(`SELECT COUNT(*) c FROM failed_sms_queue f
         JOIN numbers n ON ${cleanN}=${cleanF}
         WHERE ${nScope.where}`, nScope.params)?.c || 0;
@@ -4081,7 +3983,7 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
     /* P14 FIX (retained): role-scoped exactly like the other cards. */
     db.all(`SELECT s.number num, r.country rc, COUNT(*) c FROM sms_records s
         LEFT JOIN ranges r ON r.id = s.range_id
-        WHERE ${utcDateExpr('s.received_at')}=${utcDateNowSql()} AND COALESCE(s.is_test,0)=0${cCol}
+        WHERE ${ukDayOffsetSql('s.received_at', 0)} AND COALESCE(s.is_test,0)=0${cCol}
         GROUP BY 1, 2`, cParams)
       .forEach(row => {
         const iso = isoOfCountryText(row.rc) || resolveByPrefix(row.num);
@@ -5090,6 +4992,27 @@ app.post('/api/panel-sharing/bulk-allocate', authRequired, requireRole('admin'),
     res.status(500).json({ error: 'Bulk allocation failed: ' + err.message });
   }
 });
+/* FIX (verified live 2026-09-29): cleanUrl was called here and in
+ * forwardSharingOtpIfNeeded but never defined in this module — every HTTP
+ * sharing forward crashed with "cleanUrl is not defined" and the OTP was
+ * permanently lost. Mirrored from backend/providerSync.js. */
+function cleanUrl(value) {
+  let u = String(value == null ? '' : value).trim();
+  if (!u) return '';
+  u = u.replace(/^<+|>+$/g, '').trim();
+  const md = u.match(/\]\(\s*(https?:\/\/[^)\s]+)\s*\)/i);
+  if (md) u = md[1];
+  else {
+    const bare = u.match(/https?:\/\/[^\s\]()<>]+/i);
+    if (bare) u = bare[0];
+  }
+  u = u.replace(/&amp;/gi, '&');
+  u = u.replace(/\s+/g, '');
+  const q = u.indexOf('?');
+  const path = q === -1 ? u : u.slice(0, q);
+  const rest = q === -1 ? '' : u.slice(q);
+  return path.replace(/\/+$/, '') + rest;
+}
 app.post('/api/panel-sharing/http/test', authRequired, requireRole('admin'), async (req, res) => {
   const b = req.body || {};
   const url = cleanUrl(b.url);
@@ -5097,7 +5020,7 @@ app.post('/api/panel-sharing/http/test', authRequired, requireRole('admin'), asy
   const method = (b.method || 'POST').toUpperCase();
   const authType = b.auth_type || 'none';
   const token = b.auth_token || '';
-  const headers = { 'User-Agent': 'Galaxy-SMS-Webhook-Test/2.0' };
+  const headers = { 'User-Agent': 'Skyline-SMS-Webhook-Test/2.0' };
 
   if (authType === 'bearer' && token) headers['Authorization'] = 'Bearer ' + token;
   else if (authType === 'header' && token) headers[b.auth_header || 'X-API-Key'] = token;
@@ -5108,7 +5031,7 @@ app.post('/api/panel-sharing/http/test', authRequired, requireRole('admin'), asy
   const sampleData = {
     cli: '67425',
     number: '+44712345678',
-    message: 'Galaxy SMS connection test code: 123456',
+    message: 'Skyline SMS connection test code: 123456',
     date: new Date().toISOString().slice(0, 10),
     time: new Date().toISOString().slice(11, 19),
     otp_code: '123456',
@@ -5204,7 +5127,7 @@ function forwardSharingOtpIfNeeded(savedId, smsRow){
         const method = (cfg.method || 'POST').toUpperCase();
         const authType = cfg.auth_type || 'none';
         const token = cfg.auth_token || '';
-        const headers = { 'User-Agent': 'Galaxy-SMS-Forwarder/2.0' };
+        const headers = { 'User-Agent': 'Skyline-SMS-Forwarder/2.0' };
 
         if (authType === 'bearer' && token) headers['Authorization'] = 'Bearer ' + token;
         else if (authType === 'header' && token) headers[cfg.auth_header || 'X-API-Key'] = token;
@@ -5565,25 +5488,6 @@ app.post('/api/failed-sms/:id/retry', authRequired, requireRole('admin'), (req,r
   const id=+req.params.id;
   const f=db.get('SELECT * FROM failed_sms_queue WHERE id=?',[id]);
   if(!f) return res.status(404).json({ error:'Failed SMS not found' });
-
-  /* ---- idempotency guard -------------------------------------------------
-     A retry must never create a second sms_records row for a message that is
-     already stored (double-clicked Retry, replayed request, or a row parked
-     here after the insert had in fact succeeded). */
-  const linkedId = Number(f.sms_record_id||0);
-  if (linkedId) {
-    const row = db.get('SELECT id FROM sms_records WHERE id=?',[linkedId]);
-    if (row) return res.json({ ok:true, already_stored:true, sms_record_id: row.id, note:'already stored — no new row created' });
-  }
-  const retryIdentity = String(f.dedup_identity||'').trim();
-  if (retryIdentity) {
-    const dup = db.get('SELECT id FROM sms_records WHERE dedup_identity=? LIMIT 1',[retryIdentity]);
-    if (dup) {
-      db.run(`UPDATE failed_sms_queue SET status='Retried',retry_count=retry_count+1,updated_at=datetime('now'),sms_record_id=? WHERE id=?`,[dup.id,id]);
-      logAction(req,'retry_failed_sms','failed_sms_queue',{id,number:f.number,already_stored:true,sms_record_id:dup.id});
-      return res.json({ ok:true, already_stored:true, sms_record_id: dup.id, note:'same physical message already stored — no new row created' });
-    }
-  }
   const n=findNumber(f.number);
   if(!n){ db.run(`UPDATE failed_sms_queue SET retry_count=retry_count+1, updated_at=datetime('now') WHERE id=?`,[id]); return res.status(404).json({ error:'Number still not found' }); }
   const rangeForRetry=db.get('SELECT * FROM ranges WHERE id=?',[n.range_id])||{};
@@ -5593,12 +5497,13 @@ app.post('/api/failed-sms/:id/retry', authRequired, requireRole('admin'), (req,r
   const retryRate=payoutRateForPaymentCycle({...rangeForRetry, number_rate:effectiveRetryRate, number_payout:n.payout}, retryPaymentCycle);
   const retrySenderType=classifySender(f.cli||'');
   const retryOtpCode=extractOtpCode(f.message||'');
-  const retryIns=db.run(`INSERT INTO sms_records (number_id,number,range_id,cli,sender_type,message,otp_code,client_id,agent_id,manager_id,payout_rate,payout_amount,payment_type,dedup_identity,identity_state) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [n.id,n.number,n.range_id,f.cli||'',retrySenderType,f.message||'',retryOtpCode,n.client_id,n.agent_id,n.manager_id,retryRate,retryRate,retryPaymentType,retryIdentity,retryIdentity?'strong':'']);
-  const retryId=(retryIns&&retryIns.lastInsertRowid)?Number(retryIns.lastInsertRowid):null;
-  if(retryId){ try{ recordPaymentLedgerForSms(retryId); }catch(e){ console.warn('[PAYMENT_V2] retry ledger failed:', e.message); } }
+  db.run(`INSERT INTO sms_records (number_id,number,range_id,cli,sender_type,message,otp_code,client_id,agent_id,manager_id,payout_rate,payout_amount,payment_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [n.id,n.number,n.range_id,f.cli||'',retrySenderType,f.message||'',retryOtpCode,n.client_id,n.agent_id,n.manager_id,retryRate,retryRate,retryPaymentType]);
+  const retrySaved=db.get('SELECT id FROM sms_records ORDER BY id DESC LIMIT 1');
+  if(retrySaved){ try{ recordPaymentLedgerForSms(retrySaved.id); }catch(e){ console.warn('[PAYMENT_V2] retry ledger failed:', e.message); } }
   try { recordSmsStats({ m: n.manager_id, a: n.agent_id, c: n.client_id, cli: f.cli || '', payout: retryRate, ts: '' }); } catch (_) {}
-  db.run(`UPDATE failed_sms_queue SET status='Retried',retry_count=retry_count+1,updated_at=datetime('now'),sms_record_id=? WHERE id=?`,[retryId,id]);
+  const smsRow={number_id:n.id,number:n.number,range_id:n.range_id,cli:f.cli||'',sender_type:retrySenderType,message:f.message||'',otp_code:retryOtpCode,client_id:n.client_id,agent_id:n.agent_id,manager_id:n.manager_id};
+  db.run(`UPDATE failed_sms_queue SET status='Retried',retry_count=retry_count+1,updated_at=datetime('now') WHERE id=?`,[id]);
   logAction(req,'retry_failed_sms','failed_sms_queue',{id,number:n.number});
   res.json({ ok:true });
 });
@@ -5810,40 +5715,6 @@ function processIncomingSmsPayload(req, payload, sourceIp='', opts={}) {
     opts = { ...opts, providerMsgId, duplicateKey: dupKey };
   }
 
-  /* Durable physical-message identity (SMPP v2 / API with a stable id).
-     Only STRONG identities are ever passed here (SMSC message id, completed
-     multipart id) — never a content hash — so a row that already carries this
-     identity is the SAME physical SMS arriving through another channel. */
-  const dedupIdentity = String(opts.dedupIdentity || '').trim();
-  /* Persisted marking for the replay/no-id statistics. The ingest path passes
-     it explicitly ('no-id' when NO durable physical identity existed and the
-     message was stored anyway — lossless). For callers that only pass an
-     identity, "has an identity" is the honest default; nothing is inferred
-     about content. */
-  const identityState = String(opts.identityState || '').trim() || (dedupIdentity ? 'strong' : '');
-  if (dedupIdentity) {
-    const already = db.get('SELECT id, received_at FROM sms_records WHERE dedup_identity=? LIMIT 1', [dedupIdentity]);
-    if (already) {
-      console.log('[INCOMING_SMS] duplicate ignored (dedup_identity match)', { identity: dedupIdentity.slice(0, 24), id: already.id, sourceIp });
-      return { status: 200, body: { ok: true, duplicate: true, id: already.id, received_at: already.received_at || '' } };
-    }
-  }
-
-  /* Cross-channel identity (OPT-IN, off by default).
-     Only meaningful when the operator declares that another channel's message
-     reference is the SAME namespace as the SMPP message id
-     (SMPP_CROSS_CHANNEL_IDENTITY=1). Without that declaration the two channels
-     are kept as separate records on purpose: identical content is NOT evidence
-     of the same physical SMS. */
-  const crossRef = String(opts.crossChannelIdentity || '').trim();
-  if (crossRef && String(process.env.SMPP_CROSS_CHANNEL_IDENTITY || '0') === '1') {
-    const hit = db.get("SELECT sms_record_id FROM sms_dedup_ledger WHERE identity=? AND identity_kind NOT IN ('pdu','mp') LIMIT 1", [crossRef]);
-    if (hit) {
-      console.log('[INCOMING_SMS] duplicate ignored (cross-channel identity)', { ref: crossRef.slice(0, 24), sms_record_id: hit.sms_record_id || null });
-      return { status: 200, body: { ok: true, duplicate: true, id: hit.sms_record_id || null, cross_channel: true } };
-    }
-  }
-
   if (!number) {
     console.warn('[INCOMING_SMS] failed: number/to field required', { sourceIp, cli, payload: b });
     logWebhook('failed', b, '', '', cli, message, 'number/to field required', sourceIp);
@@ -5862,7 +5733,7 @@ function processIncomingSmsPayload(req, payload, sourceIp='', opts={}) {
   if (!n) {
     console.warn('[INCOMING_SMS] failed: number not found/allocated', { sourceIp, number, cli });
     logWebhook('failed', b, number, '', cli, message, 'Number not found/allocated in system', sourceIp);
-    addFailedSms(b, number, cli, message, 'Number not found/allocated in system', { dedupIdentity });
+    addFailedSms(b, number, cli, message, 'Number not found/allocated in system');
     return { status: 404, body: { error: 'Number not found/allocated in system', number } };
   }
 
@@ -5886,45 +5757,10 @@ function processIncomingSmsPayload(req, payload, sourceIp='', opts={}) {
   if (opts.forceZeroPayout) { smsPayoutRate = '0'; if (!limitReason) limitReason = 'provider_payout_zero'; }
   const agentMgr = n.agent_id ? getAgentManager(n.agent_id) : null;
   const resolvedManagerId = n.manager_id || (agentMgr ? agentMgr.id : null);
-  /* ---- the store. Its outcome decides success/failure of the whole call ----
-     A genuine storage failure returns a non-2xx so the SMPP layer can NACK and
-     the SMSC can retry a message we do NOT have. A post-insert bookkeeping
-     failure (below) must never do that — otherwise the SMSC resends a message
-     that is already stored and we insert it twice. */
-  let saved = null;
-  try {
-    const ins = db.run(`INSERT INTO sms_records (number_id,number,range_id,cli,sender_type,message,otp_code,client_id,agent_id,manager_id,is_test,test_batch_id,source,payout_rate,payout_amount,limit_reason,payment_type,received_at,dedup_identity,identity_state)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,COALESCE(NULLIF(?,''),datetime('now')),?,?)`,
-      [n.id, n.number, n.range_id, cli || '', senderType, message || '', otpCode, n.client_id, n.agent_id, resolvedManagerId, opts.isTest?1:0, opts.testBatchId||'', opts.source||'carrier', smsPayoutRate, smsPayoutRate, limitReason, assignedPaymentType, opts.received_at || '', dedupIdentity, identityState]);
-    // Exact row id of THIS insert (the old `ORDER BY id DESC LIMIT 1` could
-    // return another writer's row under interleaved ingestion).
-    const insertedId = (ins && ins.lastInsertRowid) ? Number(ins.lastInsertRowid) : null;
-    if (insertedId) {
-      // The row is committed. Reading it back is cosmetic (to return the stored
-      // received_at), so a failure here must never turn into a 500 — the SMSC
-      // would then redeliver a message we already have.
-      try {
-        saved = db.get('SELECT id, received_at FROM sms_records WHERE id=?', [insertedId]) || { id: insertedId, received_at: opts.received_at || '' };
-      } catch (_) {
-        saved = { id: insertedId, received_at: opts.received_at || '' };
-      }
-    } else {
-      saved = null;
-    }
-  } catch (e) {
-    const msg = String((e && e.message) || e);
-    if (dedupIdentity && /UNIQUE constraint failed: sms_records\.dedup_identity/i.test(msg)) {
-      // Database-level safety net: the same physical message is already stored.
-      const existing = db.get('SELECT id, received_at FROM sms_records WHERE dedup_identity=? LIMIT 1', [dedupIdentity]);
-      console.log('[INCOMING_SMS] duplicate rejected by dedup_identity index', { identity: dedupIdentity.slice(0, 24), id: existing ? existing.id : null });
-      return { status: 200, body: { ok: true, duplicate: true, id: existing ? existing.id : null, received_at: existing ? existing.received_at : '' } };
-    }
-    console.warn('[INCOMING_SMS] storage failure:', msg);
-    logWebhook('failed', b, number, n.number, cli, message, 'storage failure: ' + msg, sourceIp);
-    addFailedSms(b, number, cli, message, 'storage failure: ' + msg, { dedupIdentity });
-    return { status: 500, body: { error: 'storage failure' } };
-  }
-  try {
+  db.run(`INSERT INTO sms_records (number_id,number,range_id,cli,sender_type,message,otp_code,client_id,agent_id,manager_id,is_test,test_batch_id,source,payout_rate,payout_amount,limit_reason,payment_type,received_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,COALESCE(NULLIF(?,''),datetime('now')))`,
+    [n.id, n.number, n.range_id, cli || '', senderType, message || '', otpCode, n.client_id, n.agent_id, resolvedManagerId, opts.isTest?1:0, opts.testBatchId||'', opts.source||'carrier', smsPayoutRate, smsPayoutRate, limitReason, assignedPaymentType, opts.received_at || '']);
+  const saved = db.get('SELECT id, received_at FROM sms_records ORDER BY id DESC LIMIT 1');
   if (!opts.isTest) { try { recordSmsStats({ m: n.manager_id, a: n.agent_id, c: n.client_id, cli, payout: smsPayoutRate, ts: saved?.received_at }); } catch (_) {} }
   // Remember the provider's unique id so a retry of this exact callback is
   // recognised as a duplicate instead of being paid for twice.
@@ -5939,11 +5775,6 @@ function processIncomingSmsPayload(req, payload, sourceIp='', opts={}) {
   logWebhook('success', b, number, n.number, cli, message, '', sourceIp);
   console.log('[INCOMING_SMS] saved', { id: saved ? saved.id : null, number: n.number, cli: cli || '', sender_type: senderType, otp_detected: !!otpCode, source: opts.source || 'carrier', manager_id: n.manager_id || null, agent_id: n.agent_id || null, client_id: n.client_id || null });
   forwardSharingOtpIfNeeded(saved ? saved.id : null, smsRow);
-  } catch (e) {
-    /* The row is committed. Bookkeeping (stats/ledger/forwarding/webhook log)
-       may fail without changing the answer: the SMS IS stored. */
-    console.warn('[INCOMING_SMS] post-insert bookkeeping failed (row kept):', e.message);
-  }
   return { status: 200, body: { ok: true, id: saved ? saved.id : null, received_at: saved ? saved.received_at : null, matched_number: n.number, sender_type: senderType, otp_detected: !!otpCode } };
 }
 
@@ -5983,7 +5814,7 @@ app.get('/api/incoming-sms', smsIngestLimit, (req, res) => {
   const hasPayload = Object.keys(req.query || {}).some(k => ['number','to','To','recipient','destination','msisdn','receiver','called','message','text','body','Body','sms','content','msg'].includes(k));
   if (!hasPayload) {
     const settings = getCarrierSettings();
-    return res.json({ ok: true, service: 'Galaxy SMS incoming SMS endpoint', method: 'POST preferred', path: '/api/incoming-sms', integration_status: settings.integration_status, accepted_content_types: ['application/json','application/x-www-form-urlencoded','multipart/form-data'] });
+    return res.json({ ok: true, service: 'Skyline SMS incoming SMS endpoint', method: 'POST preferred', path: '/api/incoming-sms', integration_status: settings.integration_status, accepted_content_types: ['application/json','application/x-www-form-urlencoded','multipart/form-data'] });
   }
   return handleCarrierIncoming(req, res, normalizeIncomingPayload(req));
 });
@@ -6338,7 +6169,6 @@ const PORT = process.env.PORT || 4000;
 (async () => {
   await db.init();
   createTables();
-  try { migrateDedupV2(console); } catch (e) { console.warn('[DEDUP-V2] migration error:', e.message); }
   seed();
   // PHASE-2 optional process split: POWERX_ROLE=api runs web-only (no timers);
   // POWERX_ROLE=sync runs only timers (2nd process). Default (unset/'all') = everything.
@@ -6388,7 +6218,7 @@ const PORT = process.env.PORT || 4000;
     console.log('• Payment ledger startup backfill disabled (new OTPs are recorded normally)');
   }
   console.log('• API Integration poller disabled (HTTP incoming only)');
-  app.listen(PORT, () => console.log(`\n✅ Galaxy SMS backend running: http://localhost:${PORT}\n`));
+  app.listen(PORT, () => console.log(`\n✅ Skyline SMS backend running: http://localhost:${PORT}\n`));
 
   /* ===== P19k #5: one-time startup stats reconciliation =====
      Owner report: purane deletes (pre-fix code) ke baad dashboard (SMS This Month /
@@ -6415,7 +6245,7 @@ const PORT = process.env.PORT || 4000;
             COALESCE(CAST(COALESCE(NULLIF(payout_amount,''),'0') AS REAL),0) pay
           FROM sms_records WHERE id > ? AND id <= ? AND COALESCE(is_test,0)=0`, [last, hi]);
         for (const r of rows) {
-          const k = keyOf({ ...r, sd: statDateUtc(r.received_at) });
+          const k = keyOf({ ...r, sd: ukStatDate(r.received_at) });
           const cur = truth.get(k);
           if (cur) { cur.c += 1; cur.pay += r.pay; }
           else truth.set(k, { c: 1, pay: r.pay });
