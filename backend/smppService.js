@@ -91,49 +91,7 @@ function pduText(pdu) {
   return safeStr(sm);
 }
 
-/**
- * Normalized concatenation descriptor for this PDU, or null when the message
- * is single-part. Sources (SMPP 3.4/5.0):
- *   a) UDH information elements inside short_message (esm_class UDHI bit 0x40).
- *      NOTE: the smpp lib hands us each UDH element as a RAW Buffer shaped
- *      [IEI, IEI-length, ...data] (verified live), while some builds expose
- *      {id, value:Buffer} objects — both shapes are accepted here.
- *      IEI 0x00 = 8-bit concatenation ref, IEI 0x08 = 16-bit ref.
- *   b) sar_* TLVs (sar_msg_ref_num / sar_total_segments / sar_segment_seqnum).
- * Returns { ref:String, total:Number, seq:Number } with total >= 2.
- */
-function concatInfo(pdu) {
-  // (b) sar_* TLVs first — they are parsed as named ints by the lib.
-  if (pdu && pdu.sar_msg_ref_num !== undefined && pdu.sar_total_segments && pdu.sar_segment_seqnum) {
-    const ref = Number(pdu.sar_msg_ref_num);
-    const total = Number(pdu.sar_total_segments);
-    const seq = Number(pdu.sar_segment_seqnum);
-    if (isFinite(ref) && total >= 2 && seq >= 1) return { ref: String(ref), total, seq };
-  }
-
-  const sm = pdu && pdu.short_message;
-  if (!sm || typeof sm !== 'object' || !Array.isArray(sm.udh) || !sm.udh.length) return null;
-
-  for (const el of sm.udh) {
-    let iei = NaN, data = null;
-    if (Buffer.isBuffer(el)) {                 // shape (a): raw [IEI, len, ...data]
-      iei = el[0];
-      data = el.length >= 2 ? el.slice(2, 2 + el[1]) : Buffer.alloc(0);
-    } else if (el && typeof el === 'object' && Buffer.isBuffer(el.value)) {   // shape: {id, value}
-      iei = Number(el.id);
-      data = el.value;
-    }
-    if (iei === 0x00 && data && data.length >= 3) {   // 8-bit ref concat
-      return { ref: String(data[0]), total: data[1], seq: data[2] };
-    }
-    if (iei === 0x08 && data && data.length >= 4) {   // 16-bit ref concat
-      return { ref: String(data.readUInt16BE(0)), total: data[2], seq: data[3] };
-    }
-  }
-  return null;
-}
-
-/* kept for backward-compat of internal exports; superseded by concatInfo */
+/** UDH of a concatenated message, when the library exposes it. */
 function pduUdh(pdu) {
   const sm = pdu && pdu.short_message;
   if (sm && typeof sm === 'object' && Array.isArray(sm.udh)) return sm.udh;
@@ -141,14 +99,9 @@ function pduUdh(pdu) {
 }
 
 function isDeliveryReceipt(pdu) {
-  // esm_class bits 2-5 mark the message type. 0x04 = SMSC delivery receipt;
-  // 0x08 / 0x0C are the SMPP 5.0 ESME delivery/user acknowledgements.
-  // None of these are inbound SMS traffic.
+  // esm_class bit 0x04 marks a delivery receipt rather than a real inbound SMS.
   const esm = Number(pdu && pdu.esm_class) || 0;
-  const type = esm & 0x3c;
-  if (type === 0x04 || type === 0x08 || type === 0x0c) return true;
-  // message_state TLV (0x0427) exists ONLY on delivery receipts.
-  if (pdu && pdu.message_state !== undefined && pdu.message_state !== null && pdu.message_state !== '') return true;
+  if ((esm & 0x3c) === 0x04) return true;
   const t = pduText(pdu);
   return /^id:[^\s]+\s+sub:\d+/i.test(String(t).trim());
 }
@@ -209,7 +162,6 @@ const runtime = new Map();   // connection id -> state
 let deps = null;             // { log, processIncomingSmsPayload, clearApiReadCache }
 let started = false;
 let flushTimer = null;
-let dedupPruneTimer = null;
 let bookkeepingDirty = false;
 
 function markDirty() { bookkeepingDirty = true; }
@@ -246,10 +198,17 @@ function stateOf(id) {
  * Reassemble a concatenated (multipart) SMS.
  * Returns the full text once the last part arrives, otherwise null.
  */
-function reassemble(st, key, concat, text) {
-  // `concat` is the normalized descriptor from concatInfo(): { ref, total, seq }.
-  if (!concat || concat.total < 2) return text;   // not concatenated
-  const { ref, total, seq } = concat;
+function reassemble(st, key, udh, text) {
+  // UDH 0x00 = 8-bit reference, 0x08 = 16-bit reference
+  let ref = null, total = 0, seq = 0;
+  for (const el of udh || []) {
+    const id = Number(el.id);
+    const data = el.value;
+    if (!Buffer.isBuffer(data)) continue;
+    if (id === 0x00 && data.length >= 3) { ref = data[0]; total = data[1]; seq = data[2]; break; }
+    if (id === 0x08 && data.length >= 4) { ref = data.readUInt16BE(0); total = data[2]; seq = data[3]; break; }
+  }
+  if (ref === null || total < 2) return text;   // not concatenated
 
   const bucket = `${key}:${ref}:${total}`;
   let entry = st.parts.get(bucket);
@@ -258,7 +217,6 @@ function reassemble(st, key, concat, text) {
     st.parts.set(bucket, entry);
   }
   entry.parts.set(seq, text);
-  entry.at = Date.now();   // newest part wins for staleness accounting
 
   // Drop stale half-assembled messages so the map cannot grow unbounded.
   if (st.parts.size > 500) {
@@ -273,86 +231,15 @@ function reassemble(st, key, concat, text) {
   return out;
 }
 
-/* ------------------------------------------------------------------ *
- * Deduplication — 3 tiers (rework 2026-09-29, verified live).
- *
- * Why NOT a permanent content key (src|dst|text)? Two genuinely separate
- * SMS messages can legitimately have identical content ("OTP 123456"
- * requested twice). A permanent content key would merge those and silently
- * lose real OTPs, so each tier keys on what identifies the PHYSICAL
- * message, not just its bytes:
- *
- *   Tier 'mid' — carrier message id (exact, windowless). The id names the
- *     physical message; the same id twice is the same message, for ledger
- *     TTL (SMPP_DEDUP_MID_TTL_DAYS, default 30d).
- *   Tier 'mp' — multipart reference (exact, windowless). A concatenated
- *     SMS is identified by src|dst|reference|total; the carrier reuses the
- *     reference only when redelivering the SAME physical message. Text hash
- *     included so reference-number wraparound (8-bit refs recycle fast)
- *     cannot merge two different messages. TTL SMPP_DEDUP_UDH_TTL_DAYS (7d).
- *   Tier 'fp' — content fingerprint with an ANCHORED window (fallback for
- *     single-part, no-id PDUs). Physically nothing distinguishes "same
- *     message redelivered" from "new identical message" here, so the ledger
- *     records the fingerprint with the time of the last STORED copy: an
- *     identical arrival within SMPP_DEDUP_FP_WINDOW_SECONDS (default 120s)
- *     of that anchor is treated as a carrier redelivery and dropped; a
- *     later one is a legitimate new message and stored. Anchored = dropped
- *     sightings never extend the window, so a redelivery storm cannot grow
- *     a block that swallows future legit identical texts.
- *     (Replaces the old fixed 10s bucket — a redelivery >10s later used to
- *     be stored again; verified live.)
- * ------------------------------------------------------------------ */
-const FP_WINDOW_SECONDS = clampInt(process.env.SMPP_DEDUP_FP_WINDOW_SECONDS, 5, 86400, 120);
-const MID_TTL_DAYS = clampInt(process.env.SMPP_DEDUP_MID_TTL_DAYS, 1, 365, 30);
-const UDH_TTL_DAYS = clampInt(process.env.SMPP_DEDUP_UDH_TTL_DAYS, 1, 90, 7);
-
 function dedupKeyFor(pdu, src, dst, text) {
   const rid = safeStr(pdu && (pdu.receipted_message_id || pdu.message_id)).trim();
-  if (rid) return { key: 'mid:' + rid, kind: 'mid' };
-  return {
-    key: 'fp:' + crypto.createHash('sha1').update([src, dst, text].join('|')).digest('hex').slice(0, 24),
-    kind: 'fp',
-  };
-}
-
-function mpKeyFor(src, dst, concat, text) {
-  return {
-    key: 'mp:' + crypto.createHash('sha1')
-      .update([src, dst, String(concat.ref), String(concat.total), text].join('|'))
-      .digest('hex').slice(0, 24),
-    kind: 'mp',
-  };
-}
-
-/** Is this exact dedup entry still live for duplicate decisions? (fp SQL adds its window) */
-function findDuplicate(connId, dd) {
-  if (dd.kind === 'fp') {
-    return db.get(
-      `SELECT sms_record_id FROM smpp_seen
-       WHERE connection_id=? AND dedup_key=? AND datetime(received_at) >= datetime('now', ?) LIMIT 1`,
-      [connId, dd.key, `-${FP_WINDOW_SECONDS} seconds`]
-    );
-  }
-  // mid/mp rows are kept only for their TTL by pruneDedupLedger(), so a hit is always live.
-  return db.get('SELECT sms_record_id FROM smpp_seen WHERE connection_id=? AND dedup_key=? LIMIT 1', [connId, dd.key]);
-}
-
-/**
- * Ledger retention: 'mid' 30d, 'mp' 7d, 'fp' just beyond its match window.
- * Anything older can no longer influence any duplicate decision, so pruning
- * cannot resurrect a duplicate — it only re-admits a message the design
- * already classifies as new.
- */
-function pruneDedupLedger() {
-  try {
-    db.runNoSave(
-      `DELETE FROM smpp_seen
-       WHERE (dedup_key LIKE 'mid:%' AND datetime(COALESCE(NULLIF(received_at,''),created_at)) < datetime('now', ?))
-          OR (dedup_key LIKE 'mp:%'  AND datetime(COALESCE(NULLIF(received_at,''),created_at)) < datetime('now', ?))
-          OR (dedup_key LIKE 'fp:%'  AND datetime(COALESCE(NULLIF(received_at,''),created_at)) < datetime('now', ?))`,
-      [`-${MID_TTL_DAYS} days`, `-${UDH_TTL_DAYS} days`, `-${FP_WINDOW_SECONDS + 300} seconds`]
-    );
-  } catch (_) {}
+  if (rid) return 'mid:' + rid;
+  // No id from the peer: deterministic fingerprint, bucketed to 10s so a
+  // genuine repeat of the same text minutes later is still stored.
+  const bucket = Math.floor(Date.now() / 10000);
+  return 'fp:' + crypto.createHash('sha1')
+    .update([src, dst, text, bucket].join('|'))
+    .digest('hex').slice(0, 24);
 }
 
 /**
@@ -377,10 +264,9 @@ function ingest(conn, st, pdu, peer) {
     const dst = safeStr(pdu.destination_addr).trim();
     let text = pduText(pdu);
 
-    // Multipart: buffer segments until the whole physical message exists.
-    const concat = concatInfo(pdu);
-    if (concat) {
-      const assembled = reassemble(st, `${src}|${dst}`, concat, text);
+    const udh = pduUdh(pdu);
+    if (udh && udh.length) {
+      const assembled = reassemble(st, `${src}|${dst}`, udh, text);
       if (assembled === null) return OK;      // wait for remaining parts
       text = assembled;
     }
@@ -391,13 +277,11 @@ function ingest(conn, st, pdu, peer) {
       return OK;   // never NACK: the peer would redeliver this forever
     }
 
-    // Duplicate suppression (SMPP peers redeliver aggressively). The key
-    // tier is chosen so the SAME PHYSICAL message is caught even after the
-    // old 10s expiry, while genuinely separate identical texts survive.
-    const dd = concat ? mpKeyFor(src, dst, concat, text) : dedupKeyFor(pdu, src, dst, text);
-    const seen = findDuplicate(conn.id, dd);
+    // Duplicate suppression (SMPP peers redeliver aggressively).
+    const key = dedupKeyFor(pdu, src, dst, text);
+    const seen = db.get('SELECT sms_record_id FROM smpp_seen WHERE connection_id=? AND dedup_key=?', [conn.id, key]);
     if (seen) {
-      logEvent(conn, 'deliver', 'info', `duplicate ignored [${dd.kind}] (${dd.key.slice(0, 28)})`, peer);
+      logEvent(conn, 'deliver', 'info', `duplicate ignored (${key.slice(0, 28)})`, peer);
       markDirty();
       return OK;
     }
@@ -414,10 +298,8 @@ function ingest(conn, st, pdu, peer) {
     if (ok) {
       const smsId = result.body && result.body.id ? result.body.id : null;
       try {
-        // OR REPLACE: for the 'fp' tier this re-anchors the window at each
-        // newly STORED message (a dropped duplicate never extends it).
-        db.run('INSERT OR REPLACE INTO smpp_seen (connection_id,dedup_key,sms_record_id,received_at) VALUES (?,?,?,?)',
-          [conn.id, dd.key, smsId, nowSql()]);
+        db.run('INSERT OR IGNORE INTO smpp_seen (connection_id,dedup_key,sms_record_id,received_at) VALUES (?,?,?,?)',
+          [conn.id, key, smsId, nowSql()]);
       } catch (_) {}
       db.runNoSave('UPDATE smpp_connections SET total_received=total_received+1, last_activity_at=? WHERE id=?', [nowSql(), conn.id]);
       logEvent(conn, 'deliver', 'info', `received from ${src || '?'} to ${dst}`, peer);
@@ -1042,10 +924,6 @@ function start(d) {
   // One periodic flush, mirroring providerSync's bookkeeping strategy: link
   // chatter must not cost a disk write every few seconds.
   flushTimer = setInterval(() => { try { flushBookkeeping(); } catch (_) {} }, 5 * 60 * 1000);
-  // Dedup ledger retention (mid 30d / mp 7d / fp just past its match window).
-  pruneDedupLedger();
-  dedupPruneTimer = setInterval(() => { try { pruneDedupLedger(); } catch (_) {} }, 6 * 60 * 60 * 1000);
-  if (dedupPruneTimer.unref) dedupPruneTimer.unref();
   if (flushTimer.unref) flushTimer.unref();
 
   // Retry anything still queued when a link recovers.
@@ -1062,7 +940,6 @@ function stop() {
     try { stopConnection(id, true); } catch (_) {}
   }
   if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
-  if (dedupPruneTimer) { clearInterval(dedupPruneTimer); dedupPruneTimer = null; }
   flushBookkeeping();
   started = false;
 }
@@ -1083,5 +960,5 @@ module.exports = {
   flushBookkeeping,
   isLibraryAvailable() { try { getSmpp(); return true; } catch (_) { return false; } },
   libraryError() { return smppLoadError; },
-  _internal: { pduText, isDeliveryReceipt, dedupKeyFor, mpKeyFor, findDuplicate, concatInfo, pruneDedupLedger, ipAllowed, clampInt, reassemble, FP_WINDOW_SECONDS, MID_TTL_DAYS, UDH_TTL_DAYS },
+  _internal: { pduText, isDeliveryReceipt, dedupKeyFor, ipAllowed, clampInt, reassemble },
 };
