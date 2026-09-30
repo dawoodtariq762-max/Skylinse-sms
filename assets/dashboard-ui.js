@@ -1,4 +1,4 @@
-/* Galaxy / Lamix-inspired presentation. No writes, storage, auth changes or financial calculations.
+/* Skyline / Lamix-inspired presentation. No writes, storage, auth changes or financial calculations.
  * Core input is the existing role-scoped /api/dashboard response, supplied by each
  * existing loadDashboard handler AFTER its original updates. Financial values
  * retain their backend meaning; provider cost is never relabelled as earning. */
@@ -12,9 +12,7 @@
     report: '<path d="M5 3h10l4 4v14H5zM14 3v5h5M8 16v-3M12 16v-6M16 16v-4"/>',
     ranges: '<rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 7h.01M7 17h.01M11 7h6M11 17h6"/>',
     credit: '<path d="M5 3h14v18l-3-2-4 2-4-2-3 2zM8 7h8M8 11h8M8 15h5"/>',
-    money: '<circle cx="12" cy="12" r="9"/><path d="M15 8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9M12 6v12"/>',
-    self: '<path d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/>',
-    flask: '<path d="M9 3h6"/><line x1="10" y1="3" x2="10" y2="9"/><line x1="14" y1="3" x2="14" y2="9"/><path d="M10 9L4.6 18a2 2 0 0 0 1.7 3h11.4a2 2 0 0 0 1.7-3L14 9"/>'
+    money: '<circle cx="12" cy="12" r="9"/><path d="M15 8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9M12 6v12"/>'
   };
   const svg = key => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (icons[key] || icons.volume) + '</svg>';
   const count = value => value == null ? '—' : Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
@@ -39,15 +37,18 @@
       a.href = '/manager/creditNotes'; nav.append(a);
     }
     if (role === 'client') {
-      /* Skyline SMS: client dashboard shows ONLY the two cards that map to real
-         client pages — My Numbers (/client/numbers) and Detail Report (/client/stats).
-         No Self Allocate / My Clients / Credit Notes / "unavailable" placeholder tiles. */
-      const order = ['/client/numbers', '/client/stats'];
-      const tiles = [...nav.children];
-      nav.replaceChildren();
-      for (const href of order) {
-        const a = tiles.find(el => el.tagName === 'A' && el.getAttribute('href') === href);
+      const test = nav.querySelector('a[href="/client/test"]');
+      if (test) { const extra = node('div', 'lm-related'); extra.append(test); nav.after(extra); }
+      const allowed = [...nav.children]; nav.replaceChildren();
+      for (const label of ['Self Allocate', 'My Numbers', 'My Clients', 'Detailed Reports', 'Credit Notes']) {
+        const a = allowed.find(el => el.textContent.trim() === label);
         if (a) nav.append(a);
+        else {
+          const unavailable = node('div', 'gx-shortcut lm-unavailable', svg(label === 'My Clients' ? 'clients' : label === 'Credit Notes' ? 'credit' : 'ranges') + '<span>' + label + '</span><small>Not available for Client</small>');
+          unavailable.setAttribute('aria-disabled', 'true');
+          unavailable.title = 'This function is not available under existing Client permissions.';
+          nav.append(unavailable);
+        }
       }
     }
     let accent = 0;
@@ -57,7 +58,7 @@
     });
     root.querySelectorAll('.gx-shortcut[href]').forEach(a => {
       const route = a.getAttribute('href');
-      const key = /numbers$/.test(route) ? 'numbers' : /clients$|agents$|managers$/.test(route) ? 'clients' : /smsDetail$|stats$/.test(route) ? 'report' : /creditNotes$/.test(route) ? 'credit' : /selfAllocate$/.test(route) ? 'self' : /test$/.test(route) ? 'flask' : /allocation$/.test(route) ? 'ranges' : 'ranges';
+      const key = /numbers$/.test(route) ? 'numbers' : /clients$|agents$|managers$/.test(route) ? 'clients' : /smsDetail$|stats$/.test(route) ? 'report' : /creditNotes$/.test(route) ? 'credit' : 'ranges';
       const old = a.querySelector('svg'); if (old) old.outerHTML = svg(key);
     });
   }

@@ -1,8 +1,8 @@
 /* ============================================================================
-   GALAXY SMS — LIGHT THEME (galaxy-light.css v1)
+   SKYLINE SMS — LIGHT THEME (galaxy-light.css v1)
    body.gx-light par apply hota hai. Dark theme untouched — ye sirf UPAR
    override karta hai (galaxy.css ke baad load hota hai). Pure invert nahi —
-   coherent professional light palette (Galaxy brand compatible).
+   coherent professional light palette (Skyline brand compatible).
    ========================================================================== */
 /* P15: light theme me html bhi light — warna short pages me neeche dark navy html dikhta tha (blue-area bug ka root cause) */
 html.gx-light{
@@ -130,7 +130,7 @@ body.gx-light .page-head h2,body.gx-light .breadcrumb,body.gx-light .sub{color:#
 body.gx-light .breadcrumb,body.gx-light .sub,body.gx-light .hint,body.gx-light .muted{color:#5c6a8a!important}
 
 
-/* ============ P8: LIGHT SIDEBAR — soft Galaxy gradient (na pure-white, na navy) ============ */
+/* ============ P8: LIGHT SIDEBAR — soft Skyline gradient (na pure-white, na navy) ============ */
 body.gx-light .sidebar,body.gx-light .rail,body.gx-light .navshell,body.gx-light .appbar{
   background:linear-gradient(180deg,#f7f9ff 0%,#eff4fd 55%,#e9f0fb 100%)!important;
   border-color:#d9e3f4!important;box-shadow:1px 0 0 #d9e3f4!important;

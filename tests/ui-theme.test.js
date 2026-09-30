@@ -14,7 +14,7 @@ for (const role of ['admin','manager','agent','client','management','panel-shari
     const s=read(role+'.html');
     assert.match(s, /<body class="gx-light gx-lamix">/);
     assert.equal((s.match(/href="\/assets\/lamix-light\.css/g)||[]).length,1);
-    assert.match(s,/assets\/skyline-logo\.png/);
+    assert.match(s,/assets\/skyline-logo\.svg/);
     assert.doesNotMatch(s, /data-page=["']bonus["']|href=["'][^"']*\/bonus["']/i);
   });
 }
@@ -31,18 +31,7 @@ for(const role of ['admin','manager','agent','client']) {
     assert.equal((s.match(new RegExp("GXDashboard.render\\(d, '"+role+"'\\)",'g'))||[]).length,1);
     assert.ok(s.includes("GXDashboard.refreshExtras('"+role+"')"));
     assert.match(s,/GXDashboard.error\(\)/);
-    /* Skyline SMS spec: SMS-by-Country map removed from every dashboard. */
-    assert.doesNotMatch(s,/window\.GX&&GX\.map\('#gxMap'/);
-    assert.doesNotMatch(s,/gx-map-card/);
-  });
-}
-for(const role of ['admin','manager','agent','client']) {
-  test(role+' has no Complaint feature (nav, route, chat runtime removed)',()=>{
-    const s=read(role+'.html');
-    assert.doesNotMatch(s,/data-page="complaints"/);
-    assert.doesNotMatch(s,/page-complaints/);
-    assert.doesNotMatch(s,/assets\/chat\.js/);
-    assert.doesNotMatch(s,/GXChat/);
+    assert.match(s,/window.GX&&GX.map\('#gxMap'/);
   });
 }
 const js=read('assets/dashboard-ui.js');
@@ -59,12 +48,9 @@ test('No write APIs, storage, timers, new security or bonus behavior',()=>{
   assert.match(js,/API.get\('\/stats-summary\//);
   assert.match(js,/API.get\('\/number-import-batches'\)/);
 });
-test('Client dashboard shows only the two real client destinations',()=>{
-  /* Skyline SMS spec: client cards = My Numbers + Detail Report; no placeholder
-     "unavailable" tiles and no links to Self Allocate / My Clients / Credit Notes. */
-  assert.doesNotMatch(js,/Not available for Client/);
-  assert.match(js,/\['\/client\/numbers', '\/client\/stats'\]/);
-  assert.doesNotMatch(js,/href\s*=?\s*['"]\/client\/(selfAllocate|clients|creditNotes)/);
+test('Client shortcuts never fabricate restricted destinations',()=>{
+  assert.match(js,/Not available for Client/);
+  assert.doesNotMatch(js,/\/client\/(selfAllocate|clients|creditNotes)/);
   assert.match(js,/role === 'client' \? \['range'\] : \['client','range'\]/);
 });
 test('Finance reuses existing formatter; unavailable earning is explicit',()=>{

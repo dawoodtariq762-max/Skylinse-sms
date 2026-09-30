@@ -19,7 +19,7 @@ function getBackupDir(db) {
   return process.env.BACKUP_DIR
     || (process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'backups') : null)
     // VPS-safe default: outside the application folder, so backups survive accidental app deletion.
-    || path.join(os.homedir(), 'skyline-sms-backups');
+    || path.join(os.homedir(), 'nova-sms-backups');
 }
 function ensureBackupDir(db) {
   const dir = getBackupDir(db);
@@ -28,7 +28,7 @@ function ensureBackupDir(db) {
 }
 function safeBackupName(name) {
   const base = path.basename(String(name || ''));
-  if (!/^skyline-sms-backup-\d{4}-\d{2}-\d{2}T[\w-]+\.sqlite$/.test(base)) {
+  if (!/^nova-sms-backup-\d{4}-\d{2}-\d{2}T[\w-]+\.sqlite$/.test(base)) {
     throw new Error('Invalid backup file name');
   }
   return base;
@@ -39,7 +39,7 @@ function backupPath(db, fileName) {
 function listBackups(db) {
   const dir = ensureBackupDir(db);
   return fs.readdirSync(dir)
-    .filter(f => f.endsWith('.sqlite') && f.startsWith('skyline-sms-backup-'))
+    .filter(f => f.endsWith('.sqlite') && f.startsWith('nova-sms-backup-'))
     .map(file => {
       const fullPath = path.join(dir, file);
       const st = fs.statSync(fullPath);
@@ -55,7 +55,7 @@ function listBackups(db) {
 function createBackup(db, reason = 'manual') {
   const dir = ensureBackupDir(db);
   if (db.save) db.save();
-  const file = `skyline-sms-backup-${ts()}.sqlite`;
+  const file = `nova-sms-backup-${ts()}.sqlite`;
   const fullPath = path.join(dir, file);
   const tmpPath = fullPath + '.tmp';
   // PHASE-2 MEMORY FIX: exportBuffer() was the sql.js-era whole-DB-in-a-Buffer

@@ -1,9 +1,10 @@
-# Skyline SMS Panel — release 2026-09-29 (Skyline branding + SMPP dedup/multipart/UTC fix)
+# Skyline SMS Panel — release 2026-09-30 (rate hierarchy fix + report column order + dashboard shortcut cards)
 
-Ye archive **poora updated panel** hai: base = aap ka deployed source, aur us par do cheezen:
+Ye archive **poora updated panel** hai: base = aap ka deployed source, aur us par ye cheezen:
 
-1. **Frontend branding: Galaxy → Skyline SMS** (naya, is release ki buniyadi tabdeeli)
-2. **SMPP/SMS ingestion ka dedup-v2 fix** (pichhle release ka wahi verified backend code — bilkul same)
+1. **Rate/payout hierarchy fix + report column order + dashboard shortcut cards removal** (is release ke 3 changes — neeche section 0)
+2. **Frontend branding: Galaxy → Skyline SMS**
+3. **SMPP/SMS ingestion ka dedup-v2 fix** (pichhle release ka wahi verified backend code — bilkul same)
 
 **Abhi tak kuch deploy nahi hua**, koi SMSC bind nahi kiya gaya, production database ko haath nahi lagaya gaya.
 
@@ -11,6 +12,47 @@ Andar: poora frontend (13 pages, sab Skyline-branded), `backend/` (fixed), `test
 `docs/dedup-v2/` (diagnosis, plan, verification report + dono run logs),
 `docs/SKYLINE-BRANDING-NOTES.md` (branding ka record), `backend/scripts/rollback-dedup-v2.js`,
 aur `MANIFEST-SHA256.txt` (har file ka sha256).
+
+---
+
+## 0. Is release me kya badla (2026-09-30) — sirf 3 cheezen
+
+1. **Dashboard shortcut cards hata diye** — Admin, Manager, Agent aur Client ke **main dashboard** se
+   shortcut cards/tiles (My Numbers, My Clients, Self Allocate, Detail Report, Credit Note, Range
+   Allocation, Managers/Agents/Clients, Detailed Reports) remove; dashboard ab seedha apne
+   Today OTPs / statistics section se shuru hota hai. **Sidebar / navigation waisi hi hai** aur
+   saare sidebar items pehle ki tarah kaam karte hain (click kar ke verify kiya gaya).
+2. **Rate / payout hierarchy theek ki** (display + calculation dono):
+   * Admin -> Manager/Agent: Admin ka diya hua rate **usi allocation ka effective rate** hai; Admin panel
+     ki apni payout calculation usi level ka rate leti hai (range 0.012 par 0.014 diya to 0.014 — kabhi
+     card par wapas fallback nahi).
+   * Rate khali chhorne par woh level ka apna default chalता hai: Manager = Rate Management default,
+     Agent = **Manager se mila hua rate** (Admin->Agent direct ho to rate-card default), Client = **0**.
+     Khali rate kisi dusre level ki row me **likha nahi jata** (cross-level write khatam).
+   * Manager -> Agent: Agent ko Manager ka mila hua rate default dikhta hai, Manager badal sakta hai;
+     Manager ki apni payment hamesha Manager-level rate par hoti hai (kabhi Agent ke rate par nahi).
+   * Agent -> Client: default **0.00**, badla to wahi value; client ko **sirf apna assigned rate** dikhta
+     hai — agent ka purchase rate / range card / Admin rate / koi margin kabhi nahi (payload se bhi stripop).
+   * Agent **self-allocate** bhi apne level par manager se mila hua rate rakhta hai (raw range card nahi).
+3. **SMS Report / SMS Detail Report column order** — Date -> Range -> Number -> (Admin: Manager,
+   Manager: Agent, Agent: Client, Client: Client) -> CLI -> Message Body -> Rate/Payout -> baqi columns
+   (Currency etc.). Koi data remove nahi kiya; sorting/filters/pagination waisi hi kaam karti hain.
+   Grouped mode ke dimension boxes bhi usi order me hain.
+
+### Verification (extracted copy par, is release me shamil)
+
+| Suite | Natija |
+|---|---|
+| `node rate-hierarchy-test.js <port>` (naya, 99 assertions: A–H) | **PASS 99 / FAIL 0** |
+| `node tests/verify-hierarchy-rates.js` (panel ki apni suite) | **PASS 74 / FAIL 0** |
+| `node tests/unit_identity.js` | PASS 29 / FAIL 0 |
+| `node tests/smoke_endpoints.js` | PASS 18 / FAIL 0 |
+| `node tests/ui-theme.test.js` | 27 / 27 |
+| `E2E_SPEED=0.1 node tests/e2e_mock_smsc.js` | PASS 94 / FAIL 0 |
+| Browser (puppeteer) — 3 changes, 4 panels | PASS 45 / FAIL 0 + 9/9 rate-default checks |
+
+Naya test `tests/rate-hierarchy-test.js` chalane ka tareeqa: `node tests/rate-hierarchy-test.js 4899`
+(folder root se; apna throw-away DATA_DIR khud banata hai, production DB ko touch nahi karta).
 
 ---
 

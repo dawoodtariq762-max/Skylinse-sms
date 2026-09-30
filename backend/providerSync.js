@@ -192,7 +192,7 @@ const CONNECTORS = {
     // normal one; it can be overridden per provider if a provider requires it.
     const headers = {
       'Accept': 'application/json',
-      'User-Agent': String(cfg.user_agent || 'Mozilla/5.0 (compatible; SkylineSMS-Sync/1.0)'),
+      'User-Agent': String(cfg.user_agent || 'Mozilla/5.0 (compatible; GalaxySMS-Sync/1.0)'),
     };
     const params = new URLSearchParams();
 
@@ -383,6 +383,12 @@ function markProvider(id, fields) {
   );
 }
 
+if (String(process.env.SMPP_CROSS_CHANNEL_IDENTITY || '0') !== '1') {
+  // Documented limitation: SMPP, carrier-HTTP and provider-pull keep separate
+  // records unless the operator declares their references equivalent.
+  console.log('• Dedup: cross-channel identity matching OFF (SMPP_CROSS_CHANNEL_IDENTITY=0) — the same SMS arriving on two channels is stored once per channel on purpose');
+}
+
 function logSync(providerId, status, fetched, inserted, duplicates, failed, ms, error) {
   try {
     // runNoSave for the same reason as markProvider: this runs on every poll.
@@ -562,7 +568,7 @@ async function syncProvider(provider, deps, opts = {}) {
               { headers: {}, query: {}, body: {} },                 // no HTTP request
               { number: rec.number, cli: rec.cli, message: rec.message },
               `provider:${provider.name}`,
-              { source: 'api_sync', received_at: receivedAt, forceZeroPayout }
+              { source: 'api_sync', received_at: receivedAt, forceZeroPayout, crossChannelIdentity: String(rec.ref || '') }
             );
             ok = result && result.status === 200;
             if (!ok) failed++;
@@ -574,6 +580,17 @@ async function syncProvider(provider, deps, opts = {}) {
           if (ok) {
             inserted++;
             dirty = true;
+            /* Cross-channel visibility (dedup v2): remember the provider's own
+               message reference in the shared ledger. It is only ever used to
+               suppress a copy of the SAME physical message when the operator
+               declares the namespaces equivalent (SMPP_CROSS_CHANNEL_IDENTITY=1);
+               otherwise it stays as an audit trail and both records are kept. */
+            try {
+              const nowS = new Date().toISOString().slice(0, 19).replace('T', ' ');
+              db.run(`INSERT OR IGNORE INTO sms_dedup_ledger (connection_uid,identity_kind,identity,channel,sms_record_id,first_seen_at,last_seen_at,seen_count)
+                      VALUES (?,?,?,?,?,?,?,1)`,
+                ['api:' + provider.id, 'api', String(rec.ref), 'api_sync', (result && result.body && result.body.id) || null, nowS, nowS]);
+            } catch (_) {}
             // db.run (not runNoSave): inside a batch this only flags the batch
             // dirty, so the dedup ledger is guaranteed to be persisted by the
             // single save at the end of the cycle.

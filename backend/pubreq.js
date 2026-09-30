@@ -93,8 +93,8 @@ function initMailer() {
   } catch (e) { mailMode = 'log'; transporter = null; }
 }
 function mailFrom() {
-  const u = process.env.SMTP_USER || 'skyline@example.com';
-  return process.env.MAIL_FROM || `"Skyline SMS" <${u}>`;
+  const u = process.env.SMTP_USER || 'galaxy@example.com';
+  return process.env.MAIL_FROM || `"Galaxy SMS" <${u}>`;
 }
 /* error sanitize — SMTP password kabhi error text me leak na ho */
 function sanitizeErr(e) {
@@ -123,16 +123,16 @@ function emailShell(inner, footerNote) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:28px 12px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #e4eaf3;border-radius:18px;overflow:hidden;">
 <tr><td style="background:linear-gradient(135deg,#1d4ed8,#0ea5e9);padding:26px 32px;color:#ffffff;">
-<div style="font-size:22px;font-weight:bold;letter-spacing:1px;">SKYLINE SMS</div>
+<div style="font-size:22px;font-weight:bold;letter-spacing:1px;">GALAXY SMS</div>
 <div style="font-size:11px;letter-spacing:3px;opacity:.85;margin-top:4px;">PREMIUM SMS PANEL</div></td></tr>
 <tr><td style="padding:32px;color:#0f2454;font-size:15px;line-height:1.6;">${inner}</td></tr>
-<tr><td style="padding:18px 32px;background:#f8fbff;border-top:1px solid #e4eaf3;color:#64748b;font-size:12px;line-height:1.5;">${footerNote || ''}<br/>Skyline SMS · This is an automated message.</td></tr>
+<tr><td style="padding:18px 32px;background:#f8fbff;border-top:1px solid #e4eaf3;color:#64748b;font-size:12px;line-height:1.5;">${footerNote || ''}<br/>Galaxy SMS · This is an automated message.</td></tr>
 </table></td></tr></table></body></html>`;
 }
 function otpEmailHtml(code, minutes) {
   return emailShell(`
     <div style="font-weight:bold;font-size:17px;margin-bottom:10px;">Email Verification</div>
-    <p style="margin:0 0 14px;">You have requested a Skyline SMS panel account. Please enter your verification code:</p>
+    <p style="margin:0 0 14px;">You have requested a Galaxy SMS panel account. Please enter your verification code:</p>
     <div style="text-align:center;margin:22px 0;"><div style="display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px 28px;font-size:32px;font-weight:bold;letter-spacing:10px;color:#1d4ed8;">${code}</div></div>
     <p style="margin:0 0 8px;">This code will expire in <b>${minutes} minutes</b> and can be used <b>only once</b>.</p>
     <p style="margin:0;color:#64748b;font-size:13px;">If you did NOT make this request, please ignore this email.</p>`,
@@ -153,7 +153,7 @@ function welcomeEmailHtml(baseUrl, username, setupUrl, ttlHours, chatPassword) {
     </div>` : '';
 
   return emailShell(`
-    <div style="font-weight:bold;font-size:17px;margin-bottom:10px;">Welcome to Skyline SMS! 🎉</div>
+    <div style="font-weight:bold;font-size:17px;margin-bottom:10px;">Welcome to Galaxy SMS! 🎉</div>
     <p style="margin:0 0 14px;">Your panel account is ready. Here are your details:</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;font-size:14px;margin-bottom:18px;">
       <tr><td style="padding:6px 0;color:#64748b;width:130px;">Panel URL</td><td style="padding:6px 0;"><b>${baseUrl}/panel-login</b></td></tr>
@@ -199,7 +199,7 @@ function issueOtp(req_, request) {
 }
 async function sendOtpMail(req_, request) {
   const code = issueOtp(req_, request);
-  const r = await sendMail(request.email, 'Skyline SMS — Email Verification Code', otpEmailHtml(code, OTP_TTL_MIN), `Your Skyline SMS verification code is: ${code} (valid ${OTP_TTL_MIN} minutes). If you did not request this, ignore this email.`);
+  const r = await sendMail(request.email, 'Galaxy SMS — Email Verification Code', otpEmailHtml(code, OTP_TTL_MIN), `Your Galaxy SMS verification code is: ${code} (valid ${OTP_TTL_MIN} minutes). If you did not request this, ignore this email.`);
   db.run('UPDATE panel_requests SET otp_mail_status=?, mail_error=?, updated_at=? WHERE id=?', [r.status, r.ok ? '' : (r.error || ''), sqlNow(), request.id]);
   return r;
 }
@@ -436,8 +436,8 @@ module.exports = function mountPubreq(app, deps) {
       [req.user.id, sqlNow(), created.id, sqlNow(), id]);
     logAction(req, 'panel_request_approved', 'panel_requests', { id, username: r.username, role, user_id: created.id });
 
-    sendMail(r.email, 'Skyline SMS — Your Account Is Ready', welcomeEmailHtml(base, r.username, setupUrl, ttlHours, generatedChatPw),
-      `Welcome to Skyline SMS!\n\nPanel URL: ${base}/login\nUsername: ${r.username}\nSet your panel password (valid ${ttlHours} hours): ${setupUrl}\n\nAccount Security PIN:\nUsername: ${r.username}\nSecurity PIN: ${generatedChatPw} (dedicated 6-digit PIN)\nSecurity Note: Your Security PIN is required to unlock the Payment section inside the Agent Panel.`)
+    sendMail(r.email, 'Galaxy SMS — Your Account Is Ready', welcomeEmailHtml(base, r.username, setupUrl, ttlHours, generatedChatPw),
+      `Welcome to Galaxy SMS!\n\nPanel URL: ${base}/login\nUsername: ${r.username}\nSet your panel password (valid ${ttlHours} hours): ${setupUrl}\n\nAccount Security PIN:\nUsername: ${r.username}\nSecurity PIN: ${generatedChatPw} (dedicated 6-digit PIN)\nSecurity Note: Your Security PIN is required to unlock the Payment section inside the Agent Panel.`)
       .then(mr => {
         db.run('UPDATE panel_requests SET welcome_mail_status=?, mail_error=? WHERE id=?', [mr.status, mr.ok ? '' : (mr.error || ''), id]);
       });
@@ -469,8 +469,8 @@ module.exports = function mountPubreq(app, deps) {
     db.run('INSERT INTO password_setup_tokens (user_id, token_hash, expires_at) VALUES (?,?,?)', [r.created_user_id, otpHash(tok), nowPlusMin(SETUP_TTL_MIN)]);
     const base = baseUrlFrom(req);
     const ttlHours = Math.round(SETUP_TTL_MIN / 60);
-    sendMail(r.email, 'Skyline SMS — Your Panel Account Is Ready', welcomeEmailHtml(base, r.username, `${base}/set-password?token=${tok}`, ttlHours),
-      `Welcome to Skyline SMS!\n\nPanel URL: ${base}/panel-login\nUsername: ${r.username}\nSet your password (one-time link, valid ${ttlHours} hours): ${base}/set-password?token=${tok}`)
+    sendMail(r.email, 'Galaxy SMS — Your Panel Account Is Ready', welcomeEmailHtml(base, r.username, `${base}/set-password?token=${tok}`, ttlHours),
+      `Welcome to Galaxy SMS!\n\nPanel URL: ${base}/panel-login\nUsername: ${r.username}\nSet your password (one-time link, valid ${ttlHours} hours): ${base}/set-password?token=${tok}`)
       .then(mr => {
         db.run('UPDATE panel_requests SET welcome_mail_status=?, mail_error=? WHERE id=?', [mr.status, mr.ok ? '' : (mr.error || ''), id]);
         res.json({ ok: mr.ok, mail_status: mr.status, mail_error: mr.ok ? '' : (mr.error || '') });

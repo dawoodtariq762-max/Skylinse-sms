@@ -1,5 +1,5 @@
 /* ============================================================================
-   GALAXY SMS — UI helpers (galaxy.js v1)  — ZERO business-logic changes.
+   SKYLINE SMS — UI helpers (galaxy.js v1)  — ZERO business-logic changes.
    Provides: icon system, tooltips, country resolution (E.164), dashboard map,
    error/empty states, mobile card-table helper. Panels opt-in explicitly.
    ========================================================================== */

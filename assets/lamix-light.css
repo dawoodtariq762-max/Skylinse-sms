@@ -128,12 +128,8 @@ body.gx-light.gx-lamix .modal-box {max-width:calc(100vw - 24px);max-height:90dvh
 }
 @media(max-width:600px) {
  body.gx-light.gx-lamix .content {padding:16px 8px 28px!important;}
- /* Skyline SMS mobile: dashboard cards are full-width stacked rows (one per line),
-    icon leading + label trailing, never the desktop grid squeezed onto a phone. */
- body.gx-light.gx-lamix .gx-shortcuts {gap:10px!important;margin:16px 0!important;justify-content:stretch;}
- body.gx-light.gx-lamix .gx-shortcut {width:100%;max-width:none;min-height:56px;flex-direction:row;justify-content:flex-start;padding:12px 16px;gap:14px;text-align:left;font-size:13.5px;}
- body.gx-light.gx-lamix .gx-shortcut svg {width:24px;height:24px;flex-shrink:0;}
- body.gx-light.gx-lamix .gx-shortcut.lm-unavailable {display:none;}
+ body.gx-light.gx-lamix .gx-shortcuts {gap:12px!important;margin:18px 4px!important;}
+ body.gx-light.gx-lamix .gx-shortcut {width:calc(50% - 8px);max-width:170px;min-height:92px;}
  body.gx-light.gx-lamix #page-dashboard :is(.stats-grid,.gx-dash-grid) {grid-template-columns:minmax(0,1fr)!important;}
  body.gx-light.gx-lamix .lm-summaries {grid-template-columns:minmax(0,1fr);gap:0;}
  body.gx-light.gx-lamix .lm-summary {padding:9px 0;}
@@ -173,7 +169,7 @@ body.gx-light.gx-lamix .rail>.brand-text {padding:0 12px 20px!important;text-ali
 body.gx-light.gx-lamix .stat-card.dash-metric {justify-content:flex-end!important;}
 /* ===== Final colour pass, 28 September 2026 =====
    Blue sidebar and light blue top bar, chosen to sit with the approved light theme,
-   the white Galaxy logo and the existing card/table surfaces. Visual only. */
+   the white Skyline logo and the existing card/table surfaces. Visual only. */
 body.gx-light.gx-lamix :is(.sidebar,.rail,.side,.appbar) {
  background:linear-gradient(180deg,#155177 0%,#103f61 45%,#0b2f4c 100%)!important;
  border-right:1px solid #072844!important;
@@ -197,6 +193,15 @@ body.gx-light.gx-lamix :is(.sub-item,.rsubitem,.dropitem) {background:#10405f!im
 body.gx-light.gx-lamix :is(.sub-item,.rsubitem,.dropitem):hover {background:#17577c!important;color:#fff!important;}
 body.gx-light.gx-lamix :is(.sub-item,.rsubitem,.dropitem).active {background:#1d6892!important;color:#fff!important;}
 body.gx-light.gx-lamix .rail>.logo,body.gx-light.gx-lamix :is(.sb-brand,.side>.brand) .logo {box-shadow:0 1px 6px #041e300f!important;}
+/* Manager navigation surface — 29 September 2026 audit fix (visual only).
+   Manager is the only panel that renders its menu with .navtabs / .dropmenu, and
+   galaxy.css paints both of them white. The menu items inside are styled for the dark
+   sidebar (pale blue text), so the white container left the labels nearly unreadable.
+   Making the menu containers carry the same dark surface as Admin's .sb-nav and Agent's
+   .rail-nav (transparent over the sidebar gradient / the dark submenu surface) restores
+   one consistent colour system. No layout, markup or behaviour change. */
+body.gx-light.gx-lamix .navtabs {background:transparent!important;box-shadow:none!important;}
+body.gx-light.gx-lamix .dropmenu {background:#0f405f!important;border-color:#1b5678!important;box-shadow:none!important;}
 body.gx-light.gx-lamix :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab,.sub-item,.rsubitem,.dropitem) :is(.lbl,.chev) {color:currentColor!important;}
 
 body.gx-light.gx-lamix :is(.topbar,.mgr-topbar,.top,.tb1) {
