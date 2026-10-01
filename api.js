@@ -235,10 +235,10 @@
      UI options per role (backend ROLE_PAGE_MAX independently enforces the real ceiling).
      Previous options (recorded): static <option> lists in HTML (mostly 25..1000/All). */
   var GX_ROLE_PAGE_OPTIONS = {
-    client:  ['25', '50', '100', '500'],
-    test:    ['25', '50', '100', '500'],
-    agent:   ['25', '50', '100', '250', '500', '1000'],
-    manager: ['25', '50', '100', '250', '500', '1000', '2500', '5000'],
+    client:  ['25', '50', '100', '500', 'All'],
+    test:    ['25', '50', '100', '500', 'All'],
+    agent:   ['25', '50', '100', '250', '500', '1000', 'All'],
+    manager: ['25', '50', '100', '250', '500', '1000', '2500', '5000', 'All'],
     admin:   ['25', '50', '100', '250', '500', '1000', '2500', '5000', '10000', '20000', '30000', '50000', '100000', 'All']
   };
   function gxApplyRolePageOptions() {

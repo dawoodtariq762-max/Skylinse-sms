@@ -1,11 +1,11 @@
-# Skyline SMS Panel — release 2026-09-30 (rate hierarchy fix + report column order + dashboard shortcut cards)
+# Skyline SMS Panel — release 2026-09-30 r2 (Show Records "All" + Detailed Report Range/User filters)
 # sha256  path (relative to the archive root); verify inside the extracted folder: sha256sum -c MANIFEST-SHA256.txt
 # files: 206
 be893fe9eb1fc27cdd40c237c8c34a6d77c9270f54512bc9d0bea838787f53f5  ./.env.example
 04f35baf2748d21356bd83c0b486516f4041aeedb29015ce5300621263b52247  ./.gitignore
 d3b4b3f3e2261e473beba38959994652993d1a9ad53034f2933eb2ee31f02384  ./AI-HANDOVER-README.md
 ccc91221a0b892eeef2c42ee3cb2632b882d96542a9e8eb079c6661994095f06  ./CHAT-DUPLICATES-AND-FILE-PICKER-FIX-REPORT.md
-c5aa3023a89199d51590670cd1ad7a7ee3bc1626c13cb504b53e0629c2df54f8  ./DEPLOY-NOTES.md
+08d891db196efe6f95dbda375b97bf3f5b28def62aa671cf176c5be8dc2747ed  ./DEPLOY-NOTES.md
 4784abce4a40a38018f96190f19c5e09ee73f3e1382aabd68f78bc2c81d4be28  ./GALAXY-SMS-CAPACITY-AUDIT-REPORT.md
 50d0dd9f8f6386bbcca4f3731783114328bdab72147b503aedb93517b961f72b  ./P19-FINAL-REPORT.md
 98dd2e731b61d220a86ad54871a42707d2a51eff1e0f2674ed80b6a73c8460e5  ./P19K-FINAL-REPORT.md
@@ -18,9 +18,9 @@ c5aa3023a89199d51590670cd1ad7a7ee3bc1626c13cb504b53e0629c2df54f8  ./DEPLOY-NOTES
 c41f689fff96756ae46351df4ccf1f824e2012f042edfb8151eba6c3642cc1bd  ./README.md
 dbc0a32018ba47de691b8e965ea1ab83c781823628a74513cd76bcef529edaa3  ./RELEASE-LIGHT-20260928.md
 327f7f6ff15ba99f77ca4495f89a7ae8651e2c00ef2ccf747df058f202590bed  ./add-provider.sh
-d099b7440aedff4d2fef98435df815b97deb33465466dd3fc778cf09328f0375  ./admin.html
-7484109047b4e6514a24d0086e86d29ffa91952089b62766676ba988b602f44e  ./agent.html
-a018af0233f2a4731a793c2f6ae51e4e88c1ed0be2c16039894e82eb9439da5b  ./api.js
+7340c298538003fc2084665bd2afffc480109dd9f19567d60507d27d36bae61d  ./admin.html
+7679cd3a942df87ae01bd57b8b7e311cc6527fd5b7ba8a4e95341bed3ed11f8c  ./agent.html
+84a31676122ccb9abac8a99a69b9b3a066c8efb3d85b404a6bc03824c97dfc46  ./api.js
 8ee92597224f5ffab71d28ff4aea1707d14ceac149dc649e9315207035ef3ba7  ./assets/chat.js
 6f87edb84d13aa6c09baf18e4b012ba8816260a04ed32776d2eb30d4165b22b1  ./assets/credit-notes.js
 2fba166bf39addf85d69b6e21a7acc1cb45e235621e55de5a8a425a2d3b23ea9  ./assets/dashboard-ui.js
@@ -118,7 +118,7 @@ bcd82a2fd50d34090686517f569f83c2b78144f52e23e7fb11f62cc7e932b138  ./ecosystem.co
 e1059f59ba282604d81af6c8ba36c427338f95b2887ce38ab999ecd87eaa5512  ./login.html
 82454bb051bc75de83bb4f5abf296be895145de79dfd123b6d3b80bc5263e3fe  ./management-login.html
 a22260557a607d66e7520f8c809fbcbf3c03d15494d77d3f5feba45a82974243  ./management.html
-eaf29d743f584b18e34cde56d38b71111a187a418e1a3cfe89012a9a47ebc8a8  ./manager.html
+cb921597dceed76bc228b72e07fb15567c66a3c8d329d3fddc74942cc8ef1633  ./manager.html
 254738468f98feb3bc2008ee26edf0d2b60cbb7825d8835dfade75d950c80fbf  ./package-lock.json
 57b19da654287f7956f2c3a8409947d738f1bffb42b9bd4576fc1a3427a08415  ./package.json
 0d26aa91d71a20f5f496a674f6642b5dc91f18ce34906392475c5082681bc54d  ./panel-sharing-login.html

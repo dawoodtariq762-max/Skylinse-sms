@@ -1,4 +1,4 @@
-# Skyline SMS Panel — release 2026-09-30 (rate hierarchy fix + report column order + dashboard shortcut cards)
+# Skyline SMS Panel — release 2026-09-30 r2 (Show Records "All" + Detailed Report Range/User filters)
 
 Ye archive **poora updated panel** hai: base = aap ka deployed source, aur us par ye cheezen:
 
@@ -12,6 +12,40 @@ Andar: poora frontend (13 pages, sab Skyline-branded), `backend/` (fixed), `test
 `docs/dedup-v2/` (diagnosis, plan, verification report + dono run logs),
 `docs/SKYLINE-BRANDING-NOTES.md` (branding ka record), `backend/scripts/rollback-dedup-v2.js`,
 aur `MANIFEST-SHA256.txt` (har file ka sha256).
+
+---
+
+## 0b. r2 me ye 2 chhoti tabdeeliyan (2026-09-30)
+
+1. **"All" option Show Records me** — SMS CDR / Show Records ke records-per-page dropdown me
+   aakhri option **All** add kiya; select karne par us page ki saari matching records aati hain
+   (pagination 1 page). Purane numeric options (25/50/100/250/500/1000/2500/5000/10000 waghera)
+   waise hi hain — sirf All end me joda gaya. Ye **har role** ke liye laga hai (Admin/Manager/Agent/Client),
+   dono report screens (SMS Report + SMS Detailed Report) aur baqi list screens par bhi — kyunke ye list
+   `api.js` me ek hi jagah (per-role) define hoti hai aur sab Show-Records selects ko wahi list milti hai.
+2. **Range + User filters Detailed Reports me** — wahi **searchable dropdown** jo normal SMS Report me hai
+   ab teen detailed reports me bhi laga diya:
+   * Admin → SMS Detailed Report: **All Ranges + All Managers**
+   * Manager → SMS Detailed Report: **All Ranges + All Agents**
+   * Agent → SMS Detailed Report: **All Ranges + All Clients**
+   * Client → SMS Report ( uska ek hi report section): **All Ranges** (pehle se maujood tha, verify kiya gaya)
+   Search box, A-Z list, "All …" default aur pick karne par report turant filter — sab bilkul SMS Report jaisa.
+   Normal SMS Report ke filters **koi tabdeeli nahi** (regression test me verify kiya gaya).
+
+Bas itna hi: rates / payouts / SMS logic / database logic / layout ko haath nahi lagaya.
+
+### r2 verification (extracted archive par)
+
+| Check | Result |
+|---|---|
+| Browser acceptance (2 changes × 4 panels): options order, "All" = poori list, dropdowns search + asli filtering | **PASS 54 / FAIL 0** |
+| Existing SMS Report filters regression (widget + search + data filtering) | **PASS 7 / FAIL 0** |
+| `tests/unit_identity.js` | PASS 29 / FAIL 0 |
+| `tests/smoke_endpoints.js` | PASS 18 / FAIL 0 |
+| `tests/ui-theme.test.js` | 27 / 27 |
+| `tests/rate-hierarchy-test.js` (rates untouched) | PASS 99 / FAIL 0 |
+| `tests/verify-hierarchy-rates.js` | PASS 74 / FAIL 0 |
+| `tests/e2e_mock_smsc.js` (E2E_SPEED=0.1) | PASS 94 / FAIL 0 |
 
 ---
 

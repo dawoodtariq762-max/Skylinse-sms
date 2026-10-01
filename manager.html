@@ -1049,16 +1049,29 @@ function gxSdGroupSort(k){
 async function fillSdFilterSelects(){
   const escOpt=(v)=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   try{
-    const rsel=document.getElementById('sdSelRange');
-    if(rsel&&rsel.options.length<=1){
-      const ranges=await API.get('/ranges');
-      rsel.innerHTML='<option value="">All Ranges</option>'+((ranges||[]).map(r=>`<option value="${escOpt(r.name)}">${escOpt(r.name)}</option>`).join(''));
+    /* Detailed-Report Range / Agent filters: SAME searchable dropdown widget the
+       SMS Report uses. The pick feeds the existing filter state (window.__sdSel). */
+    const ranges=await API.get('/ranges');
+    const rnames=(ranges||[]).map(r=>r.name).filter(Boolean);
+    if(window.renderSearchSelect && document.getElementById('sdSelRangeContainer')){
+      window.renderSearchSelect('sdSelRangeContainer',{ id:'sdSelRange', placeholder:'All Ranges',
+        items:[{value:'',label:'All Ranges'}].concat(rnames.map(n=>({value:n,label:n}))),
+        value:(document.getElementById('sdSelRange')?.value)||'',
+        onChange:function(v){ const s=window.__sdSel=window.__sdSel||sdSelAll(); s.range=v||''; renderSmsDetail(); } });
+    } else {
+      const rsel=document.getElementById('sdSelRange');
+      if(rsel&&rsel.options.length<=1) rsel.innerHTML='<option value="">All Ranges</option>'+rnames.map(n=>`<option value="${escOpt(n)}">${escOpt(n)}</option>`).join('');
     }
-    const asel=document.getElementById('sdSelAgent');
-    if(asel&&asel.options.length<=1){
-      if(!agentsData.length){try{agentsData=await API.get('/users/agent');}catch(e){}}
-      const names=unique((agentsData||[]).map(a=>a.username));
-      asel.innerHTML='<option value="">All Agents</option>'+names.map(n=>`<option value="${escOpt(n)}">${escOpt(n)}</option>`).join('');
+    if(!agentsData.length){try{agentsData=await API.get('/users/agent');}catch(e){}}
+    const anames=unique((agentsData||[]).map(a=>a.username));
+    if(window.renderSearchSelect && document.getElementById('sdSelAgentContainer')){
+      window.renderSearchSelect('sdSelAgentContainer',{ id:'sdSelAgent', placeholder:'All Agents',
+        items:[{value:'',label:'All Agents'}].concat(anames.map(n=>({value:n,label:n}))),
+        value:(document.getElementById('sdSelAgent')?.value)||'',
+        onChange:function(v){ const s=window.__sdSel=window.__sdSel||sdSelAll(); s.agent=v||''; renderSmsDetail(); } });
+    } else {
+      const asel=document.getElementById('sdSelAgent');
+      if(asel&&asel.options.length<=1) asel.innerHTML='<option value="">All Agents</option>'+anames.map(n=>`<option value="${escOpt(n)}">${escOpt(n)}</option>`).join('');
     }
     const cll=document.getElementById('sdSelClient');
     if(cll&&cll.options.length<=1){

@@ -2598,10 +2598,27 @@ async function fillSmsDetailLiteFilters(){
      (users), CLI (existing /api/sms/clis — wide window taake all-time CLIs aayen),
      Provider (existing Provider Management /api/providers-info — koi duplicate list nahi). */
   const escOpt=(v)=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  const rsel=document.getElementById('sdSelRange');
-  if(rsel && rsel.options.length<=1) rsel.innerHTML='<option value="">All Ranges</option>'+((ratesData||[]).map(r=>`<option value="${escOpt(r.name)}">${escOpt(r.name)}</option>`).join(''));
-  const msel=document.getElementById('sdSelManager');
-  if(msel && msel.options.length<=1) msel.innerHTML='<option value="">All Managers</option>'+((usersData.manager||[]).map(m=>`<option value="${escOpt(m.username)}">${escOpt(m.username)}</option>`).join(''));
+  /* Detailed-Report Range / Manager filters: SAME searchable dropdown widget the
+     SMS Report uses (search box, A-Z list, "All …" default). The pick feeds the
+     existing filter state (window.__sdSel) and re-renders this report. */
+  const sdRangeItems=[{value:'',label:'All Ranges'}].concat((ratesData||[]).map(r=>({value:r.name,label:r.name})));
+  if(window.renderSearchSelect && document.getElementById('sdSelRangeContainer')){
+    window.renderSearchSelect('sdSelRangeContainer',{ id:'sdSelRange', placeholder:'All Ranges', items:sdRangeItems,
+      value:(document.getElementById('sdSelRange')?.value)||'',
+      onChange:function(v){ const sel=window.__sdSel=window.__sdSel||sdSelAll(); sel.range=v||''; renderSmsDetail(); } });
+  } else {
+    const rsel=document.getElementById('sdSelRange');
+    if(rsel && rsel.options.length<=1) rsel.innerHTML='<option value="">All Ranges</option>'+((ratesData||[]).map(r=>`<option value="${escOpt(r.name)}">${escOpt(r.name)}</option>`).join(''));
+  }
+  const sdMgrItems=[{value:'',label:'All Managers'}].concat((usersData.manager||[]).map(m=>({value:m.username,label:m.username})));
+  if(window.renderSearchSelect && document.getElementById('sdSelManagerContainer')){
+    window.renderSearchSelect('sdSelManagerContainer',{ id:'sdSelManager', placeholder:'All Managers', items:sdMgrItems,
+      value:(document.getElementById('sdSelManager')?.value)||'',
+      onChange:function(v){ const sel=window.__sdSel=window.__sdSel||sdSelAll(); sel.manager=v||''; renderSmsDetail(); } });
+  } else {
+    const msel=document.getElementById('sdSelManager');
+    if(msel && msel.options.length<=1) msel.innerHTML='<option value="">All Managers</option>'+((usersData.manager||[]).map(m=>`<option value="${escOpt(m.username)}">${escOpt(m.username)}</option>`).join(''));
+  }
   /* P20: Agent/Client filter selects bhi (users API — scope-safe; CLI ab free-text
      SEARCH input hai, select nahi — reference design). */
   const asel=document.getElementById('sdSelAgent');

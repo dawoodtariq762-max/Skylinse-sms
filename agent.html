@@ -1227,16 +1227,30 @@ function gxSdGroupSort(k){
 async function fillSdFilterSelects(){
   const escOpt=(v)=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   try{
-    const rsel=document.getElementById('sdSelRange');
-    if(rsel&&rsel.options.length<=1){
-      const ranges=await API.get('/ranges');
-      rsel.innerHTML='<option value="">All Ranges</option>'+((ranges||[]).map(r=>`<option value="${escOpt(r.name)}">${escOpt(r.name)}</option>`).join(''));
+    /* Detailed-Report Range / Client filters: SAME searchable dropdown widget the
+       SMS Report uses. The pick feeds the existing filter state (window.__sdSel). */
+    const ranges=await API.get('/ranges');
+    const rnames=(ranges||[]).map(r=>r.name).filter(Boolean);
+    if(window.renderSearchSelect && document.getElementById('sdSelRangeContainer')){
+      window.renderSearchSelect('sdSelRangeContainer',{ id:'sdSelRange', placeholder:'All Ranges',
+        items:[{value:'',label:'All Ranges'}].concat(rnames.map(n=>({value:n,label:n}))),
+        value:(document.getElementById('sdSelRange')?.value)||'',
+        onChange:function(v){ const s=window.__sdSel=window.__sdSel||sdSelAll(); s.range=v||''; renderSmsDetail(); } });
+    } else {
+      const rsel=document.getElementById('sdSelRange');
+      if(rsel&&rsel.options.length<=1) rsel.innerHTML='<option value="">All Ranges</option>'+rnames.map(n=>`<option value="${escOpt(n)}">${escOpt(n)}</option>`).join('');
     }
-    const cll=document.getElementById('sdSelClient');
-    if(cll&&cll.options.length<=1){
-      if(!clientsData.length){try{clientsData=await API.get('/users/client');}catch(e){}}
-      refreshClients();
-      cll.innerHTML='<option value="">All Clients</option>'+unique(myClients||[]).map(n=>`<option value="${escOpt(n)}">${escOpt(n)}</option>`).join('');
+    if(!clientsData.length){try{clientsData=await API.get('/users/client');}catch(e){}}
+    refreshClients();
+    const cnames=unique(myClients||[]);
+    if(window.renderSearchSelect && document.getElementById('sdSelClientContainer')){
+      window.renderSearchSelect('sdSelClientContainer',{ id:'sdSelClient', placeholder:'All Clients',
+        items:[{value:'',label:'All Clients'}].concat(cnames.map(n=>({value:n,label:n}))),
+        value:(document.getElementById('sdSelClient')?.value)||'',
+        onChange:function(v){ const s=window.__sdSel=window.__sdSel||sdSelAll(); s.client=v||''; renderSmsDetail(); } });
+    } else {
+      const cll=document.getElementById('sdSelClient');
+      if(cll&&cll.options.length<=1) cll.innerHTML='<option value="">All Clients</option>'+cnames.map(n=>`<option value="${escOpt(n)}">${escOpt(n)}</option>`).join('');
     }
     sdSyncFilterSelects();
   }catch(e){console.warn(e)}
