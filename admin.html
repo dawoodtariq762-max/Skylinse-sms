@@ -318,7 +318,6 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
       <div class="sb-section">Communication</div>
       <div class="nav-item" data-page="chatAccounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Agent Account PIN</span></div>
-      <div class="nav-item" data-page="complaints"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Complaints</span><span class="gx-nav-badge" id="gxCompBadge" style="display:none"></span></div>
 
       <div class="sb-section">Users</div>
       <div class="nav-item" id="userParent" onclick="toggleSub('userSub','userParent')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>User Management</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -510,13 +509,12 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
       <!-- ========== SMS TEST PANEL ========== -->
       <section class="page" id="page-payMgmt">
-        <div class="page-head"><div><h2>Payment Management</h2><div class="breadcrumb"><b>Payments</b> › Schedule &amp; Settings</div></div></div>
+        <div class="page-head"><div><h2>Payment Management</h2><div class="breadcrumb"><b>Payments</b> &rsaquo; Requests, Schedule &amp; Minimums</div><div class="muted" style="font-size:12.5px;margin-top:4px">Layout only — payment calculations, schedule rules, minimums and permissions are unchanged.</div></div></div>
         <div id="payMgmtWrap" style="display:grid;gap:16px"></div>
       </section>
 
-      <!-- P19e: INTERNAL CHAT + COMPLAINTS (GXChat builds UI at runtime) -->
+      <!-- P19e: INTERNAL CHAT (GXChat builds UI at runtime) -->
       <section class="page" id="page-chatAccounts"></section>
-      <section class="page" id="page-complaints"></section>
 
       <section class="page" id="page-test">
         <div class="page-head"><div><h2>SMS Test Panel</h2><div class="breadcrumb"><b>Home</b> › SMS Test Panel</div></div>
@@ -692,7 +690,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 /* auth guard — admin only */
 if(window.API){ API.guard('admin'); }
 window.PX_PANEL_MODE='admin_ops';
-const ADMIN_ALLOWED_PAGES=new Set(['creditNotes','dashboard','allocation','numbers','managers','agents','clients','smsReport','cliSearch','smsDetail','clientStats','agentStats','managerStats','rangeStats','numberStats','test','payMgmt','chatAccounts','complaints']);
+const ADMIN_ALLOWED_PAGES=new Set(['creditNotes','dashboard','allocation','numbers','managers','agents','clients','smsReport','cliSearch','smsDetail','clientStats','agentStats','managerStats','rangeStats','numberStats','test','payMgmt','chatAccounts']);
 function normalizePanelPage(id){ id=String(id||'dashboard'); return ADMIN_ALLOWED_PAGES.has(id)?id:'dashboard'; }
 function applyPanelSplitUi(){
   if(window.PX_PANEL_MODE!=='admin_light') return;
@@ -1637,9 +1635,9 @@ async function renderSmsDetail(){
   let data={rows:[],total:0,page:1,limit:25,totalPages:1,totalPayment:'0'};
   try{ data=await API.get('/sms/paged?'+params.toString()); }catch(e){ console.warn(e); }
   state.page=data.page||1; state.totalPages=data.totalPages||1;
-  sdHead.innerHTML=`<tr><th>Date</th><th class="sortable" onclick="gxSdSort('range')">Range <span class="sort" id="sdSort_range">${gxArr(_sdst,'range')}</span></th><th class="sortable" onclick="gxSdSort('number')">Number <span class="sort" id="sdSort_number">${gxArr(_sdst,'number')}</span></th><th>Manager</th><th class="sortable" onclick="gxSdSort('cli')">CLI <span class="sort" id="sdSort_cli">${gxArr(_sdst,'cli')}</span></th><th>SMS (Message Body)</th><th class="sortable" onclick="gxSdSort('payout')">Payout Rate <span class="sort" id="sdSort_payout">${gxArr(_sdst,'payout')}</span></th><th>Currency</th></tr>`;
+  sdHead.innerHTML=`<tr><th>Date</th><th class="sortable" onclick="gxSdSort('range')">Range <span class="sort" id="sdSort_range">${gxArr(_sdst,'range')}</span></th><th class="sortable" onclick="gxSdSort('number')">Number <span class="sort" id="sdSort_number">${gxArr(_sdst,'number')}</span></th><th class="sortable" onclick="gxSdSort('cli')">CLI <span class="sort" id="sdSort_cli">${gxArr(_sdst,'cli')}</span></th><th>SMS (Message Body)</th><th>Currency</th><th class="sortable" onclick="gxSdSort('payout')">Payout Rate <span class="sort" id="sdSort_payout">${gxArr(_sdst,'payout')}</span></th><th>Manager</th></tr>`;
   const rows=data.rows||[];
-  sdBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-blue">${r.range_name||'—'}</span></td><td class="mono">${r.number||''}</td><td><span class="tag tag-mgr">${r.manager_name||'—'}</span></td><td class="mono">${r.cli||''}</td><td class="msg-body">${r.message||''}</td><td class="cell-money payout-rate">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td>${r.range_currency?'<span class="tag tag-green">'+r.range_currency+'</span>':'—'}</td></tr>`).join('')||`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
+  sdBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-blue">${r.range_name||'—'}</span></td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="msg-body">${r.message||''}</td><td>${r.range_currency?'<span class="tag tag-green">'+r.range_currency+'</span>':'—'}</td><td class="cell-money payout-rate">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td><span class="tag tag-mgr">${r.manager_name||'—'}</span></td></tr>`).join('')||`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
   sdFoot.innerHTML='';
   sdInfo.textContent=`Showing ${smsShownCount(data.page, data.limit, rows.length, data.total)} of ${data.total||0} rows`; sdPayoutInfo.textContent=`Filtered total payout: ${money(data.totalPayment||'0')}`;
   setServerFoot(sdInfo,state,renderSmsDetail);
@@ -2691,7 +2689,17 @@ async function loadPayMgmt(force){
       <span id="pmReqCount" class="muted" style="font-size:13px"></span>
     </div>
     <div class="tscroll" style="max-height:340px;overflow:auto"><table><thead><tr><th>ID</th><th>Agent</th><th>Manager</th><th>Type</th><th>Amount</th><th>Binance UID</th><th>Status</th><th>Requested</th><th></th></tr></thead><tbody id="pmReqBody"></tbody></table></div></div>`;
-  w.innerHTML=[savebar,reqcard,daily,weekly,monthly,mins].join('<div style="height:4px"></div>');
+  const gtitle=(t,sub)=>`<div style="margin:4px 2px 0"><h3 style="margin:0;font-size:15.5px">${t}</h3>${sub?`<div class="muted" style="font-size:12.5px;margin-top:3px">${sub}</div>`:''}</div>`;
+  const scheduleGrid=`<div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));align-items:start">${daily}${weekly}${monthly}</div>`;
+  w.innerHTML=[
+    gtitle('Payment Requests','Review agent withdrawal requests, record the external payment or reject it.'),
+    reqcard,
+    gtitle('Payout Schedule','Configured payout period and payment day per type. Saving affects future payouts only (existing rule).'),
+    scheduleGrid,
+    savebar,
+    gtitle('Withdrawal Minimums','Minimum withdrawal per payment type (existing rules unchanged).'),
+    mins
+  ].join('<div style="height:8px"></div>');
   const pf=document.getElementById('pmReqFilter'); if(pf) pf.onchange=()=>{pmReqFilter=pf.value;renderPayReqs();};
   renderPayReqs();
   __payMgmtLoaded=true;
@@ -3086,7 +3094,6 @@ async function loadAdminPageData(page){
     if(page==='test'){ await ensureAdminRates(); await loadTestNumbers(); return renderTest(); }
     if(page==='payMgmt') return loadPayMgmt();
     if(page==='chatAccounts') return buildChatAccounts();
-    if(page==='complaints') return window.GXChat?GXChat.open('complaints'):null;
         if(page==='managers') return buildUserPage('manager');
     if(page==='agents') return buildUserPage('agent');
     if(page==='clients') return buildUserPage('client');

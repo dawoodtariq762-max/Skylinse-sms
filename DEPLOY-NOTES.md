@@ -1,4 +1,4 @@
-# Skyline SMS Panel — release 2026-09-30 r2 (Show Records "All" + Detailed Report Range/User filters)
+# Skyline SMS Panel — release 2026-10-02 r3 (Weekly Credit Notes + panel cleanup)
 
 Ye archive **poora updated panel** hai: base = aap ka deployed source, aur us par ye cheezen:
 
@@ -239,3 +239,39 @@ Rollback likhne se pehle `VACUUM INTO` se consistent snapshot banata hai, adhoor
   behaviour hai, is liye jaan kar waisa chhoda gaya.
 * Purane duplicate rows delete nahi kiye — A7 query se sirf dekh sakte hain.
 * Koi live SMSC bind nahi, koi production DB touch nahi, kuch deploy nahi.
+
+## 0c. r3 me ye tabdeeliyan (2026-10-02)
+
+Is release me sirf wo 13 points hain jo aap ne diye; iske ilawa kisi feature/calculation ko haath nahi lagaya gaya.
+
+1. **Client panel** — SMS Detailed Report se **Client column hata diya** (baqi columns aur functionality waise hi).
+2. **Agent panel** — SMS Rate Card ke paas wala **alag "Self Allocate" section hata diya**; Rate Card ke andar wala
+   Self Allocation (row ka button + modal) **bilkul waise hi kaam karta hai**.
+3. **Complaint** — chaaron panels (Admin/Manager/Agent/Client) se **Complaint nav + page hata diya**.
+4. **Column order (Detailed Report)** —
+   * Agent: Date → Range → Number → CLI → Message → Currency → Payout Rate → **Client**
+   * Manager: … wahi sequence … → **Agent** (aakhir me)
+   * Admin: … wahi sequence … → **Manager** (aakhir me)
+5. **Credit Notes (naya system, mojooda payout data par)** — har Manager aur har Agent ke **weekly notes**:
+   * week **mojooda payout-week config** se aata hai (Payment Management me jo set hai, default Mon → Sun);
+   * Agent ka amount **payment_ledger** se, Manager ka amount **manager-rate payout** (dashboard wala hi expression) se —
+     koi naya calculation ya re-pricing nahi;
+   * **current week ka note musalsal update** hota rehta hai (week khatam hone ka intezar nahi);
+   * **purane weeks kabhi reset/delete nahi** hote — har week apna alag record rehta hai;
+   * **minimum payout** mojooda setting se hi dikhaya jata hai (change nahi kiya).
+6. **Status: Pending / Released** — "Release" action record hota hai (kisne release kiya, kab, paid-to reference);
+   released note **history me hamesha nazar aata hai**, delete nahi hota. Paisa panel se nahi jata (Binance etc. se bahar).
+7. **Admin** — Manager + Agent dono ke notes dekhta hai, **Manager/Agent/Status se filter** kar sakta hai,
+   aur Manager ka note **khud release** karta hai; **Manager ka note release karne se uske Agents ke notes auto-release NAHI hote**.
+8. **Manager** — apna note (sirf dekh sakta hai; admin release karta hai) + apne **Agents ke notes** dekh/kar
+   release karta hai, outstanding total ke saath.
+9. **Agent** — sirf apne weekly notes (read-only) + total outstanding + minimum; Security PIN wahi purana rule
+   (payment section unlock hone par API token ke saath khulta hai).
+10. **History** — aakhri **3 mahine (14 weekly cycles)** ke records: amount, week/date, status, release info.
+11. **Payment Management (Admin)** — sirf **UI organisation**: "Payment Requests", "Payout Schedule" (3 cards), "Withdrawal Minimums"
+    groups me tarteeb di gayi. Existing IDs, buttons, calculations, permissions, DB behaviour — **sab waise hi**.
+12. **Naya table:** `credit_notes` (additive) — sirf credit-note tracking ke liye; baqi payout tables/ledger ko chhua nahi gaya.
+
+**Verification (asli panels par):** 43/43 browser checks, 31/31 live API checks, 10/10 existing payment-flow checks,
+13 + 10 credit-note unit tests, aur purane suites: unit 29/0, smoke 18/0, ui-theme 27/27, hierarchy 74/0,
+rate-hierarchy 99/0, e2e 94/0, 2-change acceptance 54/0, SMS-Report regression 7/0.

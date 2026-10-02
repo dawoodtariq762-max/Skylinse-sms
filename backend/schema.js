@@ -171,6 +171,33 @@ function createTables() {
     created_at TEXT DEFAULT (datetime('now'))
   )`);
 
+  /* Credit Notes: weekly dispatch/release tracking over EXISTING payout data.
+     Additive only — amounts come from payment_ledger (agent) / SMS payout
+     expression (manager); release is a recorded status change, no money moves. */
+  db.run(`CREATE TABLE IF NOT EXISTS credit_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_role TEXT NOT NULL,             -- manager | agent
+    subject_id INTEGER NOT NULL,
+    manager_id INTEGER,                     -- paying/owning manager (for agents)
+    payment_type TEXT DEFAULT 'weekly',     -- weekly (schedule) / monthly_30x45 / daily
+    cycle_key TEXT NOT NULL,                -- week-start (existing schedule logic)
+    period_start TEXT DEFAULT '',
+    period_end TEXT DEFAULT '',
+    eligible_at TEXT DEFAULT '',
+    amount TEXT DEFAULT '0',
+    basis TEXT DEFAULT 'ledger',            -- ledger | sms
+    status TEXT DEFAULT 'Pending',          -- Pending | Released
+    released_at TEXT DEFAULT '',
+    released_by INTEGER,
+    released_by_name TEXT DEFAULT '',
+    released_by_role TEXT DEFAULT '',
+    release_note TEXT DEFAULT '',
+    paid_to TEXT DEFAULT '',                -- recorded who was paid (external, e.g. Binance UID)
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(subject_role, subject_id, payment_type, cycle_key)
+  )`);
+
   db.run(`CREATE TABLE IF NOT EXISTS payment_requests_v2 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     agent_id INTEGER NOT NULL,
@@ -731,6 +758,8 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_requests_agent_type_status ON payment_requests_v2(agent_id, payment_type, status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests_v2(status, requested_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_notifications_agent ON payment_notifications_v2(agent_id, read_at, created_at)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_credit_notes_subject ON credit_notes(subject_role, subject_id, cycle_key)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_credit_notes_manager ON credit_notes(manager_id, cycle_key)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sharing_users_agent ON sharing_users(agent_user_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sharing_users_active ON sharing_users(active)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sharing_forward_logs_sms ON sharing_forward_logs(sms_record_id)`);

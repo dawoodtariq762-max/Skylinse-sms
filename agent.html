@@ -332,12 +332,10 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       <div class="rsub" id="sSms">
         <div class="rsubitem" data-page="rateCard"><span class="d"></span><span class="lbl">SMS Rate Card</span></div>
         <div class="rsubitem" data-page="numbers"><span class="d"></span><span class="lbl">SMS Numbers</span></div>
-        <div class="rsubitem" data-page="selfAllocate"><span class="d"></span><span class="lbl">Self Allocate</span></div>
         <div class="rsubitem" data-page="bulkAlloc"><span class="d"></span><span class="lbl">Range Allocation</span></div>
       </div>
 
       <div class="rsec">Communication</div>
-      <div class="ritem" data-page="complaints"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span class="lbl">Complaints</span><span class="gx-nav-badge" id="gxCompBadge" style="display:none"></span></div>
       <div class="ritem" data-page="clients"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg><span class="lbl">Client Management</span></div>
 
       <div class="ritem" id="pCdr" onclick="toggleSub('sCdr','pCdr')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg><span class="lbl">SMS CDR Stats</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -397,60 +395,6 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
       
       <!-- SELF ALLOCATE -->
-      <section class="page" id="page-selfAllocate">
-        <div class="page-head">
-          <div>
-            <h2>Self Allocate Numbers</h2>
-            <div class="breadcrumb"><b>SMS Numbers</b> › Self Allocate</div>
-          </div>
-          <div class="head-actions">
-            <button type="button" class="btn btn-purple" onclick="openSelfAlloc()">+ New Allocation</button>
-          </div>
-        </div>
-        <div class="card" style="padding:16px;margin-bottom:18px">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-            <div>
-              <h3 style="margin:0 0 4px 0;font-size:15px;color:var(--text,#fff)">Agent Self-Allocation Portal</h3>
-              <p class="muted" style="margin:0;font-size:13px">Allocate available numbers from your manager inventory directly into your active pool.</p>
-            </div>
-            <div id="selfAllocMgrInfo" style="font-size:13px;color:var(--text-2,#c9cde8);background:rgba(255,255,255,.06);padding:6px 14px;border-radius:10px;border:1px solid var(--border)">
-              Assigned Manager: <b id="saMgrName">—</b>
-            </div>
-          </div>
-        </div>
-        <div class="table-wrap" style="padding:15px 17px;margin-top:0">
-          <div class="table-controls">
-            <div class="tc-left">
-              <label>Show Records:</label>
-              <select id="saLen" onchange="renderSelfAllocTable()"><option>10</option><option selected>25</option><option value="All">All</option></select>
-            </div>
-            <div class="tc-right">
-              <label>Search:</label>
-              <input type="text" id="saSearch" oninput="renderSelfAllocTable()" placeholder="Search ranges..."/>
-            </div>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <div class="tscroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Range</th>
-                  <th>Weekly Rate</th>
-                  <th>Monthly Rate</th>
-                  <th>My Numbers</th>
-                  <th>Limit</th>
-                  <th>Pool Available</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="saBody"></tbody>
-            </table>
-          </div>
-          <div class="table-foot"><div class="info" id="saInfo"></div></div>
-        </div>
-      </section>
 
       <!-- SMS NUMBERS -->
       <section class="page" id="page-numbers">
@@ -510,8 +454,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
           <div class="table-foot"><div class="info" id="baInfo"></div></div></div>
       </section>
 
-      <!-- P19e: INTERNAL CHAT + COMPLAINTS (GXChat builds UI at runtime) -->
-      <section class="page" id="page-complaints"></section>
+      <!-- P19e: INTERNAL CHAT (GXChat builds UI at runtime) -->
 
       <!-- CLIENTS -->
       <section class="page" id="page-clients"></section>
@@ -830,7 +773,6 @@ async function showPage(id,el){
   document.getElementById('pageTitle').textContent=(el?el.querySelector('.lbl').textContent:'Dashboard');
   window.scrollTo({top:0,behavior:'smooth'});
 
-  if(id === 'selfAllocate'){ loadSelfAllocRanges(); return; }
   if(id === 'payment'){
     const isUnlocked = isChatPaymentUnlocked();
     const lockView = document.getElementById('paymentLockView');
@@ -1475,7 +1417,6 @@ async function loadAgentPageData(page){
     if(page==='numbers'){ loadNumbers(); return Promise.allSettled([loadRateCard(), loadClients()]).then(refreshAgentNumbersFilters); }
     if(page==='bulkAlloc'){ await Promise.allSettled([loadClients(), loadNumberSummaryForBulk()]); return; }
     if(page==='clients'){ buildClients(); return loadClients(); }
-    if(page==='complaints') return window.GXChat?GXChat.open('complaints'):null;
     if(page==='smsReport'){ if(!document.getElementById('srBody')) buildSmsReport(); return loadSms(); }
     if(page==='smsDetail'){ if(!document.getElementById('sdBody')) buildSmsDetail(); fillSdFilterSelects(); return loadSms(); }
     if(page==='clientStats'){ if(!document.getElementById('csBody')) buildClientStats(); return loadSms(); }
@@ -1566,9 +1507,9 @@ async function renderSmsDetail(){if(!document.getElementById('sdBody'))return;
   params.set('page',String(state.page||1));params.set('limit',len);params.set('sort',(_sdst.k||'date'));params.set('dir',(_sdst.k?_sdst.d:'desc'));
   let data={rows:[],total:0,page:1,limit:25,totalPages:1,totalPayment:'0'};try{data=await API.get('/sms/paged?'+params.toString())}catch(e){}
   state.page=data.page||1;state.totalPages=data.totalPages||1;
-  sdHead.innerHTML=`<tr><th>Date</th><th class="sortable" onclick="gxSdSort('range')">Range <span class="sort">${gxArr(_sdst,'range')}</span></th><th class="sortable" onclick="gxSdSort('number')">Number <span class="sort">${gxArr(_sdst,'number')}</span></th><th>Client</th><th class="sortable" onclick="gxSdSort('cli')">CLI <span class="sort">${gxArr(_sdst,'cli')}</span></th><th>Message</th><th class="sortable" onclick="gxSdSort('payout')">Payout Rate <span class="sort">${gxArr(_sdst,'payout')}</span></th><th>Currency</th></tr>`;
+  sdHead.innerHTML=`<tr><th>Date</th><th class="sortable" onclick="gxSdSort('range')">Range <span class="sort">${gxArr(_sdst,'range')}</span></th><th class="sortable" onclick="gxSdSort('number')">Number <span class="sort">${gxArr(_sdst,'number')}</span></th><th class="sortable" onclick="gxSdSort('cli')">CLI <span class="sort">${gxArr(_sdst,'cli')}</span></th><th>Message</th><th>Currency</th><th class="sortable" onclick="gxSdSort('payout')">Payout Rate <span class="sort">${gxArr(_sdst,'payout')}</span></th><th>Client</th></tr>`;
   const rows=data.rows||[];
-  sdBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><b>${r.range_name||'—'}</b></td><td class="mono">${r.number||''}</td><td><span class="tag tag-cli">${r.client_name||'—'}</span></td><td class="mono">${r.cli||''}</td><td class="msg-body">${r.message||''}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td>${r.range_currency?'<span class="tag tag-green">'+r.range_currency+'</span>':'—'}</td></tr>`).join('')||`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
+  sdBody.innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><b>${r.range_name||'—'}</b></td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="msg-body">${r.message||''}</td><td>${r.range_currency?'<span class="tag tag-green">'+r.range_currency+'</span>':'—'}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td><span class="tag tag-cli">${r.client_name||'—'}</span></td></tr>`).join('')||`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
   sdFoot.innerHTML='';
   sdInfo.textContent=`Showing ${shownSrv(data.page,data.limit,rows.length,data.total)} of ${data.total||0} rows`;sdPayoutInfo.textContent=`Filtered total payout: ${money(data.totalPayment||'0')}`;const pag=sdInfo.closest('.table-foot')?.querySelector('.pagination');if(pag&&window.drawServerPagination)drawServerPagination(pag,state,renderSmsDetail);}
 

@@ -4687,6 +4687,13 @@ function requireAgentChatUnlock(req, res, next) {
 
 // Approved read-only live settlement statements; existing payment paths stay unchanged.
 require('./creditNotes').mount(app, { db, authRequired, requireRole, requireAgentChatUnlock });
+// Weekly credit notes (Pending/Released tracking over existing payout data) — reuses the
+// existing schedule / min-payout / ledger and manager-rate payout logic passed in here.
+require('./creditNoteBook').mount(app, {
+  db, authRequired, requireRole, requireAgentChatUnlock,
+  schedulePeriodFor, utcSqlFromMs, ukParts, utcMsFromUkDate, civilAdd,
+  rolePayoutSql, paymentTypesSettings, paymentMinimum, normalizeDecimalString, paymentAudit,
+});
 
 app.get('/api/payment-v2/agent/summary', authRequired, requireRole('agent'), requireAgentChatUnlock, (req,res)=>res.json({agent_id:req.user.id, balances:agentPaymentSummary(req.user.id), wallet:db.get('SELECT * FROM agent_wallets WHERE agent_id=?',[req.user.id])||{binance_uid:'',network:'BINANCE_UID'}}));
 app.get('/api/payment-v2/agent/wallet', authRequired, requireRole('agent'), requireAgentChatUnlock, (req,res)=>res.json(db.get('SELECT * FROM agent_wallets WHERE agent_id=?',[req.user.id])||{binance_uid:'',network:'BINANCE_UID'}));

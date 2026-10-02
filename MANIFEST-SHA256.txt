@@ -1,11 +1,11 @@
-# Skyline SMS Panel — release 2026-09-30 r2 (Show Records "All" + Detailed Report Range/User filters)
+# Skyline SMS Panel — release 2026-10-02 r3 (Weekly Credit Notes + panel cleanup)
 # sha256  path (relative to the archive root); verify inside the extracted folder: sha256sum -c MANIFEST-SHA256.txt
-# files: 206
+# files: 208
 be893fe9eb1fc27cdd40c237c8c34a6d77c9270f54512bc9d0bea838787f53f5  ./.env.example
 04f35baf2748d21356bd83c0b486516f4041aeedb29015ce5300621263b52247  ./.gitignore
 d3b4b3f3e2261e473beba38959994652993d1a9ad53034f2933eb2ee31f02384  ./AI-HANDOVER-README.md
 ccc91221a0b892eeef2c42ee3cb2632b882d96542a9e8eb079c6661994095f06  ./CHAT-DUPLICATES-AND-FILE-PICKER-FIX-REPORT.md
-08d891db196efe6f95dbda375b97bf3f5b28def62aa671cf176c5be8dc2747ed  ./DEPLOY-NOTES.md
+2d896bafb887067314c582d564e1769001baac15b1d31d04a9c4eefa90a301b5  ./DEPLOY-NOTES.md
 4784abce4a40a38018f96190f19c5e09ee73f3e1382aabd68f78bc2c81d4be28  ./GALAXY-SMS-CAPACITY-AUDIT-REPORT.md
 50d0dd9f8f6386bbcca4f3731783114328bdab72147b503aedb93517b961f72b  ./P19-FINAL-REPORT.md
 98dd2e731b61d220a86ad54871a42707d2a51eff1e0f2674ed80b6a73c8460e5  ./P19K-FINAL-REPORT.md
@@ -18,11 +18,11 @@ ccc91221a0b892eeef2c42ee3cb2632b882d96542a9e8eb079c6661994095f06  ./CHAT-DUPLICA
 c41f689fff96756ae46351df4ccf1f824e2012f042edfb8151eba6c3642cc1bd  ./README.md
 dbc0a32018ba47de691b8e965ea1ab83c781823628a74513cd76bcef529edaa3  ./RELEASE-LIGHT-20260928.md
 327f7f6ff15ba99f77ca4495f89a7ae8651e2c00ef2ccf747df058f202590bed  ./add-provider.sh
-7340c298538003fc2084665bd2afffc480109dd9f19567d60507d27d36bae61d  ./admin.html
-7679cd3a942df87ae01bd57b8b7e311cc6527fd5b7ba8a4e95341bed3ed11f8c  ./agent.html
+f18c8716ce949d9f8a716d7eab89b5d4d609192ab57a998ecbc215728cebce41  ./admin.html
+2607ce824880d15f4e2d21ca032b0dd033ca262e2398c7b6336e0ca71a6ef4de  ./agent.html
 84a31676122ccb9abac8a99a69b9b3a066c8efb3d85b404a6bc03824c97dfc46  ./api.js
 8ee92597224f5ffab71d28ff4aea1707d14ceac149dc649e9315207035ef3ba7  ./assets/chat.js
-6f87edb84d13aa6c09baf18e4b012ba8816260a04ed32776d2eb30d4165b22b1  ./assets/credit-notes.js
+4b65995360f692d6a62d17d7ed3a851c36246ec4b41059d56f1c7e5d8d101c6f  ./assets/credit-notes.js
 2fba166bf39addf85d69b6e21a7acc1cb45e235621e55de5a8a425a2d3b23ea9  ./assets/dashboard-ui.js
 4cb27df1a3df4a67ac7b10c254fd9f20b58162fc5044c16e17ad77b6b7eadc09  ./assets/galaxy-appicon.png
 d89b39b854e46b2c7e48b5b8d8cb3d490cee550976bbe8bab0f19e6669868ad3  ./assets/galaxy-favicon.png
@@ -52,6 +52,7 @@ eb64c394011cf47a8848509ffd61ef18c73770be7975a808c9b06d30371c6d33  ./backend/READ
 202c17f7a2a3d7d2d084650a3ec97833c023b7a7fea9d69a4514105aec6af336  ./backend/auth.js
 e229dbbbd7f0b2649a14195d7c80713aa65a960f97aac19f9c7b4d57fa31ed1f  ./backend/backup.js
 09b4c25c87e7dd1b4a24a140012cdc0b1febc63b9fe7bded7185a91eb05cf6f3  ./backend/chat.js
+883900ea4b550b8af90f7068b9ddd4a08eef89d402f5279739dd6f9386c9b50b  ./backend/creditNoteBook.js
 d451abd324d6960170f24bc8d7a169819628de2b639a2de8fe9ab4fa38703808  ./backend/creditNotes.js
 27540ef8354ab67e9573d04003bc26e2dbfbce8f68c20870042edd6af3df0716  ./backend/dayWindow.js
 50befe5253ae7aff439c6187885d9e938cffa2e86a82cfe951778b1a38ef9970  ./backend/db.js
@@ -60,10 +61,10 @@ fb00d369ed3b93fb14f60b02022189bddec2f8d960dc95117b3271ce4f770648  ./backend/e164
 01eaadffb5f133234bf9ab87977452164f78fcd3ff759e873d6ed98587cd5bbe  ./backend/fts.js
 e0a037789b3f552629678cfd20bbeea04d15e5606e521586c1a16ee3d5ea0c18  ./backend/providerSync.js
 b16381f3cc3fc0ea8501b2f06b4d18fea00b5ecf2e531a635c8797155e3e13fd  ./backend/pubreq.js
-b0484018ba9a148a0a79c25a69e1aef2eb9d996341989f5d26cb2a99ae588c28  ./backend/schema.js
+a855d42ac6ad83e40be773ea5942dd1be1bbdb74195f4d9f7daa4f7c953d3c7c  ./backend/schema.js
 babde53c1bfbfa9618ace396805e939fe6505d2b2db1e50520184003ff27a223  ./backend/scripts/rollback-dedup-v2.js
 1c85d156f320244c253dc9a04569deb8cf44b43121fb51632cb602a8dd5d1012  ./backend/seed.js
-8c77e4cf531f5a8b13c4becb0977e507bfa94787e17a8f7f25c46428cf10cf62  ./backend/server.js
+e34b46363e01f725cc8a4bdf7fbcd94fa0d1aa205a04332434c52897d9dad815  ./backend/server.js
 ebb3b31d6d16fbe3828208ce1f470f2bd37e116cba3018f22e24600613ef4c2b  ./backend/smppIdentity.js
 10c25bf60f17cfe8460dc58f01115e9043f802c59af9320088fa599f2031479a  ./backend/smppServer.js
 5f6f530db74b057ac93d9267140cd7e784637eea51b373aa620a4588ac6e3a0a  ./backend/smppService.js
@@ -94,7 +95,7 @@ e0cf13e17b80c660939124d9b1fef9a606b5b6d30c1456bcd299de05ac569675  ./bench-toolki
 e5b1790784f8747e74e9a09f162af552cebcc45d0bfae5dfebc7a7d715ee2367  ./bench-toolkit/pwbench
 9b59b186eb739c44e40d8e623e81b63d33967c45179f47e056387abca733df6c  ./bench-toolkit/pwbench.js
 8828b80d3c468c2522993ff13e47429ca3dd402a6f0069e312cf507f4a4c9630  ./bench-toolkit/uninstall.sh
-b91a30093c6d792d4e627f9ad557ce1c2c4afb1cb91c5bb4756c4e783a44cec2  ./client.html
+f89d5d548dc7a21cd394fa17cf83b9d4478e4cdccb46ab90072803e6e4d44223  ./client.html
 d76f7b93430cfa6f153ff6c2ed0200a6d0d3c41d711837a7cee9b7b8863a18bf  ./deploy.sh
 5388f6a62d9a9153c195e1ce1e283582b24669c75f22908e29985bbd2957b3f0  ./deploy/DEPLOY-URDU.md
 cf56bf822e577aba78b779ab51ec76691e860459a3cb802ca81557f54ddde33b  ./deploy/DEPLOY.md
@@ -118,7 +119,7 @@ bcd82a2fd50d34090686517f569f83c2b78144f52e23e7fb11f62cc7e932b138  ./ecosystem.co
 e1059f59ba282604d81af6c8ba36c427338f95b2887ce38ab999ecd87eaa5512  ./login.html
 82454bb051bc75de83bb4f5abf296be895145de79dfd123b6d3b80bc5263e3fe  ./management-login.html
 a22260557a607d66e7520f8c809fbcbf3c03d15494d77d3f5feba45a82974243  ./management.html
-cb921597dceed76bc228b72e07fb15567c66a3c8d329d3fddc74942cc8ef1633  ./manager.html
+1df33fa36dc36ecfbbf6b39b15274d5fd45b42772440a3b92ea0cf17f4a7208e  ./manager.html
 254738468f98feb3bc2008ee26edf0d2b60cbb7825d8835dfade75d950c80fbf  ./package-lock.json
 57b19da654287f7956f2c3a8409947d738f1bffb42b9bd4576fc1a3427a08415  ./package.json
 0d26aa91d71a20f5f496a674f6642b5dc91f18ce34906392475c5082681bc54d  ./panel-sharing-login.html
@@ -159,6 +160,7 @@ f2c8c6d33ecda3eac790a1240a24b5c508cb939647ae16254aaa449dbde12f88  ./test-login.h
 b88b0312ad21f487f42ceae9a9adbd2150c88ec512e82fdb0bc68a4ebc68dda7  ./test.html
 51fa57d8ac0ef0b86f0e7d92d2fec95332744c9942d1977f2328a6ffb2800e9c  ./tests/assistant_ranges.json
 c34c5faee29121899a466e513f28192d0cf4a48fd2711e3f91b2860f6efcdf05  ./tests/assistant_ranges.txt
+c6baf5a67a3030d3cb20a1c08a3b04249ce4feabe04471122828e25d46120b7c  ./tests/credit-note-book.test.js
 1e5b4435aad9a29c87af71aec4d5503764f36e0ae06eef021b44b8a9b31d4359  ./tests/credit-notes.test.js
 c79ceb028d238f04a2a8bf13ac54d14cafcdd4fc6c5672dbcec5bae931723a9d  ./tests/e2e_mock_smsc.js
 410da46728b9c7d73496959038e252e19c9995aff9c92e0e9fc7435586935f2c  ./tests/final-targeted-fixes-test.js
