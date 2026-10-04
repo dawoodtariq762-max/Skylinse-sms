@@ -2515,6 +2515,12 @@ const NUMBER_PAGE_MAX_ADMIN = Math.max(NUMBER_PAGE_MAX, parseInt(process.env.NUM
 const ROLE_PAGE_MAX = { admin: 100000, manager: 5000, agent: 5000, client: 500, test: 500 };
 const ROLE_ALL_MAX  = { admin: 200000 }; /* 'All' page-size allowed for admin only; others fall back to their role cap */
 function rolePageMax(role) { return ROLE_PAGE_MAX[role] || 500; }
+/* P22 — ceiling for the SMS NUMBERS page only (SMS record/report pages keep ROLE_PAGE_MAX
+   exactly as before). The numbers list must comfortably carry the largest set each role
+   really has (Client 10k / Agent 25k / Manager 40k / Admin 50k+); the browser only paints
+   a bounded slice and copy/export still use the whole loaded set (see api.js paintRows). */
+const NUMBER_LIST_MAX = { admin: 200000, manager: 40000, agent: 25000, client: 10000, test: 500 };
+function numberListPageMax(role) { return NUMBER_LIST_MAX[role] || 500; }
 /* P11: memory-safe big-page responses. Pages <= STREAM_JSON_MAX_ROWS are built
    normally (and cached); larger pages stream row-by-row from the SQLite cursor so
    peak memory stays flat (a 100k-row res.json() triple-copies ~60MB+ and can OOM).
@@ -2551,7 +2557,7 @@ app.get('/api/numbers', authRequired, (req, res, next) => {
   const limitRaw = String(q.limit || NUMBER_PAGE_DEFAULT);
   const isAllReq = limitRaw.toLowerCase() === 'all';
   const numericReq = parsePositiveInt(limitRaw, 0);
-  const roleCap = rolePageMax(req.user.role);
+  const roleCap = numberListPageMax(req.user.role);
   const bigLimit = isAllReq ? (ROLE_ALL_MAX[req.user.role] || roleCap)
                  : (numericReq > STREAM_JSON_MAX_ROWS ? Math.min(numericReq, roleCap) : 0);
   if (!bigLimit) return next();
@@ -2583,7 +2589,7 @@ app.get('/api/numbers', authRequired, (req, res) => cachedJson(req, res, 60000, 
   const total = +(db.get(`SELECT COUNT(*) AS c ${countFrom}`, query.params)?.c || 0);
 
   const paged = req.query.paged || req.query.page || req.query.limit;
-  const roleCap = rolePageMax(req.user.role); /* P11: per-role ceiling, clamped below */
+  const roleCap = numberListPageMax(req.user.role); /* P22: numbers-page ceiling, clamped below */
   if (paged) {
     const requestedLimitRaw = String(req.query.limit || NUMBER_PAGE_DEFAULT);
     const isAll = requestedLimitRaw.toLowerCase() === 'all';
@@ -2651,8 +2657,11 @@ function handleAllocate(req, res) {
   const target = db.get('SELECT * FROM users WHERE id=?', [target_id]);
   if (!target) return res.status(404).json({ error: 'Target not found' });
 
+  /* P22: Admin allocates to Manager or Agent only — a direct Admin -> Client allocation
+     is rejected here (single enforcement point, whatever any UI sends). Client numbers
+     are allocated by their Agent, exactly as before: manager: and agent: rules unchanged. */
   const allowedTargets = {
-    admin: ['manager', 'agent', 'client'],
+    admin: ['manager', 'agent'],
     manager: ['agent', 'client'],
     agent: ['client']
   }[req.user.role] || [];
@@ -3218,18 +3227,40 @@ function affectedStatsKeys(whereSql, params = []) {
 function resyncStatsKeys(keys) {
   if (!keys || !keys.length) return { keys: 0, corrected: 0, deferred: false };
   if (keys.length > STATS_RESYNC_MAX_KEYS) return { keys: keys.length, corrected: 0, deferred: true };
+  /* P22 (delete-perf): pehle har key ke liye ALAG COUNT/SUM query chalti thi (max 4000
+     keys => 4000 full scans, measured ~32 ms each on a 300k-row table = ~2 min jisme
+     poora event loop block ho jata tha; production DB par is se zyada). Ab ek hi
+     grouped scan chalega jo sirf affected days ka window dekhta hai:
+       - days window = min..max affected stat_date (>= day 00:00:00, < maxDay+1 00:00:00)
+       - GROUP BY = wahi key definition jo delete/ingest/dashboard use karte hain:
+         statDateUtc(received_at) = timestamp ka UTC date prefix (backend/dayWindow.js),
+         owners COALESCE(...,-1) aur cli COALESCE(cli,'')
+     Result bilkul same keys/counts deta hai (parity verified), magar ek scan me.
+     Window wahi UTC-day semantics rakhta hai jo backfillSmsStats() bhi use karta hai,
+     is liye resynced value dashboard ke summation se exactly match karti hai. */
+  const dayRe = /^\d{4}-\d{2}-\d{2}$/;
+  const days = keys.map(k => String(k.sd || '').slice(0, 10)).filter(d => dayRe.test(d));
+  const truthMap = new Map();
+  if (days.length) {
+    let minDay = days[0], maxDay = days[0];
+    for (const d of days) { if (d < minDay) minDay = d; if (d > maxDay) maxDay = d; }
+    const winFrom = minDay + ' 00:00:00';
+    const winTo = dayWindow.utcDateAdd(maxDay, 1) + ' 00:00:00';
+    const grouped = db.all(`SELECT substr(received_at,1,10) sd_raw,
+        COALESCE(manager_id,-1) mgr, COALESCE(agent_id,-1) ag, COALESCE(client_id,-1) cl, COALESCE(cli,'') cli,
+        COUNT(*) c, COALESCE(SUM(CAST(COALESCE(NULLIF(payout_amount,''),'0') AS REAL)),0) p
+      FROM sms_records
+      WHERE COALESCE(is_test,0)=0 AND received_at >= ? AND received_at < ?
+      GROUP BY sd_raw, mgr, ag, cl, cli`, [winFrom, winTo]);
+    for (const g of grouped) {
+      /* unparseable timestamp => same fallback as statDateUtc()/ingest (today's UTC day) */
+      const sd = dayRe.test(String(g.sd_raw || '')) ? String(g.sd_raw).slice(0, 10) : dayWindow.utcDayString(0);
+      truthMap.set(sd + '|' + g.mgr + '|' + g.ag + '|' + g.cl + '|' + g.cli, { c: g.c || 0, p: g.p || 0 });
+    }
+  }
   let corrected = 0;
   for (const k of keys) {
-    /* UK-day bucket = [uk-midnight(sd), uk-midnight(sd+1)) — ukStatDate ke exact equivalent,
-       DST-safe (har din apne offset se convert hota hai — ukLocalDateToUtcSql). */
-    const wFrom = ukLocalDateToUtcSql(k.sd, 0);
-    const wTo = ukLocalDateToUtcSql(k.sd, 1);
-    const truth = db.get(`SELECT COUNT(*) c, COALESCE(SUM(CAST(COALESCE(NULLIF(payout_amount,''),'0') AS REAL)),0) p
-      FROM sms_records
-      WHERE COALESCE(is_test,0)=0
-        AND COALESCE(manager_id,-1)=? AND COALESCE(agent_id,-1)=? AND COALESCE(client_id,-1)=?
-        AND COALESCE(cli,'')=? AND received_at >= ? AND received_at < ?`,
-      [k.mgr, k.ag, k.cl, k.cli, wFrom, wTo]);
+    const truth = truthMap.get(k.sd + '|' + k.mgr + '|' + k.ag + '|' + k.cl + '|' + k.cli) || { c: 0, p: 0 };
     const existing = db.get(`SELECT sms_count, payout_sum FROM sms_daily_stats
       WHERE stat_date=? AND manager_id=? AND agent_id=? AND client_id=? AND cli=?`,
       [k.sd, k.mgr, k.ag, k.cl, k.cli]);
@@ -3369,8 +3400,16 @@ app.post('/api/numbers/delete', authRequired, requireRole('admin'), (req, res) =
   if (!ids.length) return res.status(400).json({ error: 'ids[] required' });
   const uniqueIds = [...new Set(ids)];
   const ph = uniqueIds.map(() => '?').join(',');
-  const result = deleteNumbersWhere(`id IN (${ph})`, uniqueIds, req, 'delete_selected_numbers', { requested: ids.length }, truthy(req.body?.delete_sms));
-  res.json({ ok: true, ...result });
+  /* P22: same call as before — only the failure path is now explicit. A DB-level error
+     (locked file, constraint, stats step) previously escaped as a generic 500, so the UI
+     could not tell the admin anything beyond "delete doesn't work". Success shape unchanged. */
+  try {
+    const result = deleteNumbersWhere(`id IN (${ph})`, uniqueIds, req, 'delete_selected_numbers', { requested: ids.length }, truthy(req.body?.delete_sms));
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    console.error('[DELETE-NUMBERS] selected delete failed:', e.message);
+    res.status(500).json({ error: 'Delete failed: ' + e.message });
+  }
 });
 
 // Move selected live SMS Numbers into Test Panel numbers.

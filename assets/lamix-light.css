@@ -151,8 +151,32 @@ body.gx-light.gx-lamix .lm-secondary-row .li {padding:12px 16px!important;margin
 body.gx-light.gx-lamix .gx-map-card #gxMap {padding:12px;}
 body.gx-light.gx-lamix .gx-map-wrap {border-radius:3px;}
 body.gx-light.gx-lamix .gx-map-wrap svg {max-height:330px;}
-body.gx-light.gx-lamix .gx-map-wrap path:not(.gx-on) {fill:#e0e7ea;stroke:#fff;}
+/* Map contrast (P22): the dashboard map sits on a white card, and the previous
+   landmass fill (#e0e7ea) / white country strokes were nearly invisible against it.
+   Colours and borders only — same SVG, same countries, same data, same hover/click
+   behaviour, same geometry and sizing. */
+body.gx-light.gx-lamix .gx-map-wrap {background:#edf3f7;border-color:#c9d6de;}
+body.gx-light.gx-lamix .gx-map-wrap path:not(.gx-on) {fill:#b7c8d2;stroke:#8fa5b2;stroke-width:.5;}
+/* active (SMS volume) countries: keep the JS fill-opacity ramp untouched, just give
+   every one of them a defined outline so low-volume countries stay visible too. */
+body.gx-light.gx-lamix .gx-map-wrap path.gx-on {stroke:#0a6fae;stroke-width:.55;}
 body.gx-light.gx-lamix .gx-map-wrap path:hover {fill:#348eae!important;}
+/* tap/hover info bubble keeps its position and behaviour, now with a readable surface
+   over the map (it previously had no background of its own in the light theme). */
+body.gx-light.gx-lamix .gx-map-info {background:#ffffff;color:#16264f;border:1px solid #c9d6de;box-shadow:0 8px 20px rgba(15,40,60,.14);}
+
+/* Number-delete confirmation modal (P22 contrast fix).
+   The modal panel is deliberately dark (#161922) but it was inheriting the light
+   theme's dark body text colour, so its heading and the two radio option labels were
+   dark-on-dark — effectively unreadable ("white-on-white" text around the delete
+   action). The modal now carries its own readable colours; its inline accent colours
+   (the red PERMANENT warning, Cancel/Confirm buttons) are untouched, and no layout,
+   spacing or behaviour changes. */
+body.gx-light.gx-lamix #gxDelModal h3 {color:#f5f7fb!important;font-size:16.5px;}
+body.gx-light.gx-lamix #gxDelModal p {color:#c9ccd2!important;}
+body.gx-light.gx-lamix #gxDelModal label {color:#eef1f7!important;}
+/* NOTE: the two option sub-lines and the red "PERMANENT" warning keep their own
+   inline colours (readable on the dark panel) — deliberately not overridden here. */
 body.gx-light.gx-lamix .welcome-step span b {display:inline;width:auto;height:auto;border-radius:0;font-size:inherit;background:transparent;}
 
 body.gx-light.gx-lamix .lm-rankings {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0;}
@@ -263,3 +287,7 @@ body.gx-light.gx-lamix .gx-copy-live {
  body.gx-light.gx-lamix .gx-copy-inline {width:30px;height:30px;margin-left:8px;}
  body.gx-light.gx-lamix .gx-copy-inline svg {width:14px;height:14px;}
 }
+
+/* Note shown when a very large numbers view was painted partially (see api.js PAINT_CAP).
+   Informational only — no layout or behaviour of the table itself changes. */
+body.gx-light.gx-lamix .gx-paint-note {padding:9px 14px;border-top:1px solid #e2e8ee;background:#f7fafc;color:#425466;font-size:12px;line-height:1.5;}

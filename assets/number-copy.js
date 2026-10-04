@@ -69,7 +69,20 @@
     btn.innerHTML = GLYPH_COPY;
     return btn;
   }
-  function decorate() {
+  /* Adds the copy control to ONE row. Same control, same click behaviour, same
+     clipboard call as before — only the timing changed: rows get their button when
+     they are about to be seen (see start()) instead of all rows at once. */
+  function decorateRow(row) {
+    if (!row || row.dataset.gxCopyDone === '1') return;
+    var found = findNumber(row);
+    if (!found) return;
+    found.host.appendChild(makeButton(found.number));
+    row.dataset.gxCopyDone = '1';
+  }
+  /* Mark every row of the numbers tables for viewport-scoped decoration. This pass
+     inserts NOTHING into the DOM (that is what kept a huge table re-laying out), so it
+     is cheap enough to re-run after the list re-renders. */
+  function scanRows() {
     for (var t = 0; t < TABLES.length; t++) {
       var body = document.getElementById(TABLES[t]);
       if (!body) continue;
@@ -77,14 +90,14 @@
       var limit = Math.min(rows.length, MAX_ROWS);
       for (var i = 0; i < limit; i++) {
         var row = rows[i];
-        if (!row || row.dataset.gxCopyDone === '1') continue;
-        var found = findNumber(row);
-        if (!found) continue;
-        found.host.appendChild(makeButton(found.number));
-        row.dataset.gxCopyDone = '1';
+        if (!row || row.dataset.gxCopyDone === '1' || row.dataset.gxCopyObs === '1') continue;
+        row.dataset.gxCopyObs = '1';
+        if (io) { try { io.observe(row); } catch (e) { decorateRow(row); } }
+        else decorateRow(row);
       }
     }
   }
+  var io = null;
   function onClick(event) {
     var btn = event.target && event.target.closest ? event.target.closest('.gx-copy-inline') : null;
     if (!btn) return;
@@ -111,16 +124,34 @@
   }
   function start() {
     document.addEventListener('click', onClick, true);
+    /* Viewport-scoped decoration (performance): the previous version gave every row of
+       the list its own copy button up front — up to MAX_ROWS inserts plus a full-table
+       re-scan on every DOM change. On a large "Show Records = All" page that was the
+       main reason the tab froze. Now a row gets its button when it comes near the
+       viewport, so a 50k-row page costs the same as a 25-row page. */
+    if (window.IntersectionObserver) {
+      io = new IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          var e = entries[i];
+          if (!e.isIntersecting) continue;
+          try { io.unobserve(e.target); } catch (err) { }
+          decorateRow(e.target);
+        }
+      }, { rootMargin: '400px 0px' });
+    }
     var scheduled = false;
     function schedule() {
       if (scheduled) return;
       scheduled = true;
-      setTimeout(function () { scheduled = false; try { decorate(); } catch (e) {} }, 120);
+      setTimeout(function () { scheduled = false; if (window.__gxPainting) return; /* big paint in progress — the paint-done event will re-scan */ try { scanRows(); } catch (e) { } }, 150);
     }
     if (window.MutationObserver) {
+      /* Only marks rows for observation — never inserts anything, so it cannot feed
+         itself the way the old decorate() did. */
       new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
     }
-    decorate();
+    window.addEventListener('gx-paint-done', function () { try { scanRows(); } catch (e) { } });
+    scanRows();
     liveRegion();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

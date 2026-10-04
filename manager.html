@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-1" />
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-2" />
 <title>SKYLINE SMS — Manager Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
@@ -339,7 +339,7 @@ body .content{padding:20px 14px!important;}
 <header class="appbar">
   <div class="appbar-top">
     <div class="brand">
-      <div class="logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-1" alt="Skyline SMS" /></div>
+      <div class="logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-2" alt="Skyline SMS" /></div>
       <div><h1>SKYLINE SMS</h1><small>Manager Panel</small></div>
     </div>
     <div class="spacer"></div>
@@ -1440,7 +1440,11 @@ async function renderNumbers(){
   if(seq!==mgrNumSeq) return;
   state.page=data.page||1; state.totalPages=data.totalPages||1;
   numData=(data.rows||[]).map(r=>({id:r.id,range_id:r.range_id,range:r.range_name||'',number:r.number,rate:r.effective_rate||r.rate||'',agent:r.agent_name||'',agent_id:r.agent_id,sd:r.sd_limit||0,sw:r.sw_limit||0}));
-  body.innerHTML=numData.map(r=>`<tr><td data-label="Selected"><input type="checkbox" class="rc" data-id="${r.id}" onchange="updSel()"/></td><td data-label="Range">${r.range}</td><td data-label="Number" class="gx-num"><b>${r.number}</b></td><td data-label="Country" class="muted">${(window.GX&&(GX.countryOf(r.number)||{}).name)||'—'}</td><td data-label="My Rate" class="cell-money">${r.rate}</td><td data-label="Agent">${r.agent?`<span class="tag tag-agt">${r.agent}</span>`:'<span class="tag tag-gray">—</span>'}</td><td data-label="Limits" class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`;
+  const __rowsHtml=(numData.map(r=>`<tr><td data-label="Selected"><input type="checkbox" class="rc" data-id="${r.id}" onchange="updSel()"/></td><td data-label="Range">${r.range}</td><td data-label="Number" class="gx-num"><b>${r.number}</b></td><td data-label="Country" class="muted">${(window.GX&&(GX.countryOf(r.number)||{}).name)||'—'}</td><td data-label="My Rate" class="cell-money">${r.rate}</td><td data-label="Agent">${r.agent?`<span class="tag tag-agt">${r.agent}</span>`:'<span class="tag tag-gray">—</span>'}</td><td data-label="Limits" class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`);
+  /* P22: paint in chunks so a very large 'Show Records' page (All) cannot freeze
+     the browser; small pages take the identical single-assignment path. */
+  if(window.API&&API.paintRows){ await API.paintRows(body, __rowsHtml, numInfo, 'Rendering {n} of {t} numbers…'); }
+  else { body.innerHTML=__rowsHtml; }
   const currentNumbers = (numData || []).map(r => String(r.number || '').trim()).filter(Boolean);
   const countEl = document.getElementById('numPageCount');
   if(countEl) countEl.textContent = currentNumbers.length.toLocaleString();

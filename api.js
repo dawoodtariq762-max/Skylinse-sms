@@ -388,14 +388,128 @@
     const tables=[...page.querySelectorAll('table')].filter(t=>(t.offsetParent!==null || !document.body.offsetParent) && t.querySelector('tbody'));
     return tables[0] || page.querySelector('table');
   }
+  /* Progressive table painting for very large "Show Records" sizes.
+     The SMS Numbers list used to be written into the DOM in a single innerHTML
+     assignment: with tens of thousands of rows that one operation froze the tab (the
+     main thread is busy building hundreds of thousands of cells before it can paint or
+     respond to a click). Small pages keep the exact old single-assignment path; large
+     ones are appended in chunks with a yield to the browser between chunks, so the page
+     stays usable, the row count is shown while it fills, and the final DOM is identical
+     (same rows, same order, same markup, same handlers). Presentation only — no data,
+     filter, pagination, copy or API change. */
+  const PAINT_CAP=5000;   /* rows actually put into the page for one big "Show Records" view */
+  async function paintRows(container, html, infoEl, busyText){
+    if(!container) return;
+    const token=(container.__gxPaintToken=(container.__gxPaintToken||0)+1);
+    if(typeof html!=='string' || html.length<=120000){ container.innerHTML=html; container.__gxFullRowsHtml=''; try{ clearPaintNote(); }catch(e){} return; }
+    container.innerHTML='';
+    let totalRows=(html.match(/<\/tr>/g)||[]).length;
+    let cappedFrom=0;
+    container.__gxFullRowsHtml='';   /* previous complete markup no longer valid */
+    /* A 10k-50k row table is beyond what a browser can lay out smoothly, so only the
+       first PAINT_CAP rows are put on the page; a short note under the table says so and
+       makes clear that Copy still copies every loaded number and that filters/Show
+       Records still apply to the whole set. (Before this, "All" simply froze the tab.) */
+    if(totalRows>PAINT_CAP){
+      let idx=-1, seen=0;
+      while(seen<PAINT_CAP){ idx=html.indexOf('</tr>', idx+1); if(idx===-1) break; seen++; }
+      if(idx!==-1){ cappedFrom=totalRows; container.__gxFullRowsHtml=html; html=html.slice(0, idx+5); totalRows=seen; }
+    }
+    const chunk=180*1024;     /* characters parsed off-DOM per step (~1.5-2k rows) */
+    const flushRows=5000;     /* rows handed to the live table per batch */
+    /* The expensive part of a huge table is the browser's table layout, which re-runs
+       on every change while the table is laid out — so the body is kept out of layout
+       while it is filled and laid out once at the end. The list area is empty for a
+       moment (the progress line is visible) and then appears complete. */
+    let ended=false;
+    window.__gxPainting=true;
+    const prevDisplay=container.style.display;
+    container.style.display='none';
+    const finish=()=>{ if(ended) return; ended=true; try{ container.style.display=prevDisplay||''; container.getBoundingClientRect(); }catch(e){}
+      if(cappedFrom){ try{ showPaintNote(container, totalRows, cappedFrom); }catch(e){} }
+      window.__gxPainting=false;
+      try{ window.dispatchEvent(new CustomEvent('gx-paint-done',{detail:{container:container}})); }catch(e){} };
+    let i=0, painted=0;
+    let pending=document.createDocumentFragment();
+    const moveRows=(nodes)=>{
+      for(const n of [...nodes.childNodes]){
+        if(n.nodeType===1 && /^(TBODY|THEAD|TFOOT)$/.test(n.tagName)){ while(n.firstChild) pending.appendChild(n.firstChild); }
+        else pending.appendChild(n);
+      }
+    };
+    try{
+      while(i<html.length){
+        if(container.__gxPaintToken!==token){ finish(); return; }   /* a newer render took over */
+        let end=Math.min(html.length, i+chunk);
+        let cut=html.lastIndexOf('</tr>', end);
+        if(cut<=i) cut=end; else cut+=5;
+        const seg=html.slice(i,cut);
+        const before=pending.childElementCount;
+        try{
+          const t=document.createElement('table'); t.innerHTML=seg; moveRows(t);
+        }catch(e){ }
+        painted+=pending.childElementCount-before;
+        i=cut;
+        if(pending.childElementCount>=flushRows){
+          container.appendChild(pending); pending=document.createDocumentFragment();
+        }
+        if(infoEl && busyText) infoEl.textContent=busyText.replace('{n}', painted.toLocaleString()).replace('{t}', totalRows.toLocaleString());
+        await new Promise(r=>setTimeout(r,0));
+      }
+      if(container.__gxPaintToken!==token){ finish(); return; }
+      if(pending.childElementCount) container.appendChild(pending);
+    } finally { finish(); }
+  }
+  /* One-line, non-blocking note under the numbers table when a view was too large to
+     paint completely (see PAINT_CAP). */
+  function showPaintNote(container, shown, total){
+    const host=container.closest('.table-wrap') || container.parentElement;
+    if(!host) return;
+    let note=document.getElementById('gxPaintNote');
+    if(!note){ note=document.createElement('div'); note.id='gxPaintNote'; note.className='gx-paint-note'; }
+    note.textContent='Showing the first '+Number(shown).toLocaleString()+' of '+Number(total).toLocaleString()
+      +' rows — the table stays responsive this way. Copy / export still use all '+Number(total).toLocaleString()
+      +' loaded numbers, and filters + Show Records still apply to the complete list.';
+    if(note.parentElement!==host) host.appendChild(note);
+  }
+  function clearPaintNote(){ const n=document.getElementById('gxPaintNote'); if(n) n.remove(); }
+  /* Brief "Copied ✓" state on the button that was pressed (mirrors the SMS Numbers
+     copy button). Restores the original button markup after 1.5 s. UI only. */
+  function flashCopyDone(btn){
+    try{
+      if(!btn) return;
+      if(!btn.dataset.gxOrigHtml) btn.dataset.gxOrigHtml = btn.innerHTML;
+      btn.innerHTML = '<span style="font-size:12px;color:#10b981;font-weight:600;white-space:nowrap">Copied ✓</span>';
+      clearTimeout(btn.__gxCopyTimer);
+      btn.__gxCopyTimer = setTimeout(()=>{
+        try{ if(btn.dataset.gxOrigHtml){ btn.innerHTML = btn.dataset.gxOrigHtml; delete btn.dataset.gxOrigHtml; } }catch(e){}
+      }, 1500);
+    }catch(e){}
+  }
   function exportTable(btn, mode){
     const table=findExportTable(btn); if(!table){ alert('No table found to export.'); return; }
-    const data=tableToMatrix(table); if(!data.length){ alert('No rows to export.'); return; }
+    /* If the visible table was capped for speed (see PAINT_CAP), copy/CSV/Excel must
+       still cover every loaded row — build the matrix from the complete markup. */
+    let data;
+    const holder=table.tBodies && table.tBodies[0];
+    if(holder && holder.__gxFullRowsHtml){
+      try{
+        const t=document.createElement('table');
+        const head=table.querySelector('thead'); if(head) t.appendChild(head.cloneNode(true));
+        const body=document.createElement('tbody'); body.innerHTML=holder.__gxFullRowsHtml; t.appendChild(body);
+        data=tableToMatrix(t);
+      }catch(e){ data=null; }
+    }
+    if(!data || !data.length) data=tableToMatrix(table);
+    if(!data.length){ alert('No rows to export.'); return; }
     const title=(document.querySelector('.page.active h2')?.textContent||document.title||'powerx-export').trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'') || 'powerx-export';
     const csv=data.map(r=>r.map(csvEscape).join(',')).join('\n');
     if(mode==='copy'){
       const copyText=data.map(r=>r.join('\t')).join('\n');
-      const done=()=>showToast('Copied table data');
+      /* Same visual confirmation the SMS Numbers copy button already shows ("Copied ✓",
+         brief green tick), so every Copy button in every panel behaves identically.
+         Presentation only — the copied text and the copy mechanics are untouched. */
+      const done=()=>{ flashCopyDone(btn); showToast('Copied table data'); };
       const syncCopy=()=>{
         const ta=document.createElement('textarea');
         ta.value=copyText;
@@ -499,7 +613,7 @@
   }
   function initExportButtons(){
     bindExportButtons();
-    const mo=new MutationObserver(()=>{ clearTimeout(window.__msExportBindTimer); window.__msExportBindTimer=setTimeout(bindExportButtons,120); });
+    const mo=new MutationObserver(()=>{ if(window.__gxPainting) return; /* see paintRows */ clearTimeout(window.__msExportBindTimer); window.__msExportBindTimer=setTimeout(bindExportButtons,120); });
     mo.observe(document.body,{childList:true,subtree:true});
     document.addEventListener('click',(e)=>{
       const btn=e.target.closest('.exp-btns button'); if(!btn) return;
@@ -636,7 +750,7 @@
   }
   function initTimeLocalization(){
     localizeTimes(document);
-    const mo=new MutationObserver(muts=>{ clearTimeout(window.__msTzTimer); window.__msTzTimer=setTimeout(()=>muts.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1) localizeTimes(n); })),80); });
+    const mo=new MutationObserver(muts=>{ if(window.__gxPainting) return; /* see paintRows */ clearTimeout(window.__msTzTimer); window.__msTzTimer=setTimeout(()=>muts.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1) localizeTimes(n); })),80); });
     mo.observe(document.body,{childList:true,subtree:true});
   }
 
@@ -689,6 +803,9 @@
     name: () => STORE('ms_name'),
     ukDate: ukDateString,
     ukToday: () => ukDateString(new Date()),
+    /* P22: shared progressive table painter (see paintRows) + copy-feedback helper,
+       used by the SMS Numbers lists in all four panels. */
+    paintRows: paintRows,
     /* P14: role-scoped distinct CLI list for report C-Level filters */
     smsClis: async (a, b) => { try { const p = new URLSearchParams(); if (a && typeof a === 'object') { Object.entries(a).forEach(([k, v]) => { if (v) p.set(k, String(v)); }); } else { if (a) p.set('from', a); if (b) p.set('to', b); } const r = await API.get('/sms/clis' + (p.toString() ? '?' + p.toString() : '')); return { clis: r.clis || [], items: r.items || [], from: r.from, to: r.to }; } catch (e) { return { clis: [], items: [] }; } },
     /* P18: role-scoped Number list for report datalist (same dataset as /sms/paged) */
@@ -713,9 +830,17 @@
   };
   function initLengthSelectObserver(){
     enhancePageSizeOptions(document);
-    const mo=new MutationObserver(muts=>{ clearTimeout(window.__msLenOptTimer); window.__msLenOptTimer=setTimeout(()=>muts.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1){ enhancePageSizeOptions(n); removePdfPrintButtons(n); } })),120); });
+    const mo=new MutationObserver(muts=>{ if(window.__gxPainting) return; /* see paintRows */ clearTimeout(window.__msLenOptTimer); window.__msLenOptTimer=setTimeout(()=>muts.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1){ enhancePageSizeOptions(n); removePdfPrintButtons(n); } })),120); });
     mo.observe(document.body,{childList:true,subtree:true});
   }
+  /* After a big progressive paint, run the per-row passes ONCE over the finished
+     table (they were skipped while painting, see paintRows). */
+  window.addEventListener('gx-paint-done', (e)=>{
+    const root=(e && e.detail && e.detail.container) || document;
+    try{ localizeTimes(root); }catch(_){}
+    try{ bindExportButtons(); }catch(_){}
+    try{ enhancePageSizeOptions(root); removePdfPrintButtons(root); }catch(_){}
+  });
   document.addEventListener('DOMContentLoaded', ()=>{ initExportButtons(); initActionFeedback(); initPanelHistory(); initIdleLogout(); initTopbarControls(); initRoutePersistence(); initTimeLocalization(); initLengthSelectObserver(); });
 
   })();

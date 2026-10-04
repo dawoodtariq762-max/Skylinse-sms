@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-1" />
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-2" />
 <title>SKYLINE SMS — Admin Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
@@ -300,7 +300,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-1" alt="Skyline SMS" /></div>
+      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-2" alt="Skyline SMS" /></div>
       <div><h1>SKYLINE SMS</h1><small>Admin Panel</small></div>
     </div>
     <nav class="sb-nav">
@@ -1035,7 +1035,24 @@ function askDeleteSmsHistory(){
 function deleteResultText(r){
   return `✅ Deleted ${r.deleted||0} numbers. OTP deleted: ${r.deleted_sms||0}. OTP kept: ${r.preserved_sms||0}. Database optimized.`;
 }
+/* P22: in-progress banner for the number delete. A delete that also removes SMS/OTP
+   history can take a while on a large database; previously the button gave no feedback
+   at all, so a slow delete looked like a dead button and invited repeat clicks.
+   Presentation only — the request, the API and the delete logic are unchanged. */
+function gxBusyBanner(text){
+  let el=document.getElementById('gxBusy');
+  if(!el){
+    el=document.createElement('div'); el.id='gxBusy';
+    el.style.cssText='position:fixed;right:18px;bottom:18px;z-index:2147483001;display:flex;align-items:center;gap:10px;'
+      +'background:#161922;color:#eef1f7;border:1px solid rgba(190,195,205,.28);border-radius:12px;padding:11px 15px;'
+      +'font-size:13px;font-weight:600;box-shadow:0 12px 28px rgba(10,10,11,.28)';
+    document.body.appendChild(el);
+  }
+  el.textContent=text; el.style.display='flex';
+  return { done(){ try{ el.remove(); }catch(e){} } };
+}
 async function deleteSelectedNumbers(){
+  if(window.__gxDelBusy){ return; }
   const ids=getSelectedIds();
   if(!ids.length){alert('Please select numbers first.');return;}
   /* P18: ek clear confirmation modal — number only vs number + SMS/OTP history */
@@ -1043,11 +1060,15 @@ async function deleteSelectedNumbers(){
   if(!mode) return;
   const delete_sms=(mode==='sms');
   if(delete_sms && !confirm('PERMANENT DELETE: '+ids.length+' number(s) and ALL their SMS/OTP history will be removed from dashboard, reports and stats. This cannot be undone. Continue?')) return;
+  window.__gxDelBusy=1;
+  const busy=gxBusyBanner('Deleting '+ids.length+' number(s)'+(delete_sms?' and their SMS/OTP history':'')+' — please wait…');
   try{
     const r=await API.post('/numbers/delete',{ids,delete_sms});
+    busy.done();
     alert(deleteResultText(r));
     if(typeof refreshNumberDependentViews==='function') await refreshNumberDependentViews(); else loadNumbers();
-  }catch(e){ alert('❌ '+e.message); }
+  }catch(e){ busy.done(); alert('❌ '+e.message); }
+  finally{ window.__gxDelBusy=0; }
 }
 async function moveSelectedToTestPanel(){
   const ids=getSelectedIds();
@@ -1064,19 +1085,19 @@ async function moveSelectedToTestPanel(){
 async function openAllocAll(){const ids=getSelectedIds();if(!ids.length){alert('Please select numbers first (checkbox).');return;}
   try{ if(!usersData.manager.length) usersData.manager=await API.get('/users/manager'); }catch(e){}
   try{ if(!usersData.agent.length) usersData.agent=await API.get('/users/agent'); }catch(e){}
-  try{ if(!usersData.client?.length) usersData.client=await API.get('/users/client'); }catch(e){}
+  /* P22: Admin allocates numbers to Manager or Agent only. Clients are NOT listed here —
+     client numbers keep coming through the Agent -> Client workflow (unchanged). */
   const managerOpts=(usersData.manager||[]).map(m=>({ value: String(m.id), label: `Manager: ${m.username}`, search: `Manager ${m.username} ${m.name||''}` }));
   const agentOpts=(usersData.agent||[]).map(a=>({ value: String(a.id), label: `Agent: ${a.username}`, search: `Agent ${a.username} ${a.name||''}` }));
-  const clientOpts=(usersData.client||[]).map(c=>({ value: String(c.id), label: `Client: ${c.username}`, search: `Client ${c.username} ${c.name||''}` }));
-  const items=[...managerOpts,...agentOpts,...clientOpts];
+  const items=[...managerOpts,...agentOpts];
   items.sort((a,b)=>a.label.localeCompare(b.label,undefined,{sensitivity:'base'}));
 
   if(window.renderSearchSelect){
     window.renderSearchSelect('aaTargetDropdownWrap',{
       id:'aaClient',
       name:'aaClient',
-      placeholder:'Please select manager, agent, client',
-      searchPlaceholder:'Search manager, agent, client...',
+      placeholder:'Please select manager or agent',
+      searchPlaceholder:'Search manager or agent...',
       style:'width:100%',
       items:items,
       value:'',
@@ -1084,7 +1105,7 @@ async function openAllocAll(){const ids=getSelectedIds();if(!ids.length){alert('
     });
   } else {
     const sel=document.getElementById('aaTargetDropdownWrap');
-    sel.innerHTML=`<select id="aaClient" style="width:100%" onchange="aaRefreshDefaultRate()"><option value="">Please select manager, agent, client</option>${items.map(it=>`<option value="${it.value}">${it.label}</option>`).join('')}</select>`;
+    sel.innerHTML=`<select id="aaClient" style="width:100%" onchange="aaRefreshDefaultRate()"><option value="">Please select manager or agent</option>${items.map(it=>`<option value="${it.value}">${it.label}</option>`).join('')}</select>`;
   }
 
   document.getElementById('aaPayterm').value='weekly_7_1';document.getElementById('aaPayout').value='0';
@@ -2525,7 +2546,7 @@ async function renderNumbers(){
     client:r.client_name||'', ownerType:(r.manager_name?'manager':(r.agent_name?'agent':(r.client_name?'client':'unallocated'))),
     myPay:r.payterm||'Weekly', myVal:r.effective_rate||r.rate||'', payType:r.payterm||'Weekly', payVal:'$ '+(r.payout||'0'), sd:r.sd_limit||0, sw:r.sw_limit||0
   }));
-  document.getElementById('numbersBody').innerHTML=rows.map(r=>`<tr>
+  const __rowsHtml=(rows.map(r=>`<tr>
     ${window.PX_PANEL_MODE==='admin_light'?'':`<td data-label="Selected"><input type="checkbox" class="rowchk" data-id="${r._id}" onchange="updateSelInfo()"/></td>`}
     <td data-label="Range">${r.range}</td><td data-label="Prefix" class="muted">${r.prefix||'—'}</td>
     <td data-label="Country" class="muted">${r.country||'—'}</td><td data-label="Number" class="gx-num"><b>${r.number}</b></td>
@@ -2533,7 +2554,11 @@ async function renderNumbers(){
     <td data-label="Client">${r.client?`<span class="tag ${r.ownerType==='agent'?'tag-agt':'tag-mgr'}">${r.client}${window.PX_PANEL_MODE==='admin_light'?'':` <span class="x" onclick="unassignOne(${r._id})">✕</span>`}</span>`:`<span class="tag tag-gray">—</span>`}</td>
     <td data-label="My Rate">${r.myPay}<br><span class="cell-sub cell-money">${r.myVal}</span></td>
     <td data-label="Payout">${r.payType}<br><span class="cell-sub">${r.payVal}</span></td>
-    <td data-label="Limits" class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="${window.PX_PANEL_MODE==='admin_light'?10:11}" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`;
+    <td data-label="Limits" class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="${window.PX_PANEL_MODE==='admin_light'?10:11}" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`);
+  /* P22: paint in chunks so a very large 'Show Records' page (All) cannot freeze
+     the browser; small pages take the identical single-assignment path. */
+  if(window.API&&API.paintRows){ await API.paintRows(document.getElementById('numbersBody'), __rowsHtml, document.getElementById('numbersInfo'), 'Rendering {n} of {t} numbers…'); }
+  else { document.getElementById('numbersBody').innerHTML=__rowsHtml; }
   const currentNumbers = (numbersData || []).map(r => String(r.number || '').trim()).filter(Boolean);
   const countEl = document.getElementById('numPageCount');
   if(countEl) countEl.textContent = currentNumbers.length.toLocaleString();
@@ -3152,10 +3177,11 @@ async function renderSmsReport(){
 
 /* =============== ADMIN RANGE ALLOCATION FINAL OVERRIDES =============== */
 function adminAllocTargets(){
+  /* P22: Admin allocation targets = Managers and Agents only (no direct Admin -> Client).
+     Client numbers continue to be allocated by their Agent. */
   const mgrs=(usersData.manager||[]).map(u=>({id:u.id,label:'Manager: '+(u.name?u.name+' ('+u.username+')':u.username),username:u.username,role:'manager'}));
   const ags=(usersData.agent||[]).map(u=>({id:u.id,label:'Agent: '+(u.name?u.name+' ('+u.username+')':u.username),username:u.username,role:'agent'}));
-  const cls=(usersData.client||[]).map(u=>({id:u.id,label:'Client: '+(u.name?u.name+' ('+u.username+')':u.username),username:u.username,role:'client'}));
-  const all = mgrs.concat(ags).concat(cls);
+  const all = mgrs.concat(ags);
   all.sort((a,b)=>a.label.localeCompare(b.label));
   return all;
 }

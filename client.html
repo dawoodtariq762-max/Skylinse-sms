@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-1" />
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-2" />
 <title>SKYLINE SMS — Client Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .copy-otp-btn{border:1px solid #ddd;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
@@ -279,7 +279,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-1" alt="Skyline SMS" /></div>
+      <div class="logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-2" alt="Skyline SMS" /></div>
       <div><h1>SKYLINE SMS</h1><small>Client Panel</small></div>
     </div>
     <nav class="sb-nav" id="tabs">
@@ -607,7 +607,11 @@ async function renderNumbers(){
   const seq=++cliNumSeq;let data={rows:[],total:0,page:1,limit:25,totalPages:1};try{data=await API.get('/numbers?'+params.toString())}catch(e){console.warn(e)}if(seq!==cliNumSeq)return;
   state.page=data.page||1;state.totalPages=data.totalPages||1;
   numData=(data.rows||[]).map(r=>({range:r.range_name||'',number:r.number,payterm:r.payterm||'Weekly',status:'Active',payout:r.payout,last_sms_at:r.last_sms_at||'',sd:r.sd_limit||0,sw:r.sw_limit||0}));
-  body.innerHTML=numData.map(r=>`<tr><td>${r.range}</td><td><b>${r.number}</b></td><td><span class="tag tag-gray">${r.payterm}</span></td><td><span class="tag tag-green">${r.status}</span></td><td data-label="Payout"><b>${cliPay(r.payout)}</b></td><td><span class="last-sms">${r.last_sms_at||'—'}</span></td><td class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No allocated numbers found</td></tr>`;
+  const __rowsHtml=(numData.map(r=>`<tr><td>${r.range}</td><td><b>${r.number}</b></td><td><span class="tag tag-gray">${r.payterm}</span></td><td><span class="tag tag-green">${r.status}</span></td><td data-label="Payout"><b>${cliPay(r.payout)}</b></td><td><span class="last-sms">${r.last_sms_at||'—'}</span></td><td class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No allocated numbers found</td></tr>`);
+  /* P22: paint in chunks so a very large 'Show Records' page (All) cannot freeze
+     the browser; small pages take the identical single-assignment path. */
+  if(window.API&&API.paintRows){ await API.paintRows(body, __rowsHtml, numInfo, 'Rendering {n} of {t} numbers…'); }
+  else { body.innerHTML=__rowsHtml; }
   const currentNumbers = (numData || []).map(r => String(r.number || '').trim()).filter(Boolean);
   const countEl = document.getElementById('numPageCount');
   if(countEl) countEl.textContent = currentNumbers.length.toLocaleString();
