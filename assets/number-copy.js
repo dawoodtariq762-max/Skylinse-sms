@@ -11,7 +11,7 @@
   function liveRegion() {
     if (live && live.isConnected) return live;
     live = document.createElement('div');
-    live.className = 'gx-copy-live';
+    live.className = 'ams-copy-live';
     live.setAttribute('role', 'status');
     live.setAttribute('aria-live', 'polite');
     document.body.appendChild(live);
@@ -44,7 +44,7 @@
   // Locates the number cell inside an existing row. Returns {number, host} or null.
   // Reads only what the existing renderer already printed; nothing is recalculated.
   function findNumber(row) {
-    var cell = row.querySelector('td.gx-num');
+    var cell = row.querySelector('td.ams-num');
     if (!cell) {
       var cells = row.querySelectorAll('td');
       for (var i = 0; i < cells.length; i++) {
@@ -62,27 +62,14 @@
   function makeButton(number) {
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'gx-copy-inline';
+    btn.className = 'ams-copy-inline';
     btn.dataset.copy = number;
     btn.title = 'Copy number';
     btn.setAttribute('aria-label', 'Copy number ' + number);
     btn.innerHTML = GLYPH_COPY;
     return btn;
   }
-  /* Adds the copy control to ONE row. Same control, same click behaviour, same
-     clipboard call as before — only the timing changed: rows get their button when
-     they are about to be seen (see start()) instead of all rows at once. */
-  function decorateRow(row) {
-    if (!row || row.dataset.gxCopyDone === '1') return;
-    var found = findNumber(row);
-    if (!found) return;
-    found.host.appendChild(makeButton(found.number));
-    row.dataset.gxCopyDone = '1';
-  }
-  /* Mark every row of the numbers tables for viewport-scoped decoration. This pass
-     inserts NOTHING into the DOM (that is what kept a huge table re-laying out), so it
-     is cheap enough to re-run after the list re-renders. */
-  function scanRows() {
+  function decorate() {
     for (var t = 0; t < TABLES.length; t++) {
       var body = document.getElementById(TABLES[t]);
       if (!body) continue;
@@ -90,16 +77,16 @@
       var limit = Math.min(rows.length, MAX_ROWS);
       for (var i = 0; i < limit; i++) {
         var row = rows[i];
-        if (!row || row.dataset.gxCopyDone === '1' || row.dataset.gxCopyObs === '1') continue;
-        row.dataset.gxCopyObs = '1';
-        if (io) { try { io.observe(row); } catch (e) { decorateRow(row); } }
-        else decorateRow(row);
+        if (!row || row.dataset.amsCopyDone === '1') continue;
+        var found = findNumber(row);
+        if (!found) continue;
+        found.host.appendChild(makeButton(found.number));
+        row.dataset.amsCopyDone = '1';
       }
     }
   }
-  var io = null;
   function onClick(event) {
-    var btn = event.target && event.target.closest ? event.target.closest('.gx-copy-inline') : null;
+    var btn = event.target && event.target.closest ? event.target.closest('.ams-copy-inline') : null;
     if (!btn) return;
     event.preventDefault();
     event.stopPropagation();
@@ -113,8 +100,8 @@
       btn.title = 'Copied';
       btn.setAttribute('aria-label', 'Copied number ' + number);
       announce('Number copied: ' + number);
-      clearTimeout(btn._gxCopyTimer);
-      btn._gxCopyTimer = setTimeout(function () {
+      clearTimeout(btn._amsCopyTimer);
+      btn._amsCopyTimer = setTimeout(function () {
         btn.classList.remove('is-copied');
         btn.innerHTML = GLYPH_COPY;
         btn.title = 'Copy number';
@@ -124,34 +111,16 @@
   }
   function start() {
     document.addEventListener('click', onClick, true);
-    /* Viewport-scoped decoration (performance): the previous version gave every row of
-       the list its own copy button up front — up to MAX_ROWS inserts plus a full-table
-       re-scan on every DOM change. On a large "Show Records = All" page that was the
-       main reason the tab froze. Now a row gets its button when it comes near the
-       viewport, so a 50k-row page costs the same as a 25-row page. */
-    if (window.IntersectionObserver) {
-      io = new IntersectionObserver(function (entries) {
-        for (var i = 0; i < entries.length; i++) {
-          var e = entries[i];
-          if (!e.isIntersecting) continue;
-          try { io.unobserve(e.target); } catch (err) { }
-          decorateRow(e.target);
-        }
-      }, { rootMargin: '400px 0px' });
-    }
     var scheduled = false;
     function schedule() {
       if (scheduled) return;
       scheduled = true;
-      setTimeout(function () { scheduled = false; if (window.__gxPainting) return; /* big paint in progress — the paint-done event will re-scan */ try { scanRows(); } catch (e) { } }, 150);
+      setTimeout(function () { scheduled = false; try { decorate(); } catch (e) {} }, 120);
     }
     if (window.MutationObserver) {
-      /* Only marks rows for observation — never inserts anything, so it cannot feed
-         itself the way the old decorate() did. */
       new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
     }
-    window.addEventListener('gx-paint-done', function () { try { scanRows(); } catch (e) { } });
-    scanRows();
+    decorate();
     liveRegion();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

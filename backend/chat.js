@@ -122,6 +122,10 @@ module.exports = function mountChat(app, deps) {
       FROM users u
       LEFT JOIN users p ON p.id = u.parent_id
       LEFT JOIN chat_credentials c ON c.user_id = u.id
+      /* §10A: the seeded 'test' panel account is not a real Agent/Manager/Admin
+         and must not appear as an account entry in the PIN management list. */
+      WHERE u.role IN ('admin','manager','agent')
+        AND LOWER(u.username) <> 'test'
       ORDER BY u.role, u.username COLLATE NOCASE
     `);
     res.json({ ok: true, accounts: rows });

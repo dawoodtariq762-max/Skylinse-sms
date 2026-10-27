@@ -1,0 +1,269 @@
+/* ==========================================================================
+   Skyline SMS — Unified design layer (load LAST, after skyline-panel.css)
+   Frontend-only. Same look for Admin / Manager / Agent / Client / Management /
+   Payment / Panel Sharing / Test. Branding runtime vars (--br-*) still win
+   when set, because every colour below is var(--br-x, fallback).
+   ========================================================================== */
+:root{
+  --u-bg:#f6f7f9;
+  --u-surface:#ffffff;
+  --u-surface-2:#f6f7f9;
+  --u-soft:#f0f2f6;
+  --u-line:#e4e6ea;
+  --u-line-2:#cfd2d8;
+  --u-ink:#191a1f;
+  --u-ink-2:#424449;
+  --u-muted:#8b8a8e;
+
+  --u-brand:#4064e6;
+  --u-brand-d:#3256df;
+  --u-brand-soft:#e0ecfc;
+
+  /* the rail stays deep navy in light mode; only the working surfaces go light */
+  --u-side:#0d111d;
+  --u-side-2:#0a0e18;
+  --u-side-text:#c7ccdc;
+  --u-side-muted:#8a8e9b;
+  --u-side-hover:#1a2030;
+  --u-side-line:#080b14;
+
+  /* semantic: solid (white text) + tint (dark text) — all >= 4.5:1 */
+  --u-ok:#17b380;     --u-ok-bg:#e3f6ef;   --u-ok-bd:#a8dcc7;   --u-ok-tx:#0e7a57;
+  --u-warn:#8a5608;   --u-warn-bg:#fcf1e2; --u-warn-bd:#f2d5a5; --u-warn-tx:#8a5608;
+  --u-bad:#d9534f;    --u-bad-bg:#fbecec;  --u-bad-bd:#f1c2c0;  --u-bad-tx:#a82e2a;
+  --u-info:#4064e6;   --u-info-bg:#e0ecfc; --u-info-bd:#b4dafb; --u-info-tx:#3256df;
+  --u-pur:#5b4bd8;    --u-pur-bg:#eeedfc;  --u-pur-bd:#cec7f6;  --u-pur-tx:#4b3fc4;
+  --u-teal:#10968f;   --u-teal-bg:#dff5f3; --u-teal-bd:#a6e1db;
+  --u-gray-bg:#f0f2f6;--u-gray-bd:#e4e6ea; --u-gray-tx:#6e6d71;
+
+  --u-r:14px; --u-r-sm:10px;
+  --u-shadow:0 1px 2px rgba(25,26,31,.05),0 6px 18px rgba(25,26,31,.05);
+  --u-shadow-lg:0 24px 60px rgba(25,26,31,.22);
+}
+
+/* ---------- page + typography ---------- */
+html body.ams-panel.ams-light{
+  background:var(--br-general-content-bg,var(--u-bg))!important;
+  color:var(--br-general-text,var(--u-ink))!important;
+  font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif!important;
+}
+html body.ams-panel.ams-light .page-head h2,html body.ams-panel.ams-light .head h2,
+html body.ams-panel.ams-light .card-head h3{color:var(--br-general-heading,var(--u-ink))!important;}
+html body.ams-panel.ams-light .breadcrumb,html body.ams-panel.ams-light .crumb,
+html body.ams-panel.ams-light .muted,html body.ams-panel.ams-light .cell-sub,
+html body.ams-panel.ams-light .stat-info p,html body.ams-panel.ams-light .card-head .sub,
+html body.ams-panel.ams-light .form-group .hint,html body.ams-panel.ams-light .table-foot .info,
+html body.ams-panel.ams-light .bulk-bar .info,html body.ams-panel.ams-light .tb-date,html body.ams-panel.ams-light .clock{
+  color:var(--br-general-text-muted,var(--u-muted))!important;
+}
+html body.ams-panel.ams-light .page-head,html body.ams-panel.ams-light .head{border-bottom:1px solid var(--u-line)!important;}
+
+/* ---------- sidebar / rail (dark navy, readable) ---------- */
+html body.ams-panel.ams-light .sidebar,html body.ams-panel.ams-light .rail,html body.ams-panel.ams-light .side{
+  background:var(--br-sidebar-bg,var(--u-side))!important;
+  border-right:1px solid var(--u-side-line)!important;
+  color:var(--br-sidebar-text,var(--u-side-text))!important;
+}
+html body.ams-panel.ams-light .sb-brand,html body.ams-panel.ams-light .rail-brand,html body.ams-panel.ams-light .brand,
+html body.ams-panel.ams-light .brand-text{border-bottom:1px solid var(--u-side-line)!important;}
+html body.ams-panel.ams-light :is(.sidebar,.rail,.side) :is(.sb-brand h1,.brand h1,.brand b,.brand-text h1){color:var(--u-ink)!important;}
+html body.ams-panel.ams-light :is(.sidebar,.rail,.side) :is(.sb-brand small,.brand small,.brand .muted,.brand-text small){color:var(--u-side-muted)!important;}
+html body.ams-panel.ams-light .sb-section,html body.ams-panel.ams-light .sb-sec,html body.ams-panel.ams-light .sec{color:var(--u-side-muted)!important;}
+html body.ams-panel.ams-light :is(.sidebar,.rail,.side) :is(.sb-logo,.logo){background:transparent!important;border:0!important;}
+html body.ams-panel.ams-light .sidebar .nav-item,html body.ams-panel.ams-light .sidebar .sub-item,
+html body.ams-panel.ams-light .sidebar .tab,html body.ams-panel.ams-light .sidebar .item,
+html body.ams-panel.ams-light .rail .ritem,html body.ams-panel.ams-light .rail .rsubitem,
+html body.ams-panel.ams-light .side .item{
+  color:var(--br-sidebar-text,var(--u-side-text))!important;background:transparent!important;
+}
+html body.ams-panel.ams-light .sidebar .nav-item svg,html body.ams-panel.ams-light .sidebar .sub-item svg,
+html body.ams-panel.ams-light .sidebar .tab svg,html body.ams-panel.ams-light .rail .ritem svg,
+html body.ams-panel.ams-light .rail .rsubitem svg{stroke:currentColor!important;}
+html body.ams-panel.ams-light .sidebar .nav-item:hover,html body.ams-panel.ams-light .sidebar .sub-item:hover,
+html body.ams-panel.ams-light .sidebar .tab:hover,html body.ams-panel.ams-light .sidebar .item:hover,
+html body.ams-panel.ams-light .rail .ritem:hover,html body.ams-panel.ams-light .rail .rsubitem:hover,
+html body.ams-panel.ams-light .side .item:hover{
+  background:var(--br-sidebar-hover-bg,var(--u-side-hover))!important;color:#edf1fa!important;
+}
+html body.ams-panel.ams-light .sidebar .nav-item.active,html body.ams-panel.ams-light .sidebar .sub-item.active,
+html body.ams-panel.ams-light .sidebar .tab.active,html body.ams-panel.ams-light .sidebar .item.active,
+html body.ams-panel.ams-light .rail .ritem.active,html body.ams-panel.ams-light .rail .rsubitem.active,
+html body.ams-panel.ams-light .side .item.active{
+  background:var(--br-sidebar-active-bg,#241e42)!important;
+  color:var(--br-sidebar-active-text,#edf1fa)!important;
+  box-shadow:none;
+}
+html body.ams-panel.ams-light .sidebar .nav-item.active svg,html body.ams-panel.ams-light .sidebar .sub-item.active svg,
+html body.ams-panel.ams-light .sidebar .tab.active svg,html body.ams-panel.ams-light .rail .ritem.active svg{stroke:#a79be8!important;color:#a79be8!important;}
+html body.ams-panel.ams-light .sub-item .dot{background:var(--u-side-muted)!important;}
+html body.ams-panel.ams-light .sub-item.active .dot{background:#a79be8!important;}
+
+/* ---------- top bar + horizontal tabs ---------- */
+html body.ams-panel.ams-light .topbar,html body.ams-panel.ams-light .tb1,html body.ams-panel.ams-light .top,html body.ams-panel.ams-light .appbar{
+  background:var(--br-header-bg,var(--u-surface))!important;
+  color:var(--br-header-text,var(--u-ink))!important;
+  border-bottom:1px solid var(--u-line)!important;
+}
+html body.ams-panel.ams-light .tb-btn,html body.ams-panel.ams-light .hamburger,html body.ams-panel.ams-light .hamb{
+  background:var(--u-soft)!important;color:var(--u-ink-2)!important;}
+html body.ams-panel.ams-light .tb-btn:hover{background:var(--u-line)!important;}
+html body.ams-panel.ams-light .tb-btn .badge{background:var(--u-bad)!important;border-color:var(--u-surface)!important;}
+html body.ams-panel.ams-light .avatar,html body.ams-panel.ams-light .who .av{
+  background:var(--u-brand-soft)!important;color:var(--u-brand-d)!important;border:2px solid var(--u-line-2)!important;}
+html body.ams-panel.ams-light .navtab{color:var(--u-muted)!important;background:transparent!important;}
+html body.ams-panel.ams-light .navtab:hover{color:var(--u-ink)!important;}
+html body.ams-panel.ams-light .navtab.active{color:var(--u-brand-d)!important;border-bottom-color:var(--u-brand)!important;}
+html body.ams-panel.ams-light .navtab svg{stroke:currentColor!important;}
+
+/* ---------- surfaces ---------- */
+html body.ams-panel.ams-light .card,html body.ams-panel.ams-light .toolbar,html body.ams-panel.ams-light .table-wrap,
+html body.ams-panel.ams-light .stat-card:not(.dash-metric),html body.ams-panel.ams-light .box,
+html body.ams-panel.ams-light .metric,html body.ams-panel.ams-light .table{
+  background:var(--br-card-bg,var(--u-surface))!important;
+  color:var(--u-ink)!important;
+  border:1px solid var(--br-card-border,var(--u-line))!important;
+  border-radius:var(--u-r)!important;
+  box-shadow:var(--br-card-shadow,var(--u-shadow));
+}
+html body.ams-panel.ams-light .stat-card:not(.dash-metric):hover{box-shadow:0 10px 28px rgba(25,26,31,.10);}
+html body.ams-panel.ams-light .stat-info h3,html body.ams-panel.ams-light .metric h3{color:var(--u-ink)!important;}
+
+/* gradient KPI tiles: deep tones so the white text always reads */
+html body.ams-panel.ams-light .stat-card.dash-metric{color:#fff!important;border:0!important;box-shadow:0 10px 24px rgba(25,26,31,.14)!important;}
+html body.ams-panel.ams-light .stat-card.dash-metric.d-blue{background:linear-gradient(135deg,#4064e6,#3256df)!important;}
+html body.ams-panel.ams-light .stat-card.dash-metric.d-green{background:linear-gradient(135deg,#19a877,#17b380)!important;}
+html body.ams-panel.ams-light .stat-card.dash-metric.d-orange{background:linear-gradient(135deg,#e0912f,#c67c1f)!important;}
+html body.ams-panel.ams-light .stat-card.dash-metric.d-pink{background:linear-gradient(135deg,#b9385f,#a12f52)!important;}
+html body.ams-panel.ams-light .stat-card.dash-metric .stat-info p,
+html body.ams-panel.ams-light .stat-card.dash-metric .stat-info h3,
+html body.ams-panel.ams-light .stat-card.dash-metric .stat-info span{color:#fff!important;}
+html body.ams-panel.ams-light .stat-card.dash-metric .stat-info p{opacity:.9;}
+html body.ams-panel.ams-light .stat-card.dash-metric::before,html body.ams-panel.ams-light .stat-card.dash-metric::after{background:rgba(255,255,255,.13)!important;}
+html body.ams-panel.ams-light .dash-go{color:#fff!important;border-color:rgba(255,255,255,.55)!important;}
+
+/* ---------- stat icons: dark-theme pastels -> readable tones on tint ---------- */
+html body.ams-panel.ams-light .stat-icon,html body.ams-panel.ams-light .si{background:var(--u-info-bg)!important;}
+html body.ams-panel.ams-light .si-blue,html body.ams-panel.ams-light .si.bl,html body.ams-panel.ams-light .si.b{background:#e0ecfc!important;}
+html body.ams-panel.ams-light .si-purple,html body.ams-panel.ams-light .si.v,html body.ams-panel.ams-light .si.in{background:#eeedfc!important;}
+html body.ams-panel.ams-light .si-green,html body.ams-panel.ams-light .si.gr,html body.ams-panel.ams-light .si.e{background:#e3f6ef!important;}
+html body.ams-panel.ams-light .si-amber,html body.ams-panel.ams-light .si.am,html body.ams-panel.ams-light .si.a{background:#fcf1e2!important;}
+html body.ams-panel.ams-light .si-cyan,html body.ams-panel.ams-light .si.sk,html body.ams-panel.ams-light .si.t{background:#dff5f3!important;}
+html body.ams-panel.ams-light .si-red,html body.ams-panel.ams-light .si.rd,html body.ams-panel.ams-light .si.ro,html body.ams-panel.ams-light .si.r{background:#fbecec!important;}
+html body.ams-panel.ams-light .si-blue svg,html body.ams-panel.ams-light .si.bl svg,html body.ams-panel.ams-light .si.b svg{stroke:#3256df!important;}
+html body.ams-panel.ams-light .si-purple svg,html body.ams-panel.ams-light .si.v svg,html body.ams-panel.ams-light .si.in svg{stroke:#4b3fc4!important;}
+html body.ams-panel.ams-light .si-green svg,html body.ams-panel.ams-light .si.gr svg,html body.ams-panel.ams-light .si.e svg{stroke:#17b380!important;}
+html body.ams-panel.ams-light .si-amber svg,html body.ams-panel.ams-light .si.am svg,html body.ams-panel.ams-light .si.a svg{stroke:#8a5608!important;}
+html body.ams-panel.ams-light .si-cyan svg,html body.ams-panel.ams-light .si.sk svg,html body.ams-panel.ams-light .si.t svg{stroke:#10968f!important;}
+html body.ams-panel.ams-light .si-red svg,html body.ams-panel.ams-light .si.rd svg,html body.ams-panel.ams-light .si.ro svg,html body.ams-panel.ams-light .si.r svg{stroke:#a82e2a!important;}
+
+/* ---------- buttons ---------- */
+html body.ams-panel.ams-light .btn{border-radius:10px!important;font-weight:650!important;border:1px solid transparent;
+  background:var(--u-brand);color:#fff!important;transition:background .15s,transform .14s,box-shadow .15s;}
+html body.ams-panel.ams-light .btn:hover{background:var(--u-brand-d);box-shadow:0 6px 16px rgba(50,86,223,.28);}
+html body.ams-panel.ams-light .btn-blue{background:#4064e6!important;color:#fff!important;}
+html body.ams-panel.ams-light .btn-blue:hover{background:#3256df!important;}
+html body.ams-panel.ams-light .btn-green,html body.ams-panel.ams-light .btn.green{background:#17b380!important;color:#fff!important;}
+html body.ams-panel.ams-light .btn-green:hover,html body.ams-panel.ams-light .btn.green:hover{background:#0e7a57!important;box-shadow:0 6px 16px rgba(4,120,87,.28);}
+html body.ams-panel.ams-light .btn-red,html body.ams-panel.ams-light .btn.red{background:#d9534f!important;color:#fff!important;}
+html body.ams-panel.ams-light .btn-red:hover,html body.ams-panel.ams-light .btn.red:hover{background:#b93834!important;box-shadow:0 6px 16px rgba(220,38,38,.28);}
+html body.ams-panel.ams-light .btn-purple{background:#5b4bd8!important;color:#fff!important;}
+html body.ams-panel.ams-light .btn-purple:hover{background:#4b3fc4!important;box-shadow:0 6px 16px rgba(75,63,196,.28);}
+html body.ams-panel.ams-light .btn-teal{background:#10968f!important;color:#fff!important;}
+html body.ams-panel.ams-light .btn-teal:hover{background:#0f6e66!important;}
+html body.ams-panel.ams-light .btn-rose{background:#d9534f!important;color:#fff!important;}
+html body.ams-panel.ams-light .btn-rose:hover{background:#b93834!important;}
+html body.ams-panel.ams-light .btn-amber{background:#d98b2b!important;color:#4a2f06!important;}
+html body.ams-panel.ams-light .btn-amber:hover{background:#c67c1f!important;box-shadow:0 6px 16px rgba(245,158,11,.30);}
+html body.ams-panel.ams-light .btn-ghost,html body.ams-panel.ams-light .btn.ghost{
+  background:var(--u-surface)!important;color:var(--u-ink-2)!important;border:1px solid var(--u-line-2)!important;box-shadow:none;}
+html body.ams-panel.ams-light .btn-ghost:hover,html body.ams-panel.ams-light .btn.ghost:hover{background:var(--u-soft)!important;color:var(--u-ink)!important;box-shadow:none;}
+html body.ams-panel.ams-light .btn:disabled,html body.ams-panel.ams-light .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+html body.ams-panel.ams-light .btn:focus-visible,html body.ams-panel.ams-light .icon-btn:focus-visible,
+html body.ams-panel.ams-light .nav-item:focus-visible{outline:3px solid rgba(50,86,223,.35);outline-offset:2px;}
+
+html body.ams-panel.ams-light .icon-btn{border-radius:8px!important;}
+html body.ams-panel.ams-light .icon-btn svg{stroke:#fff!important;}
+html body.ams-panel.ams-light .icon-btn.btn-amber svg,html body.ams-panel.ams-light .icon-btn.ib-amber svg{stroke:#4a2f06!important;}
+html body.ams-panel.ams-light .icon-btn.ib-blue{background:#4064e6!important;}
+html body.ams-panel.ams-light .icon-btn.ib-red{background:#d9534f!important;}
+html body.ams-panel.ams-light .icon-btn.ib-amber{background:#d98b2b!important;}
+html body.ams-panel.ams-light .copy-otp-btn{background:var(--u-surface)!important;color:var(--u-brand-d)!important;border:1px solid var(--u-info-bd)!important;}
+html body.ams-panel.ams-light .copy-otp-btn:hover{background:var(--u-info-bg)!important;}
+
+/* ---------- forms ---------- */
+html body.ams-panel.ams-light input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),
+html body.ams-panel.ams-light select,html body.ams-panel.ams-light textarea{
+  background:var(--br-form-input-bg,var(--u-surface))!important;
+  color:var(--br-form-input-text,var(--u-ink))!important;
+  border:1px solid var(--br-form-input-border,var(--u-line-2))!important;
+  border-radius:10px!important;
+}
+html body.ams-panel.ams-light input::placeholder,html body.ams-panel.ams-light textarea::placeholder{color:var(--br-form-placeholder,#a9a9ad)!important;opacity:1;}
+html body.ams-panel.ams-light input:focus,html body.ams-panel.ams-light select:focus,html body.ams-panel.ams-light textarea:focus{
+  border-color:var(--br-form-focus,var(--u-brand))!important;box-shadow:0 0 0 3px rgba(50,86,223,.18)!important;outline:none!important;}
+html body.ams-panel.ams-light input:disabled,html body.ams-panel.ams-light select:disabled,html body.ams-panel.ams-light textarea:disabled{background:var(--u-soft)!important;color:var(--u-muted)!important;}
+html body.ams-panel.ams-light label,html body.ams-panel.ams-light .form-group label,html body.ams-panel.ams-light .filter-row label,
+html body.ams-panel.ams-light .tc-left label,html body.ams-panel.ams-light .tc-right label{color:var(--br-form-label,var(--u-ink-2))!important;}
+html body.ams-panel.ams-light .upload-box{background:var(--u-surface-2)!important;border-color:var(--u-line-2)!important;color:var(--u-ink-2)!important;}
+html body.ams-panel.ams-light .upload-box:hover{border-color:var(--u-brand)!important;background:var(--u-brand-soft)!important;}
+
+/* ---------- tables ---------- */
+html body.ams-panel.ams-light table{color:var(--br-table-text,var(--u-ink))!important;}
+html body.ams-panel.ams-light thead th{background:var(--br-table-header-bg,var(--u-surface-2))!important;
+  color:var(--br-table-header-text,var(--u-ink-2))!important;border-bottom:1px solid var(--u-line-2)!important;}
+html body.ams-panel.ams-light tbody tr td{background:var(--br-table-row-bg,var(--u-surface))!important;border-bottom:1px solid var(--u-line)!important;}
+html body.ams-panel.ams-light tbody tr:nth-child(even) td{background:var(--br-table-row-alt-bg,#fbfbfd)!important;}
+html body.ams-panel.ams-light tbody tr:hover td{background:var(--br-table-row-hover-bg,#f0f4fe)!important;}
+html body.ams-panel.ams-light tbody tr.sel td,html body.ams-panel.ams-light tbody tr.selected-row td{background:var(--br-table-row-selected-bg,#e0ecfc)!important;}
+html body.ams-panel.ams-light .table-foot{border-top:1px solid var(--u-line)!important;background:var(--u-surface)!important;}
+html body.ams-panel.ams-light .pagination button,html body.ams-panel.ams-light .pager button{
+  background:var(--u-surface)!important;color:var(--u-ink-2)!important;border:1px solid var(--u-line-2)!important;}
+html body.ams-panel.ams-light .pagination button:hover:not(:disabled),html body.ams-panel.ams-light .pager button:hover:not(:disabled){background:var(--u-soft)!important;}
+html body.ams-panel.ams-light .pagination button.active,html body.ams-panel.ams-light .pager button.active{
+  background:var(--u-brand)!important;color:#fff!important;border-color:var(--u-brand)!important;}
+html body.ams-panel.ams-light .drill .dchip{background:var(--u-surface)!important;color:var(--u-ink-2)!important;border-color:var(--u-line-2)!important;}
+html body.ams-panel.ams-light .drill .dchip:hover{background:var(--u-brand-soft)!important;color:var(--u-brand-d)!important;border-color:var(--u-info-bd)!important;}
+html body.ams-panel.ams-light .chip,html body.ams-panel.ams-light .ams-chip{background:var(--u-soft)!important;color:var(--u-ink-2)!important;border:1px solid var(--u-line)!important;}
+html body.ams-panel.ams-light tfoot.ams-tot td{background:var(--u-surface-2)!important;color:var(--u-ink)!important;}
+html body.ams-panel.ams-light .money,html body.ams-panel.ams-light .cell-money{color:var(--u-ink)!important;font-variant-numeric:tabular-nums;}
+html body.ams-panel.ams-light .mono{color:inherit;}
+
+/* ---------- tags / status pills (tint bg + dark text) ---------- */
+html body.ams-panel.ams-light .tag{background:var(--u-gray-bg);color:var(--u-gray-tx);border:1px solid var(--u-gray-bd)!important;}
+html body.ams-panel.ams-light .tag-green{background:var(--u-ok-bg)!important;color:var(--u-ok-tx)!important;border-color:var(--u-ok-bd)!important;}
+html body.ams-panel.ams-light .tag-red{background:var(--u-bad-bg)!important;color:var(--u-bad-tx)!important;border-color:var(--u-bad-bd)!important;}
+html body.ams-panel.ams-light .tag-amber{background:var(--u-warn-bg)!important;color:var(--u-warn-tx)!important;border-color:var(--u-warn-bd)!important;}
+html body.ams-panel.ams-light .tag-blue,html body.ams-panel.ams-light .tag-cli,html body.ams-panel.ams-light .tag-client{
+  background:var(--u-info-bg)!important;color:var(--u-info-tx)!important;border-color:var(--u-info-bd)!important;}
+html body.ams-panel.ams-light .tag-mgr{background:var(--u-pur-bg)!important;color:var(--u-pur-tx)!important;border-color:var(--u-pur-bd)!important;}
+html body.ams-panel.ams-light .tag-agt{background:var(--u-teal-bg)!important;color:var(--u-teal)!important;border-color:var(--u-teal-bd)!important;}
+html body.ams-panel.ams-light .tag-gray{background:var(--u-gray-bg)!important;color:var(--u-gray-tx)!important;border-color:var(--u-gray-bd)!important;}
+html body.ams-panel.ams-light .tag-client .x{color:inherit!important;}
+/* JS-injected solid tags (panel-sharing etc.): keep white text only on dark fills */
+html body.ams-panel.ams-light .tag[style*="background:#"][style*="color:#fff"]{border-color:transparent!important;}
+
+/* ---------- modals ---------- */
+html body.ams-panel.ams-light .modal-overlay,html body.ams-panel.ams-light .modal:has(>.box){background:var(--br-modal-overlay,rgba(25,26,31,.55))!important;backdrop-filter:blur(2px);}
+html body.ams-panel.ams-light .modal:has(>.box){border:0!important;box-shadow:none!important;border-radius:0!important;}
+html body.ams-panel.ams-light .modal-overlay .modal,html body.ams-panel.ams-light .box{
+  background:var(--br-modal-bg,var(--u-surface))!important;color:var(--br-modal-text,var(--u-ink))!important;
+  border:1px solid var(--u-line)!important;border-radius:16px!important;box-shadow:var(--u-shadow-lg)!important;}
+html body.ams-panel.ams-light .modal-head,html body.ams-panel.ams-light .modal-foot{border-color:var(--u-line)!important;background:var(--u-surface)!important;}
+html body.ams-panel.ams-light .modal-head h3{color:var(--u-ink)!important;}
+html body.ams-panel.ams-light .modal-close{color:var(--u-muted)!important;}
+html body.ams-panel.ams-light .modal-close:hover{background:var(--u-soft)!important;color:var(--u-ink)!important;}
+
+/* ---------- OTP / code ---------- */
+html body.ams-panel.ams-light .otp-code,html body.ams-panel.ams-light .otp{color:var(--u-brand-d)!important;}
+html body.ams-panel.ams-light .otp-empty{color:var(--u-muted)!important;}
+html body.ams-panel.ams-light pre{background:#191a1f!important;color:#e4e6ea!important;border-radius:10px;}
+html body.ams-panel.ams-light .ig-doc code{color:var(--u-ink)!important;}
+
+/* ---------- scrollbar ---------- */
+html body.ams-panel.ams-light ::-webkit-scrollbar-thumb{background:var(--u-line-2);}
+html body.ams-panel.ams-light ::-webkit-scrollbar-track{background:transparent;}
+
+@media (prefers-reduced-motion:reduce){
+  html body.ams-panel.ams-light .btn,html body.ams-panel.ams-light .stat-card{transition:none!important;}
+  html body.ams-panel.ams-light .btn:hover{transform:none!important;}
+}

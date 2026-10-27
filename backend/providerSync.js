@@ -1,11 +1,11 @@
 /**
- * Power X SMS — Background Provider Sync Service
+ * Skyline SMS — Background Provider Sync Service
  * ---------------------------------------------------------------------------
  * Architecture
  *
  *   Provider API  ->  Background Sync Service  ->  Local Database
  *                                                        |
- *                                          Power X Backend (/api/*)
+ *                                          Skyline SMS Backend (/api/*)
  *                                                        |
  *                            Admin / Manager / Agent / Client panels
  *
@@ -173,7 +173,7 @@ const CONNECTORS = {
    *   "limit":          500,
    *   "extra_params":   { "status": "delivered" },
    *   "records_path":   "data.messages",    // where the array lives
-   *   "map": {                              // provider field -> powerx field
+   *   "map": {                              // provider field -> ams field
    *     "ref":     "message_id",
    *     "number":  "to",
    *     "cli":     "from",
@@ -192,7 +192,7 @@ const CONNECTORS = {
     // normal one; it can be overridden per provider if a provider requires it.
     const headers = {
       'Accept': 'application/json',
-      'User-Agent': String(cfg.user_agent || 'Mozilla/5.0 (compatible; GalaxySMS-Sync/1.0)'),
+      'User-Agent': String(cfg.user_agent || 'Mozilla/5.0 (compatible; Skyline-SMS-Sync/1.0)'),
     };
     const params = new URLSearchParams();
 
@@ -383,12 +383,6 @@ function markProvider(id, fields) {
   );
 }
 
-if (String(process.env.SMPP_CROSS_CHANNEL_IDENTITY || '0') !== '1') {
-  // Documented limitation: SMPP, carrier-HTTP and provider-pull keep separate
-  // records unless the operator declares their references equivalent.
-  console.log('• Dedup: cross-channel identity matching OFF (SMPP_CROSS_CHANNEL_IDENTITY=0) — the same SMS arriving on two channels is stored once per channel on purpose');
-}
-
 function logSync(providerId, status, fetched, inserted, duplicates, failed, ms, error) {
   try {
     // runNoSave for the same reason as markProvider: this runs on every poll.
@@ -422,7 +416,7 @@ function logSync(providerId, status, fetched, inserted, duplicates, failed, ms, 
  *     cycle 2 -> fetched=31  duplicates=31  (only the overlap window)
  *     cycle 3 -> fetched=31  duplicates=31
  *     ------------------------------------------------
- *     provider had 500 | Power X ingested 200 | 300 PERMANENTLY MISSING
+ *     provider had 500 | Skyline SMS ingested 200 | 300 PERMANENTLY MISSING
  *
  * 300 real SMS lost, with every log line saying "ok". That is the worst kind
  * of failure: invisible.
@@ -556,7 +550,7 @@ async function syncProvider(provider, deps, opts = {}) {
           // so allocation, payout, OTP extraction and limits behave identically.
           let ok = false;
           try {
-            // Provider payout is an INDICATOR only. Power X always calculates the
+            // Provider payout is an INDICATOR only. Skyline SMS always calculates the
             // displayed payout from its own rate cards - EXCEPT when the
             // provider explicitly reports 0, which marks the SMS non-payable.
             const providerPayout = rec.payoutRaw;
@@ -568,7 +562,7 @@ async function syncProvider(provider, deps, opts = {}) {
               { headers: {}, query: {}, body: {} },                 // no HTTP request
               { number: rec.number, cli: rec.cli, message: rec.message },
               `provider:${provider.name}`,
-              { source: 'api_sync', received_at: receivedAt, forceZeroPayout, crossChannelIdentity: String(rec.ref || '') }
+              { source: 'api_sync', received_at: receivedAt, forceZeroPayout }
             );
             ok = result && result.status === 200;
             if (!ok) failed++;
@@ -580,17 +574,6 @@ async function syncProvider(provider, deps, opts = {}) {
           if (ok) {
             inserted++;
             dirty = true;
-            /* Cross-channel visibility (dedup v2): remember the provider's own
-               message reference in the shared ledger. It is only ever used to
-               suppress a copy of the SAME physical message when the operator
-               declares the namespaces equivalent (SMPP_CROSS_CHANNEL_IDENTITY=1);
-               otherwise it stays as an audit trail and both records are kept. */
-            try {
-              const nowS = new Date().toISOString().slice(0, 19).replace('T', ' ');
-              db.run(`INSERT OR IGNORE INTO sms_dedup_ledger (connection_uid,identity_kind,identity,channel,sms_record_id,first_seen_at,last_seen_at,seen_count)
-                      VALUES (?,?,?,?,?,?,?,1)`,
-                ['api:' + provider.id, 'api', String(rec.ref), 'api_sync', (result && result.body && result.body.id) || null, nowS, nowS]);
-            } catch (_) {}
             // db.run (not runNoSave): inside a batch this only flags the batch
             // dirty, so the dedup ledger is guaranteed to be persisted by the
             // single save at the end of the cycle.

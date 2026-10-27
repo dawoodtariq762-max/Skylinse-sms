@@ -10,6 +10,90 @@ function ensureColumn(table, column, definition) {
   if (!cols.includes(column)) db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
+function tableExists(table) {
+  return !!db.get("SELECT name FROM sqlite_master WHERE type='table' AND name=?", [table]);
+}
+
+function tableColumns(table) {
+  return db.all(`PRAGMA table_info(${table})`).map(c => c.name);
+}
+
+/*
+ * Skyline SMS provider-registry table migration.
+ *
+ * Existing production databases may still have the provider registry under its
+ * pre-Skyline table name. Rename it in place so provider IDs — and therefore every
+ * ranges.provider_id link — remain unchanged. The both-tables path is only a
+ * defensive merge for a partially migrated database: IDs are preserved where
+ * possible, range links are remapped where an ID collision/name match makes
+ * that necessary, and the old table is archived rather than dropped.
+ */
+function migrateProviderRegistryTable() {
+  const legacyTable = 'galaxy_providers';
+  const currentTable = 'ams_providers';
+  const hasLegacy = tableExists(legacyTable);
+  const hasCurrent = tableExists(currentTable);
+  if (!hasLegacy) return;
+
+  if (!hasCurrent) {
+    db.run(`ALTER TABLE ${legacyTable} RENAME TO ${currentTable}`);
+    console.log('✓ Provider registry table migrated to ams_providers (IDs and range links preserved)');
+    return;
+  }
+
+  const legacyCount = db.get(`SELECT COUNT(*) c FROM ${legacyTable}`)?.c || 0;
+  const currentCount = db.get(`SELECT COUNT(*) c FROM ${currentTable}`)?.c || 0;
+  if (!legacyCount) {
+    db.run(`DROP TABLE ${legacyTable}`);
+    return;
+  }
+  if (!currentCount) {
+    db.run(`DROP TABLE ${currentTable}`);
+    db.run(`ALTER TABLE ${legacyTable} RENAME TO ${currentTable}`);
+    console.log('✓ Provider registry table migrated to ams_providers (IDs and range links preserved)');
+    return;
+  }
+
+  ensureColumn(currentTable, 'payment_method', "TEXT DEFAULT ''");
+  ensureColumn(currentTable, 'status', "TEXT DEFAULT 'Active'");
+  ensureColumn(currentTable, 'conn_type', "TEXT DEFAULT ''");
+  ensureColumn('ranges', 'provider_id', 'INTEGER');
+
+  const legacyColumns = tableColumns(legacyTable);
+  const sharedColumns = tableColumns(currentTable).filter(c => legacyColumns.includes(c));
+  const remappedIds = new Map();
+  const legacyRows = db.all(`SELECT * FROM ${legacyTable} ORDER BY id`);
+  for (const row of legacyRows) {
+    const byName = db.get(
+      `SELECT id FROM ${currentTable} WHERE LOWER(TRIM(name))=LOWER(TRIM(?)) LIMIT 1`,
+      [row.name]
+    );
+    if (byName) {
+      if (byName.id !== row.id) remappedIds.set(row.id, byName.id);
+      continue;
+    }
+    const idTaken = !!db.get(`SELECT id FROM ${currentTable} WHERE id=?`, [row.id]);
+    const insertColumns = idTaken ? sharedColumns.filter(c => c !== 'id') : sharedColumns;
+    const placeholders = insertColumns.map(() => '?').join(',');
+    db.run(
+      `INSERT INTO ${currentTable} (${insertColumns.join(',')}) VALUES (${placeholders})`,
+      insertColumns.map(c => row[c] ?? null)
+    );
+    if (idTaken) {
+      const inserted = db.get('SELECT last_insert_rowid() id');
+      if (inserted?.id) remappedIds.set(row.id, inserted.id);
+    }
+  }
+  for (const [oldId, newId] of remappedIds) {
+    db.run('UPDATE ranges SET provider_id=? WHERE provider_id=?', [newId, oldId]);
+  }
+
+  let archiveTable = 'ams_providers_migration_archive';
+  if (tableExists(archiveTable)) archiveTable += '_' + Date.now();
+  db.run(`ALTER TABLE ${legacyTable} RENAME TO ${archiveTable}`);
+  console.warn(`✓ Provider registry merged into ams_providers; previous table archived as ${archiveTable}`);
+}
+
 function createTables() {
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,33 +253,6 @@ function createTables() {
     status TEXT DEFAULT 'open', -- open | requested | paid | rejected
     request_id INTEGER,
     created_at TEXT DEFAULT (datetime('now'))
-  )`);
-
-  /* Credit Notes: weekly dispatch/release tracking over EXISTING payout data.
-     Additive only — amounts come from payment_ledger (agent) / SMS payout
-     expression (manager); release is a recorded status change, no money moves. */
-  db.run(`CREATE TABLE IF NOT EXISTS credit_notes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    subject_role TEXT NOT NULL,             -- manager | agent
-    subject_id INTEGER NOT NULL,
-    manager_id INTEGER,                     -- paying/owning manager (for agents)
-    payment_type TEXT DEFAULT 'weekly',     -- weekly (schedule) / monthly_30x45 / daily
-    cycle_key TEXT NOT NULL,                -- week-start (existing schedule logic)
-    period_start TEXT DEFAULT '',
-    period_end TEXT DEFAULT '',
-    eligible_at TEXT DEFAULT '',
-    amount TEXT DEFAULT '0',
-    basis TEXT DEFAULT 'ledger',            -- ledger | sms
-    status TEXT DEFAULT 'Pending',          -- Pending | Released
-    released_at TEXT DEFAULT '',
-    released_by INTEGER,
-    released_by_name TEXT DEFAULT '',
-    released_by_role TEXT DEFAULT '',
-    release_note TEXT DEFAULT '',
-    paid_to TEXT DEFAULT '',                -- recorded who was paid (external, e.g. Binance UID)
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now')),
-    UNIQUE(subject_role, subject_id, payment_type, cycle_key)
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS payment_requests_v2 (
@@ -358,7 +415,7 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     if (!ex) db.run('INSERT INTO payment_schedule (payment_type) VALUES (?)', [t]);
   });
   ensureColumn('carrier_settings', 'retention_days', 'INTEGER DEFAULT 30');
-  // GALAXY: Range/Rate Management fields (additive, all optional)
+  // Skyline: Range/Rate Management fields (additive, all optional)
   ensureColumn('ranges', 'country', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'provider', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'currency_rate', "TEXT DEFAULT ''");
@@ -366,7 +423,7 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   ensureColumn('ranges', 'range_start', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'range_end', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'status', "TEXT DEFAULT 'Active'");
-  // GALAXY: Activity Integration entries (Provider Name + IP allowlist)
+  // Skyline: Activity Integration entries (Provider Name + IP allowlist)
   db.run(`CREATE TABLE IF NOT EXISTS activity_ips (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     provider_name TEXT DEFAULT '',
@@ -375,8 +432,9 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     created_at TEXT DEFAULT (datetime('now'))
   )`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_activity_ips_enabled ON activity_ips(enabled)`);
-  // GALAXY: Provider-level registry (relationship/payment/reporting — credentials stay in connections)
-  db.run(`CREATE TABLE IF NOT EXISTS galaxy_providers (
+  // Skyline: Provider-level registry (relationship/payment/reporting — credentials stay in connections)
+  migrateProviderRegistryTable();
+  db.run(`CREATE TABLE IF NOT EXISTS ams_providers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     payment_term TEXT DEFAULT '',
@@ -386,10 +444,10 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   )`);
-  /* GALAXY P6: provider accounting (additive, non-destructive) */
-  ensureColumn('galaxy_providers', 'payment_method', "TEXT DEFAULT ''");
-  ensureColumn('galaxy_providers', 'status', "TEXT DEFAULT 'Active'");
-  ensureColumn('galaxy_providers', 'conn_type', "TEXT DEFAULT ''");
+  /* Skyline P6: provider accounting (additive, non-destructive) */
+  ensureColumn('ams_providers', 'payment_method', "TEXT DEFAULT ''");
+  ensureColumn('ams_providers', 'status', "TEXT DEFAULT 'Active'");
+  ensureColumn('ams_providers', 'conn_type', "TEXT DEFAULT ''");
   db.run(`CREATE TABLE IF NOT EXISTS provider_payments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     provider_id INTEGER,
@@ -427,38 +485,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   ensureColumn('sms_records', 'payout_rate', "TEXT DEFAULT ''");
   ensureColumn('sms_records', 'payout_amount', "TEXT DEFAULT ''");
   ensureColumn('sms_records', 'limit_reason', "TEXT DEFAULT ''");
-  /* SMPP dedup v2 (additive; see backend/smppIdentity.js).
-     The ledger table itself is created further down in this same function, so
-     these ALTERs are guarded: on a brand-new database there is nothing to add
-     (the CREATE already carries the final shape), on an existing database that
-     predates a column this adds it. */
-  if (db.all("SELECT name FROM sqlite_master WHERE type='table' AND name='sms_dedup_ledger'").length) {
-    ensureColumn('sms_dedup_ledger', 'acked_at', "TEXT DEFAULT ''");
-    ensureColumn('sms_dedup_ledger', 'seen_count', 'INTEGER DEFAULT 1');
-    ensureColumn('sms_dedup_ledger', 'channel', "TEXT DEFAULT 'smpp'");
-    ensureColumn('sms_dedup_ledger', 'last_seen_at', "TEXT DEFAULT ''");
-  }
-  /* smpp_connections is created further down in this function (same reasoning
-     as the ledger above): only ALTER when the table already exists. */
-  if (db.all("SELECT name FROM sqlite_master WHERE type='table' AND name='smpp_connections'").length) {
-    ensureColumn('smpp_connections', 'connection_uid', "TEXT DEFAULT ''");
-  }
-  ensureColumn('sms_records', 'dedup_identity', "TEXT DEFAULT ''");
-  /* Explicit per-message marking of where the identity came from:
-       'strong'    — durable provider/SMSC id
-       'multipart' — concatenated message rebuilt from UDH parts
-       'weak'      — only with the armed content-suppression window
-       'no-id'     — no physical identity existed; STORED ANYWAY (lossless)
-       ''          — legacy / non-SMPP rows (nothing inferred) */
-  ensureColumn('sms_records', 'identity_state', "TEXT NOT NULL DEFAULT ''");
-  ensureColumn('failed_sms_queue', 'dedup_identity', "TEXT DEFAULT ''");
-  ensureColumn('failed_sms_queue', 'sms_record_id', 'INTEGER');
-  /* Partial UNIQUE index: only STRONG identities (SMSC message ids, completed
-     multipart ids) ever populate sms_records.dedup_identity, so a content-only
-     duplicate can never be rejected by the database. */
-  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_sms_records_dedup_strong ON sms_records(dedup_identity) WHERE dedup_identity <> ''`);
-  /* Replay/no-id statistics: cheap COUNTs over the marked rows only. */
-  db.run(`CREATE INDEX IF NOT EXISTS idx_sms_records_identity_state ON sms_records(identity_state, received_at) WHERE identity_state <> ''`);
   ensureColumn('ranges', 'deleted_at', "TEXT DEFAULT ''");
   /* P19k #4: Provider Rate — admin-internal, per payment-cycle period (ranges.rate_1_1/7_1/7_7/30_45
      wahi convention follow). Sirf Real Provider Cost (admin dashboard) use karta hai;
@@ -490,7 +516,7 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   ensureColumn('users', 'is_super_manager', 'INTEGER DEFAULT 0');
   ensureColumn('users', 'chat_display_name', "TEXT DEFAULT ''");
 
-  /* Galaxy SMS Official Channel */
+  /* Skyline SMS Official Channel */
   const cs = db.get('SELECT COUNT(*) AS c FROM carrier_settings');
   if (!cs || cs.c === 0) {
     db.run(`INSERT INTO carrier_settings (integration_status,carrier_ip,http_callback_url,notes)
@@ -566,8 +592,8 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
    * integrations keep working byte-for-byte as before.
    *
    * mode:
-   *   'client' = Power X binds OUT to the provider's SMPP server (ESME).
-   *   'server' = Power X LISTENS on a port and the carrier binds IN to us.
+   *   'client' = Skyline SMS binds OUT to the provider's SMPP server (ESME).
+   *   'server' = Skyline SMS LISTENS on a port and the carrier binds IN to us.
    */
   db.run(`CREATE TABLE IF NOT EXISTS smpp_connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -605,7 +631,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     consecutive_failures INTEGER NOT NULL DEFAULT 0,
     total_received INTEGER NOT NULL DEFAULT 0,
     total_sent INTEGER NOT NULL DEFAULT 0,
-    connection_uid TEXT DEFAULT '',           -- stable SMSC-account identity (host|port|system_id)
 
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
@@ -623,46 +648,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   )`);
   db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_smpp_seen_unique ON smpp_seen(connection_id, dedup_key)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_smpp_seen_created ON smpp_seen(created_at)`);
-
-  /* ------------------------------------------------------------------ *
-   * DURABLE DEDUP LEDGER (v2) + restart-safe multipart assembly
-   *
-   * smpp_seen above is keyed by the mutable smpp_connections row id and was
-   * wiped whenever a connection was deleted, so replay protection did not
-   * survive connection edits. sms_dedup_ledger is keyed by a STABLE account
-   * identity (connection_uid = host|port|system_id) plus the identity of the
-   * physical message itself, and is never deleted by connection edits.
-   *
-   * Purely additive: smpp_seen is kept as history and simply no longer used
-   * by the new ingest path. No existing row is rewritten.
-   * ------------------------------------------------------------------ */
-  db.run(`CREATE TABLE IF NOT EXISTS sms_dedup_ledger (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    connection_uid TEXT NOT NULL,
-    identity_kind TEXT NOT NULL,
-    identity TEXT NOT NULL,
-    channel TEXT DEFAULT 'smpp',
-    sms_record_id INTEGER,
-    first_seen_at TEXT NOT NULL,
-    last_seen_at TEXT DEFAULT '',
-    acked_at TEXT DEFAULT '',
-    seen_count INTEGER DEFAULT 1
-  )`);
-  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_sms_dedup_unique ON sms_dedup_ledger(connection_uid, identity_kind, identity)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_sms_dedup_sms ON sms_dedup_ledger(sms_record_id)`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS smpp_parts (
-    connection_uid TEXT NOT NULL,
-    group_key TEXT NOT NULL,
-    seq INTEGER NOT NULL,
-    total INTEGER NOT NULL DEFAULT 0,
-    part_identity TEXT DEFAULT '',
-    part_strong INTEGER DEFAULT 0,
-    text TEXT NOT NULL DEFAULT '',
-    received_at TEXT NOT NULL,
-    PRIMARY KEY (connection_uid, group_key, seq)
-  )`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_smpp_parts_age ON smpp_parts(received_at)`);
 
   // Event log: bind/unbind/error/reconnect/received/sent. Kept small by the service.
   db.run(`CREATE TABLE IF NOT EXISTS smpp_logs (
@@ -721,14 +706,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_client_cli_date ON sms_records(client_id, cli, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_range_cli_date ON sms_records(range_id, cli, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_number_cli_date ON sms_records(number, cli, received_at)`);
-  /* Admin "delete number(s) + SMS history" matches sms_records by number_id as well as by
-     number text. Without this index that OR-condition could not be satisfied by any index,
-     so SQLite fell back to SCAN sms_records — the whole SMS table — on every such delete
-     (measured: ~1.8 s just for the DELETE on a 300k-row table, and it grows with the table,
-     not with the number of rows being deleted). With the index the same statement plans as
-     MULTI-INDEX OR over idx_sms_number_id + idx_sms_number_date. Additive performance index
-     only: no data, no column and no behaviour change. */
-  db.run(`CREATE INDEX IF NOT EXISTS idx_sms_number_id ON sms_records(number_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_test_date ON sms_records(is_test, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_manager_date ON sms_records(manager_id, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_agent_date ON sms_records(agent_id, received_at)`);
@@ -766,8 +743,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_requests_agent_type_status ON payment_requests_v2(agent_id, payment_type, status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests_v2(status, requested_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_notifications_agent ON payment_notifications_v2(agent_id, read_at, created_at)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_credit_notes_subject ON credit_notes(subject_role, subject_id, cycle_key)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_credit_notes_manager ON credit_notes(manager_id, cycle_key)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sharing_users_agent ON sharing_users(agent_user_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sharing_users_active ON sharing_users(active)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sharing_forward_logs_sms ON sharing_forward_logs(sms_record_id)`);
@@ -956,6 +931,48 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
 
   
 
+  /* ========================================================================
+     FINAL POLISH (Section 7) — PROVIDER DATA SEPARATION
+     ------------------------------------------------------------------------
+     Two different things used to live in the SAME column (ranges.provider):
+       1. the free-text "Provider (reference)" an Admin may type on the range
+          form (informational only — typos / "Test 01" / inconsistent case), and
+       2. the REAL provider chosen from the registry when numbers are imported
+          (POST /api/providers-info/assign-range, written by the GCM import).
+     Every provider count/summary/statistic grouped by that free text, so a
+     typed reference was counted as an extra "provider" that does not exist in
+     Provider Management (ams_providers).
+
+     Fix (additive, non-destructive):
+       * ranges.provider_id  -> authoritative FK to ams_providers(id).
+       * ranges.provider     -> stays exactly as it is: the informational
+                                reference text (kept, still editable, never
+                                counted as a provider any more).
+     Backfill rule: provider_id is set ONLY where the stored text matches an
+     existing registry provider name exactly (case-insensitive). No fuzzy or
+     approximate matching, no provider records created, no text renamed, no
+     numbers reassigned. Idempotent — safe on every boot and on production.
+     ======================================================================== */
+  ensureColumn('ranges', 'provider_id', 'INTEGER');
+  db.run(`CREATE INDEX IF NOT EXISTS idx_ranges_provider_id ON ranges(provider_id)`);
+  try {
+    db.run(`UPDATE ranges SET provider_id = (
+              SELECT gp.id FROM ams_providers gp
+              WHERE LOWER(TRIM(gp.name)) = LOWER(TRIM(ranges.provider))
+              LIMIT 1)
+            WHERE provider_id IS NULL
+              AND COALESCE(TRIM(provider),'') <> ''`);
+    /* A link whose provider record no longer exists is cleared here too, so the
+       invariant also holds for databases migrated by an older build (server.js
+       runs the same statement on startup and after a backup restore). Without it
+       those ranges would be counted by nobody: they are not in any provider total
+       and not in the "no linked provider" report either. The informational
+       reference text in ranges.provider is never touched. */
+    db.run(`UPDATE ranges SET provider_id = NULL
+            WHERE provider_id IS NOT NULL
+              AND provider_id NOT IN (SELECT id FROM ams_providers)`);
+  } catch (e) { console.warn('ranges.provider_id backfill:', e.message); }
+
   /* ============ MIGRATION: RE-LINK NUMBERS FROM DELETED RANGES TO ACTIVE RANGES ============ */
   try {
     const pairMap = [
@@ -973,107 +990,170 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
       }
     }
   } catch (e) { console.warn('Central Africa migration:', e.message); }
-}
+  /* ================================================================
+   * PER-USER REST API CREDENTIALS  (Manager / Agent self-service API)
+   * Token is NEVER stored - only a SHA-256 hash + a short display prefix.
+   * ================================================================ */
+  db.run(`CREATE TABLE IF NOT EXISTS api_credentials (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      INTEGER NOT NULL UNIQUE,
+    token_hash   TEXT NOT NULL,
+    token_prefix TEXT NOT NULL,
+    status       TEXT NOT NULL DEFAULT 'inactive',   -- inactive | active | revoked
+    created_at   TEXT DEFAULT (datetime('now')),
+    activated_at TEXT,
+    last_used_at TEXT,
+    revoked_at   TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_api_credentials_status ON api_credentials(status)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_api_credentials_prefix ON api_credentials(token_prefix)`);
 
-/* ------------------------------------------------------------------ *
- * Dedup v2 migration
- * ---------------------------------------------------------------------------
- * - additive only: creates the ledger/parts tables, adds columns, backfills
- *   smpp_connections.connection_uid from the account config
- * - takes ONE consistent snapshot of the database file before the first run
- *   (VACUUM INTO; falls back to a byte copy) so the change can be rolled back
- * - seeds the new ledger ONLY from strong (mid:*) keys already present in
- *   smpp_seen. Fingerprint keys (fp:*) are deliberately NOT seeded: they are
- *   content-based and could suppress a genuine future identical SMS.
- * - never rewrites or deletes sms_records.
- * Reversal: backend/scripts/rollback-dedup-v2.js
- * ------------------------------------------------------------------ */
-function migrateDedupV2(log = console) {
-  const meta = (k, v) => {
-    try {
-      if (v === undefined) {
-        const r = db.get('SELECT value FROM meta WHERE key=?', [k]);
-        return r ? r.value : null;
-      }
-      db.run('INSERT INTO meta (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', [k, String(v)]);
-      return String(v);
-    } catch (_) { return null; }
-  };
+  /* ========================================================================
+   * Generic application settings (key/value).
+   * Currently holds `public_base_url` — the externally reachable origin that
+   * the REST API integration page shows to users. It is NOT derived from the
+   * request (which would report 127.0.0.1 or an internal port behind a proxy)
+   * and it is NOT hardcoded. When unset the UI says so explicitly instead of
+   * presenting a guessed URL as real.
+   * ===================================================================== */
+  db.run(`CREATE TABLE IF NOT EXISTS app_settings (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`);
+
+  /* API usage / error log. Deliberately stores NO token and NO message body. */
+  db.run(`CREATE TABLE IF NOT EXISTS api_request_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    credential_id INTEGER,
+    user_id       INTEGER,
+    endpoint      TEXT,
+    ip            TEXT,
+    status_code   INTEGER,
+    error         TEXT,
+    created_at    TEXT DEFAULT (datetime('now'))
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_api_request_logs_user ON api_request_logs(user_id, created_at)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_api_request_logs_created ON api_request_logs(created_at)`);
+
+  /* ================================================================
+   * CHAT SYSTEM  (Admin <-> Manager <-> Agent)
+   * ================================================================ */
+  db.run(`CREATE TABLE IF NOT EXISTS chat_conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind            TEXT NOT NULL DEFAULT 'direct',  -- direct | panel
+    a_id            INTEGER NOT NULL,                -- always the lower user id
+    b_id            INTEGER NOT NULL,                -- always the higher user id
+    created_at      TEXT DEFAULT (datetime('now')),
+    last_message_at TEXT,
+    UNIQUE(a_id, b_id)
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_conv_a ON chat_conversations(a_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_conv_b ON chat_conversations(b_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_conv_last ON chat_conversations(last_message_at)`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id INTEGER NOT NULL,
+    sender_id       INTEGER NOT NULL,
+    body            TEXT NOT NULL DEFAULT '',
+    client_msg_id   TEXT,                            -- dedupe on reconnect/retry
+    created_at      TEXT DEFAULT (datetime('now')),
+    delivered_at    TEXT,                            -- receipt: 2 grey ticks
+    read_at         TEXT,                            -- receipt: 2 blue ticks
+    UNIQUE(conversation_id, client_msg_id)
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_msg_conv ON chat_messages(conversation_id, id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_msg_sender ON chat_messages(sender_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_msg_unread ON chat_messages(conversation_id, read_at)`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS chat_attachments (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id      INTEGER,                            -- NULL until the message is sent
+    conversation_id INTEGER,                            -- NULL until the message is sent
+    uploader_id     INTEGER NOT NULL,
+    orig_name       TEXT NOT NULL,
+    stored_name     TEXT NOT NULL,
+    mime            TEXT,
+    size_bytes      INTEGER DEFAULT 0,
+    created_at      TEXT DEFAULT (datetime('now'))
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_att_msg ON chat_attachments(message_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_att_conv ON chat_attachments(conversation_id)`);
+
+  /* ========================================================================
+   * Chat presence — the server-side source of truth for "is this user's chat
+   * session actually connected?".
+   *
+   * Message ticks must never be faked in the browser: one grey tick means the
+   * recipient has no live session, two grey ticks means a live session exists
+   * and the message reached it, two blue ticks means the recipient opened the
+   * conversation and the server recorded read_at.
+   *
+   * last_seen is refreshed by the SSE heartbeat. A row whose last_seen has
+   * gone stale is treated as offline even if the socket never emitted 'close'
+   * (laptop lid, network loss, killed tab) — that is what stops a user being
+   * shown as online forever after they disappear.
+   * ===================================================================== */
+  db.run(`CREATE TABLE IF NOT EXISTS chat_presence (
+    user_id     INTEGER PRIMARY KEY,
+    online      INTEGER NOT NULL DEFAULT 0,
+    last_seen   TEXT,
+    since       TEXT,
+    updated_at  TEXT DEFAULT (datetime('now'))
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_chat_presence_online ON chat_presence(online)`);
+
+  /* ---- migration: chat_attachments.message_id must be nullable ----
+   * An attachment is uploaded BEFORE the message that carries it exists, so the
+   * column has to accept NULL. Any database created with the NOT NULL variant
+   * is rebuilt here. Safe to run repeatedly. */
   try {
-    const done = meta('dedup_v2_migrated');
-    if (done === '1') return { ok: true, already: true };
-
-    // ---- one-time backup (only when there is something to back up) -------
-    let backupPath = '';
-    try {
-      const hasRows = (db.get('SELECT COUNT(*) c FROM sms_records') || {}).c || 0;
-      if (hasRows > 0 && typeof db.getDbFile === 'function') {
-        const fs = require('fs');
-        const path = require('path');
-        const file = db.getDbFile();
-        const stamp = new Date().toISOString().slice(0, 10);
-        backupPath = `${file}.pre-dedup-v2-${stamp}`;
-        if (!fs.existsSync(backupPath)) {
-          try {
-            db.runNoSave(`VACUUM INTO '${String(backupPath).replace(/'/g, "''")}'`);
-          } catch (e) {
-            fs.copyFileSync(file, backupPath);
-          }
-          log.log(`• [DEDUP-V2] pre-migration backup: ${path.basename(backupPath)}`);
-        } else {
-          log.log(`• [DEDUP-V2] pre-migration backup already exists: ${path.basename(backupPath)}`);
-        }
-        meta('dedup_v2_backup', backupPath);
-      }
-    } catch (e) { log.warn('[DEDUP-V2] backup skipped: ' + e.message); }
-
-    // ---- backfill connection_uid from the SMSC account config ------------
-    try {
-      const { connectionUidOf } = require('./smppIdentity');
-      const conns = db.all('SELECT id,name,mode,host,port,system_id,listen_port,connection_uid FROM smpp_connections');
-      for (const c of conns) {
-        if (c.connection_uid) continue;
-        const uid = connectionUidOf(c) || (c.mode === 'server' ? ('smpp:server:' + String(c.listen_port || 0)) : '');
-        if (uid) db.run('UPDATE smpp_connections SET connection_uid=? WHERE id=?', [uid, c.id]);
-      }
-    } catch (e) { log.warn('[DEDUP-V2] connection_uid backfill: ' + e.message); }
-
-    // ---- seed the ledger with STRONG identities only ---------------------
-    try {
-      const seen = db.all("SELECT connection_id, dedup_key, sms_record_id, received_at FROM smpp_seen WHERE dedup_key LIKE 'mid:%'");
-      let seeded = 0;
-      for (const r of seen) {
-        const conn = db.get('SELECT connection_uid FROM smpp_connections WHERE id=?', [r.connection_id]);
-        const uid = (conn && conn.connection_uid) || ('smpp:legacy:' + r.connection_id);
-        const info = db.run(
-          'INSERT OR IGNORE INTO sms_dedup_ledger (connection_uid,identity_kind,identity,channel,sms_record_id,first_seen_at,last_seen_at) VALUES (?,?,?,?,?,?,?)',
-          [uid, 'mid', String(r.dedup_key).slice(4), 'smpp', r.sms_record_id || null, r.received_at || '', r.received_at || '']
-        );
-        seeded += (info && info.changes) || 0;
-      }
-      log.log(`• [DEDUP-V2] ledger seeded from strong keys: ${seeded} (fp:* fingerprint keys intentionally NOT seeded)`);
-    } catch (e) { log.warn('[DEDUP-V2] seed: ' + e.message); }
-
-    // ---- mark rows that already carry a durable identity ----------------
-    // Additive and guarded by its OWN meta key, so a database where the first
-    // migration already ran still gets it. Rows WITHOUT an id are deliberately
-    // left alone: nothing is inferred and no SMS record is rewritten.
-    if (meta('dedup_v2_identity_state') !== '1') {
-      try {
-        const r = db.run(`UPDATE sms_records SET identity_state='strong' WHERE COALESCE(identity_state,'')='' AND COALESCE(dedup_identity,'')<>''`);
-        const n = (r && r.changes) || 0;
-        if (n) log.log(`• [DEDUP-V2] marked ${n} existing row(s) identity_state='strong' (no row rewritten)`);
-        meta('dedup_v2_identity_state', '1');
-      } catch (e) { log.warn('[DEDUP-V2] identity_state backfill: ' + e.message); }
+    const cols = db.all('PRAGMA table_info(chat_attachments)') || [];
+    const mid = cols.find(c => c.name === 'message_id');
+    const cid = cols.find(c => c.name === 'conversation_id');
+    if ((mid && Number(mid.notnull) === 1) || (cid && Number(cid.notnull) === 1)) {
+      db.run(`CREATE TABLE chat_attachments_new (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_id      INTEGER,
+        conversation_id INTEGER,
+        uploader_id     INTEGER NOT NULL,
+        orig_name       TEXT NOT NULL,
+        stored_name     TEXT NOT NULL,
+        mime            TEXT,
+        size_bytes      INTEGER DEFAULT 0,
+        created_at      TEXT DEFAULT (datetime('now'))
+      )`);
+      db.run(`INSERT INTO chat_attachments_new
+              (id, message_id, conversation_id, uploader_id, orig_name, stored_name, mime, size_bytes, created_at)
+              SELECT id, message_id, conversation_id, uploader_id, orig_name, stored_name, mime, size_bytes, created_at
+                FROM chat_attachments WHERE message_id IS NOT NULL`);
+      db.run('DROP TABLE chat_attachments');
+      db.run('ALTER TABLE chat_attachments_new RENAME TO chat_attachments');
+      db.run('CREATE INDEX IF NOT EXISTS idx_chat_att_msg ON chat_attachments(message_id)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_chat_att_conv ON chat_attachments(conversation_id)');
+      console.log('  migrated chat_attachments.message_id to nullable');
     }
+  } catch (e) { console.warn('chat_attachments migration:', e.message); }
 
-    meta('dedup_v2_migrated', '1');
-    log.log('• [DEDUP-V2] migration complete' + (backupPath ? ' (backup ready)' : ''));
-    return { ok: true, backup: backupPath };
-  } catch (e) {
-    log.warn('[DEDUP-V2] migration failed (continuing with old behaviour): ' + e.message);
-    return { ok: false, error: e.message };
-  }
+  /* Per-user chat lock (PIN) preference.
+   * Deliberately SEPARATE from chat_credentials, which backs the existing
+   * Account Security PIN used by the payment section - chat locking must never
+   * disturb payment authorisation. */
+  db.run(`CREATE TABLE IF NOT EXISTS chat_lock_prefs (
+    user_id       INTEGER PRIMARY KEY,
+    chat_pin_hash TEXT,
+    locked        INTEGER NOT NULL DEFAULT 0,
+    updated_at    TEXT DEFAULT (datetime('now'))
+  )`);
+  /* idempotent: adds the column to databases that already created this table */
+  ensureColumn('chat_lock_prefs', 'chat_pin_hash', 'TEXT');
+  ensureColumn('chat_lock_prefs', 'locked', 'INTEGER NOT NULL DEFAULT 0');
+
+
+
 }
 
-module.exports = { createTables, migrateDedupV2 };
+
+module.exports = { createTables };

@@ -1,154 +1,351 @@
-/* ============================================================================
-   SKYLINE SMS — LIGHT THEME (skyline-light.css)
-   Applied when body.gx-light / body.sk-light is active.
-   High-contrast, professional enterprise slate & cobalt palette.
-   ========================================================================== */
-
-html.gx-light, html.sk-light {
-  --sk-bg: #f8fafc;
-  --sk-bg-canvas: #f1f5f9;
-  --sk-bg-subtle: #e2e8f0;
-  --sk-surface: #ffffff;
-  --sk-surface-2: #f1f5f9;
-  --sk-surface-3: #e2e8f0;
-  --sk-row: #ffffff;
-  --sk-row-alt: #f8fafc;
-  --sk-border: #e2e8f0;
-  --sk-border-strong: #cbd5e1;
-  --sk-text: #0f172a;
-  --sk-text-2: #334155;
-  --sk-muted: #64748b;
-  --sk-dim: #94a3b8;
-  --sk-sidebar: #ffffff;
-  --sk-topbar: rgba(255, 255, 255, 0.94);
-  --sk-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-  --sk-shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.06);
-
-  --bg: #f8fafc !important;
-  background: #f8fafc !important;
-  color-scheme: light;
+/* Approved cross-panel LIGHT presentation, scoped away from every login page.
+   No controls are hidden by action/permission, and no workflow IDs are changed.
+   Phase-5 §2C: COLOURS ONLY. All theme-neutral geometry (sizes, spacing,
+   flex/grid, font metrics) now lives in assets/skyline-layout.css, which is
+   loaded after this file in every panel, so Light and Dark share one layout. */
+/* Approved cross-panel presentation, scoped away from every login page.
+   No controls are hidden by action/permission, and no workflow IDs are changed. */
+body.ams-light.ams-panel {
+ --bg:#f6f7f9;--panel:#fff;--panel2:#f0f2f6;--text:#2d2e33;--muted:#6e6d71;--border:#cfd2d8;--border2:#cfd2d8;--accent:#3256df;--blue:#3256df;background:#f6f7f9!important;color:#2d2e33!important;
 }
-
-body.gx-light, body.sk-light {
-  background:
-    radial-gradient(900px 500px at 90% -10%, rgba(37, 99, 235, 0.06), transparent 60%),
-    radial-gradient(800px 460px at -10% 110%, rgba(56, 189, 248, 0.06), transparent 60%),
-    #f8fafc !important;
-  color: #0f172a !important;
+body.ams-light.ams-panel :is(.sidebar,.rail,.side,.appbar) {
+ background:#e9eaee!important;border-right-color:#cfd2d8!important;
 }
-
-body.gx-light ::-webkit-scrollbar-thumb, body.sk-light ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-color: #f8fafc;
+body.ams-light.ams-panel :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab) {
+ background:linear-gradient(#fbfbfd,#e4e6ea)!important;color:#424449!important;border-bottom-color:#cfd2d8!important;box-shadow:inset 0 1px #fff!important;
 }
-
-body.gx-light .sidebar, body.sk-light .sidebar,
-body.gx-light .rail, body.sk-light .rail {
-  background: #ffffff !important;
-  border-right: 1px solid #e2e8f0 !important;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04) !important;
+body.ams-light.ams-panel :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab):hover {
+ background:#f0f4fe!important;color:#1769b0!important;
 }
-
-body.gx-light .sb-brand h1, body.sk-light .sb-brand h1,
-body.gx-light .brand h1, body.sk-light .brand h1 {
-  color: #0f172a !important;
+body.ams-light.ams-panel :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab,.sub-item,.rsubitem,.dropitem).active {
+ background:#fff!important;color:#1769b0!important;box-shadow:inset 3px 0 #3256df!important;
 }
-
-body.gx-light .nav-item, body.sk-light .nav-item {
-  color: #475569 !important;
+body.ams-light.ams-panel :is(.topbar,.mgr-topbar,.top) {
+ background:linear-gradient(#fff,#f0f2f6)!important;border-bottom-color:#cfd2d8!important;box-shadow:0 1px 4px #0000000c!important;
 }
-
-body.gx-light .nav-item svg, body.sk-light .nav-item svg {
-  stroke: #64748b !important;
+body.ams-light.ams-panel :is(.breadcrumb,.crumb) {
+ background:linear-gradient(#f6f7f9,#e4e6ea)!important;color:#6e6d71!important;border-color:#cfd2d8;
 }
-
-body.gx-light .nav-item:hover, body.sk-light .nav-item:hover {
-  background: #eff6ff !important;
-  color: #1d4ed8 !important;
+body.ams-light.ams-panel :is(.card,.panel,.table-wrap,.toolbar,.modal-box,.ms-modal,.box) {
+ border-color:#cfd2d8!important;background:#fff!important;box-shadow:0 1px 2px #00000006!important;
 }
-body.gx-light .nav-item:hover svg, body.sk-light .nav-item:hover svg {
-  stroke: #2563eb !important;
+body.ams-light.ams-panel :is(.card-head,.modal-head,.ms-modal-head,.ms-notif-head) {
+ background:linear-gradient(#f0f2f6,#e4e6ea)!important;border-bottom-color:#cfd2d8!important;
 }
-
-body.gx-light .nav-item.active, body.sk-light .nav-item.active {
-  background: #eff6ff !important;
-  color: #1d4ed8 !important;
-  box-shadow: inset 0 0 0 1px #bfdbfe !important;
+body.ams-light.ams-panel .card-head .sub {
+ color:#6e6d71!important;
 }
-body.gx-light .nav-item.active svg, body.sk-light .nav-item.active svg {
-  stroke: #2563eb !important;
+body.ams-light.ams-panel :is(.toolbar,.table-controls,.table-foot) {
+ background:linear-gradient(#fbfbfd,#eff1f5)!important;
 }
-
-body.gx-light .topbar, body.sk-light .topbar {
-  background: rgba(255, 255, 255, 0.94) !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+body.ams-light.ams-panel :is(th,td) {
+ border-right-color:#e4e6ea!important;border-bottom-color:#e4e6ea!important;
 }
-
-body.gx-light .clock, body.sk-light .clock,
-body.gx-light .tb-date, body.sk-light .tb-date {
-  background: #f1f5f9 !important;
-  color: #334155 !important;
-  border-color: #cbd5e1 !important;
+body.ams-light.ams-panel th {
+ background:#f6f7f9!important;color:#424449!important;
 }
-
-body.gx-light .page-head h2, body.sk-light .page-head h2 {
-  color: #0f172a !important;
+body.ams-light.ams-panel td {
+ background:#fff;
 }
-
-body.gx-light .card, body.sk-light .card,
-body.gx-light .table-wrap, body.sk-light .table-wrap,
-body.gx-light .toolbar, body.sk-light .toolbar {
-  background: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
-  color: #0f172a !important;
+body.ams-light.ams-panel tbody tr:hover td {
+ background:#f0f4fe;
 }
-
-body.gx-light .card-head h3, body.sk-light .card-head h3,
-body.gx-light .card h3, body.sk-light .card h3 {
-  color: #0f172a !important;
+body.ams-light.ams-panel :is(input,select,textarea,.sd-trigger) {
+ border-color:#cfd2d8!important;background:#fff!important;color:#424449!important;box-shadow:inset 0 1px 2px #00000006!important;
 }
-
-body.gx-light .stat-card, body.sk-light .stat-card {
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
+body.ams-light.ams-panel :is(input[type=checkbox],input[type=radio]) {
+ accent-color:#3256df;
 }
-body.gx-light .stat-card .stat-info p, body.sk-light .stat-card .stat-info p {
-  color: #64748b !important;
+body.ams-light.ams-panel :is(button,a,input,select,textarea,summary,[tabindex]):focus-visible {
+ outline-color:#3256df!important;
 }
-body.gx-light .stat-card .stat-info h3, body.sk-light .stat-card .stat-info h3 {
-  color: #0f172a !important;
+body.ams-light.ams-panel :is(.btn,.ams-btn,.ms-btn.primary) {
+ background:linear-gradient(#3f6ce8,#3256df)!important;border-color:#2748c4!important;color:#fff!important;box-shadow:inset 0 1px #ffffff22!important;
 }
-
-body.gx-light table th, body.sk-light table th,
-body.gx-light thead th, body.sk-light thead th {
-  background: #f8fafc !important;
-  color: #475569 !important;
-  border-bottom-color: #cbd5e1 !important;
+body.ams-light.ams-panel :is(.btn-ghost,.btn.ghost,.exp-btns .btn,.exp-btns .ams-btn,.ms-btn.ghost) {
+ background:linear-gradient(#fff,#e4e6ea)!important;border-color:#cfd2d8!important;color:#424449!important;
 }
-
-body.gx-light tbody tr td, body.sk-light tbody tr td {
-  color: #1e293b !important;
-  border-bottom-color: #f1f5f9 !important;
+body.ams-light.ams-panel :is(.btn-red,.btn.red,.ams-red,.ams-btn.danger) {
+ background:linear-gradient(#e0726e,#b93834)!important;border-color:#a82e2a!important;color:#fff!important;
 }
-body.gx-light tbody tr:nth-child(even) td, body.sk-light tbody tr:nth-child(even) td {
-  background: #f8fafc !important;
+body.ams-light.ams-panel :is(.btn-green,.btn.green,.ams-green):not(.exp-btns *) {
+ background:linear-gradient(#35c093,#12865f)!important;border-color:#12865f!important;color:#fff!important;
 }
-body.gx-light tbody tr:hover td, body.sk-light tbody tr:hover td {
-  background: #eff6ff !important;
+body.ams-light.ams-panel :is(.btn-amber,.btn-orange,.ams-amber) {
+ background:linear-gradient(#f4cf94,#e0a13c)!important;color:#4a2f06!important;border-color:#c67c1f!important;
 }
-
-body.gx-light input, body.sk-light input,
-body.gx-light select, body.sk-light select,
-body.gx-light textarea, body.sk-light textarea {
-  background: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+body.ams-light.ams-panel button:disabled {
+ opacity:.5;filter:grayscale(.3);
 }
-body.gx-light input:focus, body.sk-light input:focus,
-body.gx-light select:focus, body.sk-light select:focus {
-  background: #ffffff !important;
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+body.ams-light.ams-panel .pagination button {
+ border-color:#cfd2d8!important;background:linear-gradient(#fff,#e9eaee)!important;color:#6e6d71!important;
+}
+body.ams-light.ams-panel .pagination button.active {
+ background:#3256df!important;color:#fff!important;border-color:#1769b0!important;
+}
+body.ams-light.ams-panel :is(.stat-card.dash-metric,.card.metric,.ams-pay-chip) {
+ border-color:#cfd2d8!important;background:linear-gradient(#f0f2f6,#dfe1e6)!important;box-shadow:inset 0 1px #fff!important;
+}
+body.ams-light.ams-panel .stat-card.dash-metric .stat-info p {
+ color:#6e6d71!important;
+}
+body.ams-light.ams-panel .stat-card.dash-metric .stat-info h3 {
+ color:#2748c4!important;
+}
+body.ams-light.ams-panel .stat-card.dash-metric .stat-info span {
+ color:#6e6d71!important;
+}
+body.ams-light.ams-panel .dash-go {
+ border-color:#e4e6ea!important;background:#fff!important;
+}
+body.ams-light.ams-panel .dash-go svg {
+ fill:none!important;stroke:#10968f!important;
+}
+body.ams-light.ams-panel .ams-shortcut {
+ background:linear-gradient(#fff,#e9eaee);border-color:#cfd2d8;box-shadow:0 0 0 3px #f0f2f6,inset 0 1px #fff;color:#424449;
+}
+body.ams-light.ams-panel .ams-shortcut svg {
+ stroke:#10968f!important;
+}
+body.ams-light.ams-panel a.ams-shortcut:hover {
+ border-color:#10968f;background:#f0f4fe;
+}
+body.ams-light.ams-panel .ams-shortcut.ams-metric-unavailable {
+ background:#f0f2f6;color:#8b8a8e;box-shadow:0 0 0 3px #eff1f5;
+}
+body.ams-light.ams-panel .ams-metric-unavailable svg {
+ stroke:#a9a9ad!important;
+}
+body.ams-light.ams-panel .ams-metric-unavailable small {
+ color:#8b8a8e;
+}
+body.ams-light.ams-panel .ams-metric-related .ams-shortcut {
+ box-shadow:none;background:#fff;
+}
+body.ams-light.ams-panel .ams-metric-dashboard-status {
+ color:#6e6d71;
+}
+body.ams-light.ams-panel .ams-metric-dashboard-status.is-error {
+ color:#a82e2a;border-color:#f1c2c0;background:#fbecec;
+}
+body.ams-light.ams-panel .ams-metric-volume-total {
+ color:#8b8a8e;
+}
+body.ams-light.ams-panel .ams-metric-volume-total strong {
+ color:#10968f!important;
+}
+body.ams-light.ams-panel .ams-metric-volume-svg text {
+ fill:#8b8a8e;
+}
+body.ams-light.ams-panel .ams-metric-volume-svg circle:focus {
+ stroke:#191a1f;
+}
+body.ams-light.ams-panel .ams-metric-chart-values {
+ color:#6e6d71;
+}
+body.ams-light.ams-panel .ams-metric-chart-empty {
+ color:#8b8a8e;
+}
+body.ams-light.ams-panel .ams-metric-summary-icon {
+ background:#fff;border-color:#e4e6ea;box-shadow:inset 0 0 0 3px #f6f7f9;color:#10968f;
+}
+body.ams-light.ams-panel .ams-metric-summary:nth-child(2) .ams-metric-summary-icon,body.ams-light.ams-panel .ams-metric-summary:nth-child(3) .ams-metric-summary-icon {
+ color:#8a5608;
+}
+body.ams-light.ams-panel .ams-metric-summary strong {
+ color:#17b380!important;
+}
+body.ams-light.ams-panel .ams-metric-summary span:not(.ams-metric-summary-icon) {
+ color:#8a5608;
+}
+body.ams-light.ams-panel .ams-metric-summary small {
+ color:#8b8a8e;
+}
+body.ams-light.ams-panel .ams-pay-chip .t {
+ color:#6e6d71!important;
+}
+body.ams-light.ams-panel .ams-pay-chip .v {
+ color:#2748c4!important;
+}
+body.ams-light.ams-panel .ams-pay-chip .s {
+ color:#8b8a8e!important;
+}
+body.ams-light.ams-panel .ams-metric-earning-card {
+ border-color:#cfd2d8;background:#fff;
+}
+body.ams-light.ams-panel .ams-metric-earning-card strong {
+ color:#8b8a8e!important;
+}
+body.ams-light.ams-panel .ams-metric-earning-card small,body.ams-light.ams-panel .ams-metric-earning-state>p {
+ color:#8b8a8e;
+}
+body.ams-light.ams-panel .ams-map-wrap path:not(.ams-on) {
+ fill:#e4e6ea;stroke:#fff;
+}
+body.ams-light.ams-panel .ams-map-wrap path:hover {
+ fill:#10968f!important;
+}
+body.ams-light.ams-panel .welcome-step span b {
+ background:transparent;
+}
+body.ams-light.ams-panel .ams-metric-report-link {
+ color:#1769b0;
+}
+body.ams-light.ams-panel .ams-metric-empty {
+ color:#8b8a8e;
+}
+body.ams-light.ams-panel .rail>.logo {
+ background:#fff!important;box-shadow:none!important;
+}
+/* ===== Final colour pass, 28 September 2026 =====
+   Blue sidebar and light blue top bar, chosen to sit with the approved light theme,
+   the white Skyline SMS logo and the existing card/table surfaces. Visual only. */
+body.ams-light.ams-panel :is(.sidebar,.rail,.side,.appbar) {
+ background:linear-gradient(180deg,#0d111d 0%,#0a0e18 45%,#080b14 100%)!important;border-right-color:#080b14!important;box-shadow:inset -1px 0 0 #1a2030,6px 0 20px #0d111d14!important;
+}
+body.ams-light.ams-panel :is(.sb-brand,.rail>.brand,.side>.brand,.sidebar>.brand,.appbar-top) {
+ border-color:#1a2030!important;
+}
+body.ams-light.ams-panel :is(.brand small,.sb-brand small,.brand-text small,.side .brand small,.rail>.brand-text small,.appbar-top small) {
+ color:#8a8e9b!important;
+}
+body.ams-light.ams-panel :is(.brand h1,.sb-brand h1,.brand-text h1,.side .brand b,.rail>.brand-text h1) {
+ color:#fff!important;
+}
+body.ams-light.ams-panel :is(.sb-sec,.sb-section,.rsec) {
+ color:#8a8e9b!important;
+}
+body.ams-light.ams-panel :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab) {
+ background:transparent!important;border-bottom-color:#262d40!important;color:#c7ccdc!important;box-shadow:none!important;
+}
+body.ams-light.ams-panel :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab) svg {
+ stroke:#8a8e9b!important;color:#8a8e9b!important;
+}
+body.ams-light.ams-panel :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab):hover {
+ background:#ffffff14!important;color:#fff!important;
+}
+body.ams-light.ams-panel :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab,.sub-item,.rsubitem,.dropitem).active {
+ background:#241e42!important;color:#edf1fa!important;box-shadow:inset 3px 0 0 #a79be8!important;
+}
+body.ams-light.ams-panel :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab,.sub-item,.rsubitem,.dropitem).active svg {
+ stroke:#a79be8!important;color:#a79be8!important;
+}
+body.ams-light.ams-panel :is(.sub-item,.rsubitem,.dropitem) {
+ background:#151b29!important;color:#c7ccdc!important;border-bottom-color:#262d40!important;
+}
+body.ams-light.ams-panel :is(.sub-item,.rsubitem,.dropitem):hover {
+ background:#1a2030!important;color:#fff!important;
+}
+body.ams-light.ams-panel :is(.sub-item,.rsubitem,.dropitem).active {
+ background:#241e42!important;color:#fff!important;
+}
+body.ams-light.ams-panel .rail>.logo,body.ams-light.ams-panel :is(.sb-brand,.side>.brand) .logo {
+ box-shadow:0 1px 6px #041e300f!important;
+}
+/* Manager navigation surface — 29 September 2026 audit fix (visual only).
+   Manager is the only panel that renders its menu with .navtabs / .dropmenu, and
+   skyline.css paints both of them white. The menu items inside are styled for the dark
+   sidebar (pale blue text), so the white container left the labels nearly unreadable.
+   Making the menu containers carry the same dark surface as Admin's .sb-nav and Agent's
+   .rail-nav (transparent over the sidebar gradient / the dark submenu surface) restores
+   one consistent colour system. No layout, markup or behaviour change. */
+body.ams-light.ams-panel .navtabs {
+ background:transparent!important;box-shadow:none!important;
+}
+body.ams-light.ams-panel .dropmenu {
+ background:#151b29!important;border-color:#262d40!important;box-shadow:none!important;
+}
+body.ams-light.ams-panel :is(.nav-item,.ritem,.navtab,.side .item,.sidebar .tab,.sub-item,.rsubitem,.dropitem) :is(.lbl,.chev) {
+ color:currentColor!important;
+}
+body.ams-light.ams-panel :is(.topbar,.mgr-topbar,.top,.tb1) {
+ background:linear-gradient(#ffffff 0%,#eaf2fd 100%)!important;border-bottom-color:#e4e6ea!important;box-shadow:0 1px 5px #0d111d14!important;
+}
+body.ams-light.ams-panel :is(.topbar,.mgr-topbar,.top,.tb1) :is(.tb-title,.clock,.tb-date) {
+ color:#2748c4!important;
+}
+body.ams-light.ams-panel .tb-btn {
+ background:#fff!important;border-color:#cfd2d8!important;
+}
+body.ams-light.ams-panel .tb-btn svg {
+ stroke:#1769b0!important;
+}
+body.ams-light.ams-panel .tb-btn:hover {
+ background:#e0ecfc!important;border-color:#b4dafb!important;
+}
+body.ams-light.ams-panel .hamburger {
+ color:#1769b0!important;background:transparent!important;
+}
+body.ams-light.ams-panel .hamburger svg {
+ stroke:#1769b0!important;
+}
+body.ams-light.ams-panel :is(.who,.user-chip,.chip-user) {
+ background:#eaf2fd!important;border-color:#cfd2d8!important;color:#191a1f!important;
+}
+body.ams-light.ams-panel .who :is(.nm,.rl) {
+ color:#191a1f!important;
+}
+body.ams-light.ams-panel .who .av {
+ background:linear-gradient(#1f90f3,#1769b0)!important;color:#fff!important;
+}
+body.ams-light.ams-panel .mgr-mobile-menu {
+ background:#fff!important;border-color:#cfd2d8!important;color:#1769b0!important;
+}
+/* Dashboard card accents — muted professional palette, not random bright colours. */
+body.ams-light.ams-panel .ams-metric-acc-1 {
+ --ams-metric-accent:#1f90f3;--ams-metric-tint:#eaf2fd;--ams-metric-edge:#b4dafb;
+}
+body.ams-light.ams-panel .ams-metric-acc-2 {
+ --ams-metric-accent:#0e7a57;--ams-metric-tint:#e3f6ef;--ams-metric-edge:#a6e1db;
+}
+body.ams-light.ams-panel .ams-metric-acc-3 {
+ --ams-metric-accent:#4b3fc4;--ams-metric-tint:#eeedfc;--ams-metric-edge:#cec7f6;
+}
+body.ams-light.ams-panel .ams-metric-acc-4 {
+ --ams-metric-accent:#8a5608;--ams-metric-tint:#fcf1e2;--ams-metric-edge:#f2d5a5;
+}
+body.ams-light.ams-panel .ams-metric-acc-5 {
+ --ams-metric-accent:#17b380;--ams-metric-tint:#e3f6ef;--ams-metric-edge:#a8dcc7;
+}
+body.ams-light.ams-panel .ams-metric-acc-6 {
+ --ams-metric-accent:#1769b0;--ams-metric-tint:#eaf2fd;--ams-metric-edge:#b4dafb;
+}
+body.ams-light.ams-panel .ams-shortcut[class*="ams-metric-acc-"] {
+ background:linear-gradient(#ffffff,var(--ams-metric-tint))!important;border-color:var(--ams-metric-edge)!important;box-shadow:0 0 0 3px #f0f2f6,inset 0 3px 0 var(--ams-metric-accent)!important;
+}
+body.ams-light.ams-panel .ams-shortcut[class*="ams-metric-acc-"] svg {
+ stroke:var(--ams-metric-accent)!important;
+}
+body.ams-light.ams-panel .ams-shortcut[class*="ams-metric-acc-"]>span {
+ color:#424449!important;
+}
+body.ams-light.ams-panel a.ams-shortcut[class*="ams-metric-acc-"]:hover {
+ background:linear-gradient(#ffffff,var(--ams-metric-tint))!important;border-color:var(--ams-metric-accent)!important;
+}
+body.ams-light.ams-panel #page-dashboard .stat-card.dash-metric[class*="ams-metric-acc-"] {
+ background:linear-gradient(#ffffff,var(--ams-metric-tint))!important;border-color:var(--ams-metric-edge)!important;box-shadow:inset 0 3px 0 var(--ams-metric-accent),inset 0 1px #fff!important;
+}
+body.ams-light.ams-panel #page-dashboard .stat-card.dash-metric[class*="ams-metric-acc-"] .dash-go {
+ background:#fff!important;border-color:var(--ams-metric-edge)!important;
+}
+body.ams-light.ams-panel #page-dashboard .stat-card.dash-metric[class*="ams-metric-acc-"] .dash-go svg {
+ stroke:var(--ams-metric-accent)!important;
+}
+body.ams-light.ams-panel #page-dashboard .stat-card.dash-metric[class*="ams-metric-acc-"] .stat-info p {
+ color:#424449!important;
+}
+body.ams-light.ams-panel #page-dashboard .stat-card.dash-metric[class*="ams-metric-acc-"] .stat-info h3 {
+ color:#1769b0!important;
+}
+body.ams-light.ams-panel .ams-copy-inline {
+ border-color:#b4dafb;background:#fff;color:#1f90f3;
+}
+body.ams-light.ams-panel .ams-copy-inline svg {
+ stroke:currentColor;fill:none;
+}
+body.ams-light.ams-panel .ams-copy-inline:hover {
+ background:#eaf2fd;border-color:#7fa9f7;
+}
+body.ams-light.ams-panel .ams-copy-inline.is-copied {
+ background:#e3f6ef;border-color:#a8dcc7;color:#17b380;
 }

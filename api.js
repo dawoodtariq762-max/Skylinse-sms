@@ -3,13 +3,13 @@
  * Uses localStorage token, adds Authorization header, redirects on 401.
  */
 (function () {
-  const AUTH_KEYS = ['ms_token','ms_role','ms_user','ms_name','gx_chat_unlock_token','gx_agent_sec_unlocked'];
+  const AUTH_KEYS = ['ams_token','ams_role','ams_user','ams_name','ams_chat_unlock_token','ams_agent_sec_unlocked'];
   function clearAuthStorage(){
     try{ AUTH_KEYS.forEach(k=>{ sessionStorage.removeItem(k); localStorage.removeItem(k); }); }catch(e){}
   }
   const STORE = (k) => sessionStorage.getItem(k) || localStorage.getItem(k);
-  const TOKEN = () => STORE('ms_token');
-  const ROLE = () => STORE('ms_role');
+  const TOKEN = () => STORE('ams_token');
+  const ROLE = () => STORE('ams_role');
 
   function guard(expectedRole) {
     if (!TOKEN()) { location.href = '/panel-login'; return false; }
@@ -21,7 +21,7 @@
     const opt = { method, headers: { 'Content-Type': 'application/json' } };
     const t = TOKEN();
     if (t) opt.headers['Authorization'] = 'Bearer ' + t;
-    const unlock = sessionStorage.getItem('gx_chat_unlock_token') || localStorage.getItem('gx_chat_unlock_token');
+    const unlock = sessionStorage.getItem('ams_chat_unlock_token') || localStorage.getItem('ams_chat_unlock_token');
     if (unlock) opt.headers['X-Chat-Unlock-Token'] = unlock;
     if (body !== undefined) opt.body = JSON.stringify(body);
     const r = await fetch('/api' + path, opt);
@@ -36,7 +36,7 @@
     const opt = { method: 'POST', body: formData, headers: {} };
     const t = TOKEN();
     if (t) opt.headers['Authorization'] = 'Bearer ' + t;
-    const unlock = sessionStorage.getItem('gx_chat_unlock_token') || localStorage.getItem('gx_chat_unlock_token');
+    const unlock = sessionStorage.getItem('ams_chat_unlock_token') || localStorage.getItem('ams_chat_unlock_token');
     if (unlock) opt.headers['X-Chat-Unlock-Token'] = unlock;
     const r = await fetch('/api' + path, opt);
     if (r.status === 401) { clearAuthStorage(); location.href = '/panel-login'; throw new Error('Session expired'); }
@@ -96,14 +96,46 @@
 
 
 
+  /* ---- Appearance (Light / Dark). Persisted per browser; no server write. ---- */
+  const THEME_KEY='ams_theme';
+  function currentTheme(){ try{ return localStorage.getItem(THEME_KEY)==='dark'?'dark':'light'; }catch(e){ return 'light'; } }
+  function applyTheme(mode){
+    const dark = mode==='dark';
+    document.documentElement.classList.toggle('ams-dark', dark);
+    document.documentElement.classList.toggle('ams-light', !dark);
+    document.body.classList.toggle('ams-dark', dark);
+    document.body.classList.toggle('ams-light', !dark);
+    try{ localStorage.setItem(THEME_KEY, dark?'dark':'light'); }catch(e){}
+    document.querySelectorAll('[data-theme-btn]').forEach(b=>{
+      const on = b.getAttribute('data-theme-btn')===mode;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on?'true':'false');
+    });
+    const lbl=document.getElementById('msThemeLabel');
+    if(lbl) lbl.textContent = 'Appearance: '+(dark?'Dark':'Light')+' \u00b7 Skyline SMS';
+    /* FINAL POLISH 2B: every theme control in the page (the top-nav sun/moon toggle,
+       any [data-theme-btn]) repaints from this one event, so the switch is instant and
+       stays in sync no matter who triggered it (toggle, settings panel, stored value). */
+    try{ document.dispatchEvent(new CustomEvent('ams:theme',{detail:{theme:dark?'dark':'light'}})); }catch(e){}
+  }
+  window.amsSetTheme = applyTheme;
+  if (document.body) applyTheme(currentTheme());
+
   function ensureSettingsUI(){
     if(document.getElementById('msSettingsPanel')) return;
     const panel=document.createElement('div');
     panel.id='msSettingsPanel'; panel.className='ms-notif-panel'; panel.style.top='68px';
     panel.innerHTML=`<div class="ms-notif-head"><b>Panel Settings</b><div class="ms-notif-actions"><button id="msCloseSettings">×</button></div></div>
       <div class="ms-notif-list" style="padding:14px 16px">
-        <div class="ms-switch">Appearance: Light · Skyline SMS</div>
+        <div class="ms-switch" id="msThemeLabel">Appearance: Light · Skyline SMS</div>
+        <div class="ms-theme-row" role="group" aria-label="Appearance">
+          <button type="button" class="ms-theme-btn" data-theme-btn="light">Light</button>
+          <button type="button" class="ms-theme-btn" data-theme-btn="dark">Dark</button>
+        </div>
       </div>`;
+    panel.querySelectorAll('[data-theme-btn]').forEach(b=>{
+      b.onclick=()=>applyTheme(b.getAttribute('data-theme-btn'));
+    });
     document.body.appendChild(panel);
     document.getElementById('msCloseSettings').onclick=()=>panel.classList.remove('show');
   }
@@ -113,16 +145,17 @@
     if(document.getElementById('msThemeCss')) return;
     const st=document.createElement('style');st.id='msThemeCss';
     st.textContent=`
-      /* Skyline SMS runtime motion and widgets; palette in galaxy.css. */
+      /* Skyline SMS runtime motion and widgets; palette in ams.css. */
       .page.active{animation:msPageFade .24s cubic-bezier(.22,.9,.3,1) both}.card,.table-wrap,.toolbar,.stat-card{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background-color .18s ease}button,.btn,.tb-btn,.nav-item,.sub-item,.tab,.ritem,.rsubitem,.navtab,.dropitem{transition:transform .14s ease,box-shadow .14s ease,background-color .14s ease,color .14s ease,opacity .14s ease}button:active,.btn:active{transform:translateY(1px) scale(.99)}tbody tr{transition:background-color .14s ease}@keyframes msPageFade{from{opacity:.55;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-      .ms-progress{position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#007acc,#6db9df,#0054b8);z-index:20000;transform-origin:left;animation:msProgress .7s ease both}.ms-working{box-shadow:0 0 0 4px rgba(0,122,204,.20)!important;filter:brightness(1.04)}@keyframes msProgress{0%{transform:scaleX(0)}70%{transform:scaleX(.82)}100%{transform:scaleX(1);opacity:0}}
-      .ms-toast{position:fixed;right:22px;bottom:22px;background:linear-gradient(96deg,#eef8ff,#ffffff);border:1px solid rgba(0,122,204,.34);color:#333;border-radius:12px;padding:11px 14px;font-weight:700;font-size:13px;box-shadow:0 20px 50px rgba(0,70,110,.14);z-index:20001;opacity:0;transform:translateY(8px);animation:msToast .95s ease both}@keyframes msToast{15%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(8px)}}
+      .ms-progress{position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#3256df,#7fa9f7,#2748c4);z-index:20000;transform-origin:left;animation:msProgress .7s ease both}.ms-working{box-shadow:0 0 0 4px rgba(0,122,204,.20)!important;filter:brightness(1.04)}@keyframes msProgress{0%{transform:scaleX(0)}70%{transform:scaleX(.82)}100%{transform:scaleX(1);opacity:0}}
+      .ms-toast{position:fixed;right:22px;bottom:22px;background:linear-gradient(96deg,#f0f4fe,#ffffff);border:1px solid rgba(0,122,204,.34);color:#2d2e33;border-radius:12px;padding:11px 14px;font-weight:700;font-size:13px;box-shadow:0 20px 50px rgba(0,70,110,.14);z-index:20001;opacity:0;transform:translateY(8px);animation:msToast .95s ease both}@keyframes msToast{15%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(8px)}}
       [data-page]{position:relative}.ms-page-link-overlay{position:absolute;inset:0;z-index:3;background:transparent!important;color:inherit!important;text-decoration:none!important}.ms-page-link-overlay:focus{outline:2px solid rgba(232,21,26,.55);outline-offset:2px;border-radius:inherit}
     `
     document.head.appendChild(st);
   }
   async function openSettings(){
     ensureSettingsUI();
+    applyTheme(currentTheme());
     document.getElementById('msSettingsPanel').classList.add('show');
   }
 
@@ -147,24 +180,26 @@
     if(document.getElementById('msProfileMenu')) return;
     const css=document.createElement('style');
     css.textContent=`
-      .ms-profile-menu{position:fixed;right:24px;top:60px;background:#fff;border:1px solid #E2E8F0;border-radius:14px;box-shadow:0 18px 48px rgba(15,23,42,.16);z-index:10000;display:none;min-width:190px;overflow:hidden}.ms-profile-menu.show{display:block}.ms-profile-item{padding:12px 14px;cursor:pointer;font-weight:700;color:#1E293B;border-bottom:1px solid #F1F5F9}.ms-profile-item:hover{background:#F8FAFC}.ms-profile-item:last-child{border-bottom:0}
-      .ms-modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10001;display:none;align-items:center;justify-content:center;padding:18px}.ms-modal-backdrop.show{display:flex}.ms-modal{width:min(720px,96vw);max-height:86vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #E2E8F0;box-shadow:0 28px 80px rgba(15,23,42,.22)}.ms-modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #E2E8F0}.ms-modal-head h3{margin:0;color:#1E293B}.ms-modal-body{padding:18px}.ms-modal-foot{padding:14px 18px;border-top:1px solid #E2E8F0;display:flex;justify-content:flex-end;gap:10px}.ms-x{border:0;background:#F1F5F9;border-radius:9px;width:32px;height:32px;cursor:pointer}.ms-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ms-field{margin-bottom:14px}.ms-field label{display:block;font-weight:800;font-size:13px;color:#334155;margin-bottom:7px}.ms-field input{width:100%;height:42px;border:1px solid #CBD5E1;border-radius:10px;padding:0 12px}.ms-btn{border:0;border-radius:10px;min-height:38px;padding:8px 14px;font-weight:800;cursor:pointer}.ms-btn.primary{background:linear-gradient(135deg,#2563EB,#06B6D4);color:white}.ms-btn.ghost{background:#fff;color:#334155;border:1px solid #CBD5E1}.ms-activity-table{width:100%;border-collapse:separate;border-spacing:0 4px}.ms-activity-table th{background:#F1F5F9;color:#334155;text-align:left;padding:10px;font-size:12px}.ms-activity-table td{background:#fff;border-bottom:1px solid #F1F5F9;padding:10px;color:#1E293B;font-size:13px}`;
+      .ms-profile-menu{position:fixed;right:24px;top:60px;background:#fff;border:1px solid #e4e6ea;border-radius:14px;box-shadow:0 18px 48px rgba(25,26,31,.16);z-index:10000;display:none;min-width:190px;overflow:hidden}.ms-profile-menu.show{display:block}.ms-profile-item{padding:12px 14px;cursor:pointer;font-weight:700;color:#2d2e33;border-bottom:1px solid #f0f2f6}.ms-profile-item:hover{background:#f6f7f9}.ms-profile-item:last-child{border-bottom:0}
+      .ms-modal-backdrop{position:fixed;inset:0;background:rgba(25,26,31,.45);z-index:10001;display:none;align-items:center;justify-content:center;padding:18px}.ms-modal-backdrop.show{display:flex}.ms-modal{width:min(720px,96vw);max-height:86vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #e4e6ea;box-shadow:0 28px 80px rgba(25,26,31,.22)}.ms-modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #e4e6ea}.ms-modal-head h3{margin:0;color:#2d2e33}.ms-modal-body{padding:18px}.ms-modal-foot{padding:14px 18px;border-top:1px solid #e4e6ea;display:flex;justify-content:flex-end;gap:10px}.ms-x{border:0;background:#f0f2f6;border-radius:9px;width:32px;height:32px;cursor:pointer}.ms-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ms-field{margin-bottom:14px}.ms-field label{display:block;font-weight:800;font-size:13px;color:#424449;margin-bottom:7px}.ms-field input{width:100%;height:42px;border:1px solid #cfd2d8;border-radius:10px;padding:0 12px}.ms-btn{border:0;border-radius:10px;min-height:38px;padding:8px 14px;font-weight:800;cursor:pointer}.ms-btn.primary{background:linear-gradient(135deg,#4064e6,#10968f);color:white}.ms-btn.ghost{background:#fff;color:#424449;border:1px solid #cfd2d8}.ms-activity-table{width:100%;border-collapse:separate;border-spacing:0 4px}.ms-activity-table th{background:#f0f2f6;color:#424449;text-align:left;padding:10px;font-size:12px}.ms-activity-table td{background:#fff;border-bottom:1px solid #f0f2f6;padding:10px;color:#2d2e33;font-size:13px}`;
     document.head.appendChild(css);
     const menu=document.createElement('div');menu.id='msProfileMenu';menu.className='ms-profile-menu';menu.innerHTML=`<div class="ms-profile-item" id="msOpenProfile">Profile</div><div class="ms-profile-item" id="msOpenActivity">Activity Log</div>`;document.body.appendChild(menu);
-    const modal=document.createElement('div');modal.id='msProfileModal';modal.className='ms-modal-backdrop';modal.innerHTML=`<div class="ms-modal"><div class="ms-modal-head"><h3>Profile</h3><button class="ms-x" id="msCloseProfile">×</button></div><div class="ms-modal-body"><div class="ms-form-grid"><div class="ms-field"><label>Username</label><input id="msProfileUsername"></div><div class="ms-field"><label>Current Password</label><input type="password" id="msProfileCurrent" placeholder="Required for password change"></div><div class="ms-field"><label>New Password</label><input type="password" id="msProfileNew"></div><div class="ms-field"><label>Confirm New Password</label><input type="password" id="msProfileConfirm"></div><div class="ms-field ms-admin-only"><label>Admin Security Code</label><input type="password" id="msProfileAdminCode" placeholder="Required for admin password change"></div></div><div id="msSecurityCodeBox" class="ms-admin-only" style="margin-top:16px;padding-top:14px;border-top:1px solid #E2E8F0"><h4 style="margin:0 0 10px;color:#1E293B">Change Admin Security Code</h4><div class="ms-form-grid"><div class="ms-field"><label>Old Security Code</label><input type="password" id="msOldSecCode"></div><div class="ms-field"><label>New Security Code</label><input type="password" id="msNewSecCode"></div><div class="ms-field"><label>Confirm New Security Code</label><input type="password" id="msConfirmSecCode"></div></div><button class="ms-btn primary" id="msChangeSecCode" type="button">Change Security Code</button></div><div id="msProfileMsg" style="font-size:13px;color:#64748B;margin-top:10px"></div></div><div class="ms-modal-foot"><button class="ms-btn ghost" id="msProfileCancel">Cancel</button><button class="ms-btn primary" id="msProfileSave">Save Profile</button></div></div>`;document.body.appendChild(modal);
+    const modal=document.createElement('div');modal.id='msProfileModal';modal.className='ms-modal-backdrop';modal.innerHTML=`<div class="ms-modal"><div class="ms-modal-head"><h3>Profile</h3><button class="ms-x" id="msCloseProfile">×</button></div><div class="ms-modal-body"><div class="ms-form-grid"><div class="ms-field"><label>Username</label><input id="msProfileUsername"></div><div class="ms-field"><label>Current Password</label><input type="password" id="msProfileCurrent" placeholder="Required for password change"></div><div class="ms-field"><label>New Password</label><input type="password" id="msProfileNew"></div><div class="ms-field"><label>Confirm New Password</label><input type="password" id="msProfileConfirm"></div><div class="ms-field ms-admin-only"><label>Admin Security Code</label><input type="password" id="msProfileAdminCode" placeholder="Required for admin password change"></div></div><div id="msSecurityCodeBox" class="ms-admin-only" style="margin-top:16px;padding-top:14px;border-top:1px solid #e4e6ea"><h4 style="margin:0 0 10px;color:#2d2e33">Change Admin Security Code</h4><div class="ms-form-grid"><div class="ms-field"><label>Old Security Code</label><input type="password" id="msOldSecCode"></div><div class="ms-field"><label>New Security Code</label><input type="password" id="msNewSecCode"></div><div class="ms-field"><label>Confirm New Security Code</label><input type="password" id="msConfirmSecCode"></div></div><button class="ms-btn primary" id="msChangeSecCode" type="button">Change Security Code</button></div><div id="msProfileMsg" style="font-size:13px;color:#8b8a8e;margin-top:10px"></div></div><div class="ms-modal-foot"><button class="ms-btn ghost" id="msProfileCancel">Cancel</button><button class="ms-btn primary" id="msProfileSave">Save Profile</button></div></div>`;document.body.appendChild(modal);
     const act=document.createElement('div');act.id='msActivityModal';act.className='ms-modal-backdrop';act.innerHTML=`<div class="ms-modal"><div class="ms-modal-head"><h3>Activity Log</h3><button class="ms-x" id="msCloseActivity">×</button></div><div class="ms-modal-body" id="msActivityBody">Loading...</div><div class="ms-modal-foot"><button class="ms-btn ghost" id="msActivityClose">Close</button></div></div>`;document.body.appendChild(act);
     document.getElementById('msOpenProfile').onclick=()=>{menu.classList.remove('show');openProfileModal();};
     document.getElementById('msOpenActivity').onclick=()=>{menu.classList.remove('show');openActivityModal();};
     document.getElementById('msCloseProfile').onclick=document.getElementById('msProfileCancel').onclick=()=>modal.classList.remove('show');
     document.getElementById('msCloseActivity').onclick=document.getElementById('msActivityClose').onclick=()=>act.classList.remove('show');
     const secBox=document.getElementById('msSecurityCodeBox');
-    if(secBox && !document.getElementById('msCarrierLockBox')) secBox.insertAdjacentHTML('afterend', `<div id="msCarrierLockBox" class="ms-admin-only" style="margin-top:16px;padding-top:14px;border-top:1px solid #E2E8F0"><h4 style="margin:0 0 10px;color:#1E293B">Change Carrier Integration Password</h4><div class="ms-form-grid"><div class="ms-field"><label>Admin Security Code</label><input type="password" id="msCarrierSecCode"></div><div class="ms-field"><label>New Carrier Password</label><input type="password" id="msCarrierNewPass"></div><div class="ms-field"><label>Confirm Carrier Password</label><input type="password" id="msCarrierConfirmPass"></div></div><button class="ms-btn primary" id="msChangeCarrierPass" type="button">Change Carrier Password</button></div>`);
+    if(secBox && !document.getElementById('msCarrierLockBox')) secBox.insertAdjacentHTML('afterend', `<div id="msCarrierLockBox" class="ms-admin-only" style="margin-top:16px;padding-top:14px;border-top:1px solid #e4e6ea"><h4 style="margin:0 0 10px;color:#2d2e33">Change Carrier Integration Password</h4><div class="ms-form-grid"><div class="ms-field"><label>Admin Security Code</label><input type="password" id="msCarrierSecCode"></div><div class="ms-field"><label>New Carrier Password</label><input type="password" id="msCarrierNewPass"></div><div class="ms-field"><label>Confirm Carrier Password</label><input type="password" id="msCarrierConfirmPass"></div></div><button class="ms-btn primary" id="msChangeCarrierPass" type="button">Change Carrier Password</button></div>`);
     document.getElementById('msProfileSave').onclick=saveOwnProfile;
     document.getElementById('msChangeSecCode').onclick=changeAdminSecurityCode;
     document.getElementById('msChangeCarrierPass').onclick=changeCarrierLockPassword;
   }
   function openProfileMenu(){
-    if(ROLE()==='client'){ return; }
+    /* Clients have no admin flyout; their profile control must still do
+       something, so it opens the profile dialog (username / password). */
+    if(ROLE()==='client'){ openProfileModal(); return; }
     ensureProfileUI();
     const m=document.getElementById('msProfileMenu');
     m.classList.toggle('show');
@@ -177,7 +212,7 @@
     try{
       const body={username:document.getElementById('msProfileUsername').value.trim(),current_password:document.getElementById('msProfileCurrent').value,new_password:document.getElementById('msProfileNew').value,confirm_password:document.getElementById('msProfileConfirm').value,admin_security_code:document.getElementById('msProfileAdminCode')?document.getElementById('msProfileAdminCode').value:''};
       const r=await req('PUT','/profile',body);
-      sessionStorage.setItem('ms_token',r.token);sessionStorage.setItem('ms_user',r.user.username);sessionStorage.setItem('ms_role',r.user.role);sessionStorage.setItem('ms_name',r.user.name||r.user.username);localStorage.setItem('ms_token',r.token);localStorage.setItem('ms_user',r.user.username);localStorage.setItem('ms_role',r.user.role);localStorage.setItem('ms_name',r.user.name||r.user.username);
+      sessionStorage.setItem('ams_token',r.token);sessionStorage.setItem('ams_user',r.user.username);sessionStorage.setItem('ams_role',r.user.role);sessionStorage.setItem('ams_name',r.user.name||r.user.username);localStorage.setItem('ams_token',r.token);localStorage.setItem('ams_user',r.user.username);localStorage.setItem('ams_role',r.user.role);localStorage.setItem('ams_name',r.user.name||r.user.username);
       document.getElementById('msProfileMsg').textContent='Profile updated successfully.';
       setTimeout(()=>location.reload(),700);
     }catch(e){document.getElementById('msProfileMsg').textContent='Error: '+e.message;}
@@ -199,7 +234,7 @@
     }catch(e){document.getElementById('msProfileMsg').textContent='Error: '+e.message;}
   }
   function renderActivityTable(title, rows){
-    return `<h4 style="margin:14px 0 8px;color:#1E293B">${title}</h4><table class="ms-activity-table"><thead><tr><th>Date</th><th>User</th><th>Role</th><th>Action</th><th>IP</th></tr></thead><tbody>${(rows||[]).map(r=>`<tr><td>${(r.created_at||'').slice(0,19)}</td><td>${r.username||'—'}</td><td>${r.role||'—'}</td><td><b>${r.action}</b></td><td>${r.ip||'—'}</td></tr>`).join('')||'<tr><td colspan="5">No activity found</td></tr>'}</tbody></table>`;
+    return `<h4 style="margin:14px 0 8px;color:#2d2e33">${title}</h4><table class="ms-activity-table"><thead><tr><th>Date</th><th>User</th><th>Role</th><th>Action</th><th>IP</th></tr></thead><tbody>${(rows||[]).map(r=>`<tr><td>${(r.created_at||'').slice(0,19)}</td><td>${r.username||'—'}</td><td>${r.role||'—'}</td><td><b>${r.action}</b></td><td>${r.ip||'—'}</td></tr>`).join('')||'<tr><td colspan="5">No activity found</td></tr>'}</tbody></table>`;
   }
   async function openActivityModal(){
     if(ROLE()==='client') return;
@@ -234,17 +269,17 @@
   /* ===== P11: ROLE-BASED PAGE-SIZE OPTIONS =====
      UI options per role (backend ROLE_PAGE_MAX independently enforces the real ceiling).
      Previous options (recorded): static <option> lists in HTML (mostly 25..1000/All). */
-  var GX_ROLE_PAGE_OPTIONS = {
-    client:  ['25', '50', '100', '500', 'All'],
-    test:    ['25', '50', '100', '500', 'All'],
-    agent:   ['25', '50', '100', '250', '500', '1000', 'All'],
-    manager: ['25', '50', '100', '250', '500', '1000', '2500', '5000', 'All'],
+  var AMS_ROLE_PAGE_OPTIONS = {
+    client:  ['25', '50', '100', '500'],
+    test:    ['25', '50', '100', '500'],
+    agent:   ['25', '50', '100', '250', '500', '1000'],
+    manager: ['25', '50', '100', '250', '500', '1000', '2500', '5000'],
     admin:   ['25', '50', '100', '250', '500', '1000', '2500', '5000', '10000', '20000', '30000', '50000', '100000', 'All']
   };
-  function gxApplyRolePageOptions() {
+  function amsApplyRolePageOptions() {
     try {
-      var role = (localStorage.getItem('ms_role') || '').toLowerCase();
-      var opts = GX_ROLE_PAGE_OPTIONS[role];
+      var role = (localStorage.getItem('ams_role') || '').toLowerCase();
+      var opts = AMS_ROLE_PAGE_OPTIONS[role];
       if (!opts) return;
       var want = '|' + opts.join('|') + '|';
       document.querySelectorAll('select[id$="Len"]').forEach(function(sel) {
@@ -256,11 +291,11 @@
       });
     } catch (e) { console.warn('role page options failed', e); }
   }
-  window.gxApplyRolePageOptions = gxApplyRolePageOptions;
+  window.amsApplyRolePageOptions = amsApplyRolePageOptions;
   /* re-apply twice: immediately + delayed (panel late-renders can rewrite selects) */
-  gxApplyRolePageOptions();
-  setTimeout(gxApplyRolePageOptions, 1500);
-  document.addEventListener('DOMContentLoaded', function() { gxApplyRolePageOptions(); setTimeout(gxApplyRolePageOptions, 1500); });
+  amsApplyRolePageOptions();
+  setTimeout(amsApplyRolePageOptions, 1500);
+  document.addEventListener('DOMContentLoaded', function() { amsApplyRolePageOptions(); setTimeout(amsApplyRolePageOptions, 1500); });
   function paginateRows(key, rows, len, infoId, rerender) {
     rows = rows || [];
     const state = window.__pagerState || (window.__pagerState = {});
@@ -344,7 +379,7 @@
 
   function initRoutePersistence(){
     if(!TOKEN()) return;
-    const key='ms_last_page_'+panelKeyForStorage();
+    const key='ams_last_page_'+panelKeyForStorage();
     document.addEventListener('click', (e)=>{
       const el=e.target.closest('[data-page]');
       if(el && el.dataset && el.dataset.page) localStorage.setItem(key, el.dataset.page);
@@ -388,128 +423,14 @@
     const tables=[...page.querySelectorAll('table')].filter(t=>(t.offsetParent!==null || !document.body.offsetParent) && t.querySelector('tbody'));
     return tables[0] || page.querySelector('table');
   }
-  /* Progressive table painting for very large "Show Records" sizes.
-     The SMS Numbers list used to be written into the DOM in a single innerHTML
-     assignment: with tens of thousands of rows that one operation froze the tab (the
-     main thread is busy building hundreds of thousands of cells before it can paint or
-     respond to a click). Small pages keep the exact old single-assignment path; large
-     ones are appended in chunks with a yield to the browser between chunks, so the page
-     stays usable, the row count is shown while it fills, and the final DOM is identical
-     (same rows, same order, same markup, same handlers). Presentation only — no data,
-     filter, pagination, copy or API change. */
-  const PAINT_CAP=5000;   /* rows actually put into the page for one big "Show Records" view */
-  async function paintRows(container, html, infoEl, busyText){
-    if(!container) return;
-    const token=(container.__gxPaintToken=(container.__gxPaintToken||0)+1);
-    if(typeof html!=='string' || html.length<=120000){ container.innerHTML=html; container.__gxFullRowsHtml=''; try{ clearPaintNote(); }catch(e){} return; }
-    container.innerHTML='';
-    let totalRows=(html.match(/<\/tr>/g)||[]).length;
-    let cappedFrom=0;
-    container.__gxFullRowsHtml='';   /* previous complete markup no longer valid */
-    /* A 10k-50k row table is beyond what a browser can lay out smoothly, so only the
-       first PAINT_CAP rows are put on the page; a short note under the table says so and
-       makes clear that Copy still copies every loaded number and that filters/Show
-       Records still apply to the whole set. (Before this, "All" simply froze the tab.) */
-    if(totalRows>PAINT_CAP){
-      let idx=-1, seen=0;
-      while(seen<PAINT_CAP){ idx=html.indexOf('</tr>', idx+1); if(idx===-1) break; seen++; }
-      if(idx!==-1){ cappedFrom=totalRows; container.__gxFullRowsHtml=html; html=html.slice(0, idx+5); totalRows=seen; }
-    }
-    const chunk=180*1024;     /* characters parsed off-DOM per step (~1.5-2k rows) */
-    const flushRows=5000;     /* rows handed to the live table per batch */
-    /* The expensive part of a huge table is the browser's table layout, which re-runs
-       on every change while the table is laid out — so the body is kept out of layout
-       while it is filled and laid out once at the end. The list area is empty for a
-       moment (the progress line is visible) and then appears complete. */
-    let ended=false;
-    window.__gxPainting=true;
-    const prevDisplay=container.style.display;
-    container.style.display='none';
-    const finish=()=>{ if(ended) return; ended=true; try{ container.style.display=prevDisplay||''; container.getBoundingClientRect(); }catch(e){}
-      if(cappedFrom){ try{ showPaintNote(container, totalRows, cappedFrom); }catch(e){} }
-      window.__gxPainting=false;
-      try{ window.dispatchEvent(new CustomEvent('gx-paint-done',{detail:{container:container}})); }catch(e){} };
-    let i=0, painted=0;
-    let pending=document.createDocumentFragment();
-    const moveRows=(nodes)=>{
-      for(const n of [...nodes.childNodes]){
-        if(n.nodeType===1 && /^(TBODY|THEAD|TFOOT)$/.test(n.tagName)){ while(n.firstChild) pending.appendChild(n.firstChild); }
-        else pending.appendChild(n);
-      }
-    };
-    try{
-      while(i<html.length){
-        if(container.__gxPaintToken!==token){ finish(); return; }   /* a newer render took over */
-        let end=Math.min(html.length, i+chunk);
-        let cut=html.lastIndexOf('</tr>', end);
-        if(cut<=i) cut=end; else cut+=5;
-        const seg=html.slice(i,cut);
-        const before=pending.childElementCount;
-        try{
-          const t=document.createElement('table'); t.innerHTML=seg; moveRows(t);
-        }catch(e){ }
-        painted+=pending.childElementCount-before;
-        i=cut;
-        if(pending.childElementCount>=flushRows){
-          container.appendChild(pending); pending=document.createDocumentFragment();
-        }
-        if(infoEl && busyText) infoEl.textContent=busyText.replace('{n}', painted.toLocaleString()).replace('{t}', totalRows.toLocaleString());
-        await new Promise(r=>setTimeout(r,0));
-      }
-      if(container.__gxPaintToken!==token){ finish(); return; }
-      if(pending.childElementCount) container.appendChild(pending);
-    } finally { finish(); }
-  }
-  /* One-line, non-blocking note under the numbers table when a view was too large to
-     paint completely (see PAINT_CAP). */
-  function showPaintNote(container, shown, total){
-    const host=container.closest('.table-wrap') || container.parentElement;
-    if(!host) return;
-    let note=document.getElementById('gxPaintNote');
-    if(!note){ note=document.createElement('div'); note.id='gxPaintNote'; note.className='gx-paint-note'; }
-    note.textContent='Showing the first '+Number(shown).toLocaleString()+' of '+Number(total).toLocaleString()
-      +' rows — the table stays responsive this way. Copy / export still use all '+Number(total).toLocaleString()
-      +' loaded numbers, and filters + Show Records still apply to the complete list.';
-    if(note.parentElement!==host) host.appendChild(note);
-  }
-  function clearPaintNote(){ const n=document.getElementById('gxPaintNote'); if(n) n.remove(); }
-  /* Brief "Copied ✓" state on the button that was pressed (mirrors the SMS Numbers
-     copy button). Restores the original button markup after 1.5 s. UI only. */
-  function flashCopyDone(btn){
-    try{
-      if(!btn) return;
-      if(!btn.dataset.gxOrigHtml) btn.dataset.gxOrigHtml = btn.innerHTML;
-      btn.innerHTML = '<span style="font-size:12px;color:#10b981;font-weight:600;white-space:nowrap">Copied ✓</span>';
-      clearTimeout(btn.__gxCopyTimer);
-      btn.__gxCopyTimer = setTimeout(()=>{
-        try{ if(btn.dataset.gxOrigHtml){ btn.innerHTML = btn.dataset.gxOrigHtml; delete btn.dataset.gxOrigHtml; } }catch(e){}
-      }, 1500);
-    }catch(e){}
-  }
   function exportTable(btn, mode){
     const table=findExportTable(btn); if(!table){ alert('No table found to export.'); return; }
-    /* If the visible table was capped for speed (see PAINT_CAP), copy/CSV/Excel must
-       still cover every loaded row — build the matrix from the complete markup. */
-    let data;
-    const holder=table.tBodies && table.tBodies[0];
-    if(holder && holder.__gxFullRowsHtml){
-      try{
-        const t=document.createElement('table');
-        const head=table.querySelector('thead'); if(head) t.appendChild(head.cloneNode(true));
-        const body=document.createElement('tbody'); body.innerHTML=holder.__gxFullRowsHtml; t.appendChild(body);
-        data=tableToMatrix(t);
-      }catch(e){ data=null; }
-    }
-    if(!data || !data.length) data=tableToMatrix(table);
-    if(!data.length){ alert('No rows to export.'); return; }
-    const title=(document.querySelector('.page.active h2')?.textContent||document.title||'powerx-export').trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'') || 'powerx-export';
+    const data=tableToMatrix(table); if(!data.length){ alert('No rows to export.'); return; }
+    const title=(document.querySelector('.page.active h2')?.textContent||document.title||'skyline-sms-export').trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'') || 'skyline-sms-export';
     const csv=data.map(r=>r.map(csvEscape).join(',')).join('\n');
     if(mode==='copy'){
       const copyText=data.map(r=>r.join('\t')).join('\n');
-      /* Same visual confirmation the SMS Numbers copy button already shows ("Copied ✓",
-         brief green tick), so every Copy button in every panel behaves identically.
-         Presentation only — the copied text and the copy mechanics are untouched. */
-      const done=()=>{ flashCopyDone(btn); showToast('Copied table data'); };
+      const done=()=>showToast('Copied table data');
       const syncCopy=()=>{
         const ta=document.createElement('textarea');
         ta.value=copyText;
@@ -534,7 +455,7 @@
     const w=window.open('','_blank');
     if(!w){ alert('Popup blocked. Please allow popups.'); return; }
     const safeTitle=title.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
-    w.document.write('<!doctype html><html><head><title>'+safeTitle+'</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h2{margin:0 0 14px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #ccc;padding:7px;text-align:left;vertical-align:top}th{background:#f1f5f9}</style></head><body><h2>'+safeTitle+'</h2>'+table.outerHTML+'</body></html>');
+    w.document.write('<!doctype html><html><head><title>'+safeTitle+'</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h2{margin:0 0 14px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #cfd2d8;padding:7px;text-align:left;vertical-align:top}th{background:#f0f2f6}</style></head><body><h2>'+safeTitle+'</h2>'+table.outerHTML+'</body></html>');
     w.document.close(); w.focus(); setTimeout(()=>w.print(),300);
   }
   async function waitNumberJob(jobId, initial={}){
@@ -613,7 +534,7 @@
   }
   function initExportButtons(){
     bindExportButtons();
-    const mo=new MutationObserver(()=>{ if(window.__gxPainting) return; /* see paintRows */ clearTimeout(window.__msExportBindTimer); window.__msExportBindTimer=setTimeout(bindExportButtons,120); });
+    const mo=new MutationObserver(()=>{ clearTimeout(window.__msExportBindTimer); window.__msExportBindTimer=setTimeout(bindExportButtons,120); });
     mo.observe(document.body,{childList:true,subtree:true});
     document.addEventListener('click',(e)=>{
       const btn=e.target.closest('.exp-btns button'); if(!btn) return;
@@ -635,6 +556,10 @@
 
   function closeAllSidebars(){
     try{
+      /* AMSNav owns the off-canvas state (body.ams-ui-sb-open). Panels whose historic
+         close functions were not adopted by AMSNav (Agent has only toggleRail)
+         stayed open after overlay-link navigation, so close through AMSNav too. */
+      if(window.AMSNav && window.innerWidth <= 900) window.AMSNav.close();
       document.getElementById('sidebar')?.classList.remove('show');
       document.getElementById('overlay')?.classList.remove('show');
       document.getElementById('sbOverlay')?.classList.remove('show');
@@ -649,7 +574,7 @@
 
   function activatePageFromHistory(page){
     if(!page) page='dashboard';
-    try{ localStorage.setItem('ms_last_page_'+panelKeyForStorage(), page); }catch(e){}
+    try{ localStorage.setItem('ams_last_page_'+panelKeyForStorage(), page); }catch(e){}
     if(typeof window.showPageByName==='function') { window.showPageByName(page); return; }
     const safePage=String(page).replace(/"/g,'\\"');
     const el=document.querySelector(`[data-page="${safePage}"]`);
@@ -681,7 +606,7 @@
       window.__msPageLinkTimer=setTimeout(initPageLinks,200);
     });
     linkMo.observe(document.body,{childList:true,subtree:true});
-    const initialPage=pageFromUrl() || localStorage.getItem('ms_last_page_'+panelKeyForStorage()) || currentPageName() || defaultPageForCurrentPanel();
+    const initialPage=pageFromUrl() || localStorage.getItem('ams_last_page_'+panelKeyForStorage()) || currentPageName() || defaultPageForCurrentPanel();
     try{ history.replaceState({msPanel:true,page:initialPage},'',pageUrl(initialPage)); }catch(e){}
     document.addEventListener('click',(e)=>{
       if(e.target.closest('a.ms-page-link-overlay')) return;
@@ -697,10 +622,10 @@
   }
   function initIdleLogout(){
     if(!TOKEN() || location.pathname.includes('login')) return;
-    const maxIdleMs = parseInt(localStorage.getItem('ms_idle_timeout_ms') || String(7*60*1000), 10);
+    const maxIdleMs = parseInt(localStorage.getItem('ams_idle_timeout_ms') || String(7*60*1000), 10);
     let timer=null;
-    const stamp=()=>sessionStorage.setItem('ms_last_activity', String(Date.now()));
-    const expired=()=>Date.now() - parseInt(sessionStorage.getItem('ms_last_activity') || String(Date.now()), 10) > maxIdleMs;
+    const stamp=()=>sessionStorage.setItem('ams_last_activity', String(Date.now()));
+    const expired=()=>Date.now() - parseInt(sessionStorage.getItem('ams_last_activity') || String(Date.now()), 10) > maxIdleMs;
     const doLogout=()=>{ try{alert('Session expired due to inactivity. Please login again.');}catch(e){} API.logout(); };
     const check=()=>{ if(expired()) return doLogout(); clearTimeout(timer); timer=setTimeout(check, Math.min(maxIdleMs, 60000)); };
     const reset=()=>{ stamp(); clearTimeout(timer); timer=setTimeout(check, Math.min(maxIdleMs, 60000)); };
@@ -748,64 +673,370 @@
       if(local){ el.dataset.msUtc=raw; el.textContent=local; el.title='UK time: '+local+' | Stored UTC: '+raw; }
     });
   }
+  /* Rows are appended in a burst of DOM updates (table body + footer + pager), and
+     the pending-nodes list used to be REPLACED on every new mutation batch: only the
+     last batch before the quiet period was ever localised, so report tables that
+     rendered slightly earlier kept showing the raw stored UTC value. During BST that
+     is exactly one hour behind the intended Europe/London reporting time, and it also
+     made freshly received messages look out of order next to their real arrival time.
+     Nodes are now ACCUMULATED and the whole queue is flushed, followed by a document
+     re-scan so a cell whose text was refreshed in place is still corrected.
+     Storage and sorting are untouched: received_at stays UTC in the database and in
+     every query/order clause - only the displayed value is converted. */
+  let tzPending=[];
+  function tzFlush(){
+    const nodes=tzPending; tzPending=[];
+    for(const n of nodes){ try{ localizeTimes(n); }catch(e){} }
+    try{ localizeTimes(document); }catch(e){}
+  }
+  function tzSchedule(node){
+    if(node && node.nodeType===1) tzPending.push(node);
+    clearTimeout(window.__msTzTimer);
+    window.__msTzTimer=setTimeout(tzFlush,120);
+  }
   function initTimeLocalization(){
     localizeTimes(document);
-    const mo=new MutationObserver(muts=>{ if(window.__gxPainting) return; /* see paintRows */ clearTimeout(window.__msTzTimer); window.__msTzTimer=setTimeout(()=>muts.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1) localizeTimes(n); })),80); });
+    const mo=new MutationObserver(muts=>{ muts.forEach(m=>m.addedNodes.forEach(n=>tzSchedule(n))); });
     mo.observe(document.body,{childList:true,subtree:true});
   }
+
+  /* =========================================================================
+   * FINAL POLISH §2A — ONE WORKING HAMBURGER FOR EVERY PANEL
+   * -------------------------------------------------------------------------
+   * Each panel had its own half-working menu button: Admin/Client only opened the
+   * sidebar (no close from the button), Agent's ☰ only existed under 900px and had
+   * no overlay, and the Manager's .mgr-mobile-menu was hidden by CSS at BOTH ends of
+   * the breakpoint range, so it could never be clicked. Nothing here is per-panel
+   * any more: AMSNav finds the panel's own nav element, main content element, overlay
+   * and menu button(s), then drives one consistent behaviour:
+   *
+   *   wide screens (>900px) : the button collapses/expands the sidebar and the
+   *                           content resizes into the freed space (body class
+   *                           ams-ui-sb-collapsed, no overlap, no horizontal scroll)
+   *   narrow screens        : the sidebar is off-canvas, the button opens/closes it,
+   *                           a dimming overlay blocks the content, and the overlay,
+   *                           Escape or any nav click closes it again
+   *
+   * The panel's own openSidebar()/closeSb()/toggleRail()/... functions are kept (they
+   * are called from markup and other code) but now delegate here, and the Fullscreen
+   * button is untouched.
+   * ========================================================================= */
+  const AMS_SB_QUERY = '#sidebar, #rail, header.appbar, .appbar';
+  const AMS_OVERLAY_QUERY = '#overlay, #sbOverlay, #mgrMobileOverlay, .sb-overlay, .mgr-mobile-overlay, .ams-ui-sb-overlay';
+  const AMS_BUTTON_QUERY = '.hamburger, .mgr-mobile-menu, .mgr-topbar-menu, [data-ams-ui-sb-toggle]';
+  const AMSNav = {
+    parts: null,
+    find: function(){
+      if (this.parts && document.body.contains(this.parts.nav)) return this.parts;
+      const nav = document.querySelector(AMS_SB_QUERY);
+      if (!nav) { this.parts = null; return null; }
+      const holder = nav.parentElement || document.body;
+      let main = holder.querySelector('.main') || document.querySelector('.main');
+      if (!main) main = document.querySelector('.content');
+      let overlay = document.querySelector(AMS_OVERLAY_QUERY);
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'ams-ui-sb-overlay';
+        overlay.id = 'amsSbOverlay';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', () => AMSNav.close());
+      }
+      const buttons = Array.prototype.slice.call(document.querySelectorAll(AMS_BUTTON_QUERY));
+      this.parts = { nav: nav, main: main, overlay: overlay, buttons: buttons };
+      return this.parts;
+    },
+    narrow: function(){ return window.matchMedia('(max-width:900px)').matches; },
+    isOpen: function(){
+      const p = this.find(); if (!p) return false;
+      return this.narrow() ? document.body.classList.contains('ams-ui-sb-open')
+                           : !document.body.classList.contains('ams-ui-sb-collapsed');
+    },
+    /* The off-canvas sidebar covers the top bar's left edge, hiding the very
+       button that opened it. While the narrow drawer is open, temporarily
+       place that same button at body level just outside the drawer; restore
+       it to its original top-bar position on close. Events stay attached. */
+    placeButtons: function(p, floating){
+      p.buttons.forEach(function(b){
+        if (floating) {
+          if (b.classList.contains('ams-ui-sb-float') || !b.parentNode) return;
+          try { if (window.getComputedStyle(b).display === 'none') return; } catch(e){}
+          b.__amsSbHome = { parent: b.parentNode, next: b.nextSibling };
+          b.classList.add('ams-ui-sb-float');
+          document.body.appendChild(b);
+        } else if (b.classList.contains('ams-ui-sb-float')) {
+          b.classList.remove('ams-ui-sb-float');
+          const home = b.__amsSbHome;
+          if (home && home.parent && document.body.contains(home.parent)) {
+            if (home.next && home.next.parentNode === home.parent) home.parent.insertBefore(b, home.next);
+            else home.parent.appendChild(b);
+          }
+          delete b.__amsSbHome;
+        }
+      });
+    },
+    collapseSubmenu: function(menu){
+      if (!menu) return;
+      menu.classList.remove('open');
+      menu.classList.remove('show');
+      const wrap = (typeof menu.closest === 'function') ? menu.closest('.dropwrap') : null;
+      const parent = (wrap && wrap.querySelector('.navtab')) || menu.previousElementSibling;
+      if (parent) {
+        parent.classList.remove('open');
+        if (parent.hasAttribute && parent.hasAttribute('aria-expanded')) parent.setAttribute('aria-expanded', 'false');
+      }
+    },
+    apply: function(open){
+      const p = this.find(); if (!p) return;
+      const narrow = this.narrow();
+      document.body.classList.toggle('ams-ui-sb-open', !!open && narrow);
+      document.body.classList.toggle('ams-ui-sb-collapsed', !open && !narrow);
+      /* keep each panel's own .show contract alive (their CSS transitions on it) */
+      p.nav.classList.toggle('show', !!open && narrow);
+      p.overlay.classList.toggle('show', !!open && narrow);
+      try{ document.body.style.overflow = (open && narrow) ? 'hidden' : ''; }catch(e){}
+      p.buttons.forEach(function(b){
+        b.setAttribute('aria-expanded', open ? 'true' : 'false');
+        const label = (narrow ? 'Menu' : 'Sidebar') + (open ? ' (close)' : ' (open)');
+        b.setAttribute('aria-label', label);
+        b.setAttribute('title', label);
+        b.setAttribute('data-tip', label);
+      });
+      this.placeButtons(p, !!open && narrow);
+      try{ document.dispatchEvent(new CustomEvent('ams:sidebar',{detail:{open:!!open,narrow:narrow}})); }catch(e){}
+    },
+    open: function(){ this.apply(true); },
+    close: function(){ this.apply(false); },
+    toggle: function(){ this.apply(!this.isOpen()); },
+    init: function(){
+      const p = this.find(); if (!p) return;
+      const self = this;
+      p.buttons.forEach(function(b){
+        if (b.dataset.amsSbWired) return;
+        b.dataset.amsSbWired = '1';
+        b.type = 'button';
+        /* the markup's own onclick only ever opened the menu; the button itself must
+           both open and close, so the inline handler is replaced by this one */
+        b.removeAttribute('onclick');
+        b.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); self.toggle(); });
+      });
+      /* Mobile only: close the off-canvas menu after a navigation selection, never
+         when a dropdown parent is tapped just to expand/collapse its submenu (the
+         parents also carry .nav-item, so matching classes used to close the bar).
+         Document capture, restricted to this nav, because the page-link overlay
+         handler also runs at document capture and stops the event before it can
+         reach a nav-level listener (notably on Agent submenu items). Dropdown
+         expansion and sidebar visibility therefore stay separate states. */
+      document.addEventListener('click', function(e){
+        if (!self.narrow()) return;
+        const t = e.target;
+        if (!t || typeof t.closest !== 'function' || !p.nav.contains(t)) return;
+        if (t.closest('[onclick*="toggleSub"], [onclick*="toggleDrop"], [aria-haspopup="true"]')) return;
+        if (t.closest('[data-page], a[href]')) {
+          self.collapseSubmenu(t.closest('.submenu, .rsub, .dropmenu'));
+          self.close();
+        }
+      }, true);
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && self.narrow()) self.close(); });
+      let rt = null;
+      window.addEventListener('resize', function(){
+        clearTimeout(rt);
+        rt = setTimeout(function(){
+          /* crossing the breakpoint must never leave a stuck overlay or a hidden bar */
+          if (self.narrow()) document.body.classList.remove('ams-ui-sb-collapsed');
+          else { document.body.classList.remove('ams-ui-sb-open'); p.nav.classList.remove('show'); p.overlay.classList.remove('show'); try{ document.body.style.overflow=''; }catch(e){} }
+          self.apply(self.isOpen());
+        }, 120);
+      });
+      this.apply(this.isOpen());
+    }
+  };
+  window.AMSNav = AMSNav;
+  /* Panels keep their historic function names; they now all mean the same thing. */
+  function amsAdoptPanelSidebarFunctions(){
+    const map = { openSidebar:'open', closeSidebar:'close', openSb:'open', closeSb:'close',
+                  toggleRail:'toggle', toggleManagerSidebar:'toggle', closeManagerSidebar:'close' };
+    Object.keys(map).forEach(function(name){
+      if (typeof window[name] !== 'function') return;
+      if (window[name].__amsNav) return;
+      const fn = function(){ AMSNav[map[name]](); };
+      fn.__amsNav = true;
+      window[name] = fn;
+    });
+  }
+
+  /* =========================================================================
+   * FINAL POLISH §2B — SUN / MOON LIGHT-DARK TOGGLE IN THE TOP NAV
+   * -------------------------------------------------------------------------
+   * The top-nav gear opened #msSettingsPanel, an element that has no CSS anywhere in
+   * the project: it was appended, never displayed, and the click looked dead. The gear
+   * is now the theme toggle itself (icon, tooltip, aria state), and panels that never
+   * had a gear (Agent, Client) get the identical button injected next to Fullscreen.
+   * Theme = Light by default, instant, persisted per user in localStorage under the
+   * existing ams_theme key, and applied to html+body so the shared dark layer in
+   * skyline.css and the shared geometry in skyline-layout.css both follow it.
+   * API.openSettings and the Light/Dark buttons inside that panel are left in place,
+   * so no legitimate Settings entry point is removed.
+   * ========================================================================= */
+  const AMS_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/></svg>';
+  const AMS_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.8A8.6 8.6 0 0 1 9.2 3.5a8.6 8.6 0 1 0 11.3 11.3z"/></svg>';
+  function amsIsLoginPage(){
+    const b = document.body;
+    return !!b && (b.classList.contains('ams-login') || b.classList.contains('ams-portal-login'));
+  }
+  function amsThemeNow(){ return (document.body && document.body.classList.contains('ams-dark')) ? 'dark' : 'light'; }
+  function amsPaintThemeToggle(btn){
+    const mode = amsThemeNow();
+    const next = mode === 'dark' ? 'light' : 'dark';
+    btn.innerHTML = mode === 'dark' ? AMS_SUN : AMS_MOON;
+    const label = 'Switch to ' + (next === 'dark' ? 'Dark' : 'Light') + ' theme (now ' + (mode === 'dark' ? 'Dark' : 'Light') + ')';
+    btn.setAttribute('title', label);
+    btn.setAttribute('data-tip', label);
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('aria-pressed', mode === 'dark' ? 'true' : 'false');
+    btn.setAttribute('data-theme-mode', mode);
+  }
+  function amsToggleTheme(){
+    const next = amsThemeNow() === 'dark' ? 'light' : 'dark';
+    if (typeof window.amsSetTheme === 'function') window.amsSetTheme(next);
+    else applyTheme(next);
+  }
+  function initThemeToggles(scope){
+    if (amsIsLoginPage()) return;                      /* login pages stay Light by design */
+    const root = scope || document;
+    let made = 0;
+    root.querySelectorAll('.tb-btn[title="Settings"], button[title="Settings"]').forEach(function(b){
+      if (b.dataset.amsThemeToggle) return;
+      b.dataset.amsThemeToggle = '1';
+      b.type = 'button';
+      b.removeAttribute('onclick');
+      b.classList.add('ams-ui-theme-toggle');
+      b.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); amsToggleTheme(); });
+      amsPaintThemeToggle(b);
+      made++;
+    });
+    if (!made && !root.querySelector('[data-ams-ui-theme-toggle]')) {
+      const anchor = root.querySelector('.topbar [title="Fullscreen"], .tb1 [title="Fullscreen"], .mgr-topbar [title="Fullscreen"], .topbar .tb-btn, .tb1 .tb-btn');
+      const host = anchor ? anchor.parentElement : root.querySelector('.topbar, .tb1, .mgr-topbar');
+      if (host) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tb-btn ams-ui-theme-toggle';
+        b.dataset.amsThemeToggle = '1';
+        if (anchor) host.insertBefore(b, anchor); else host.appendChild(b);
+        b.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); amsToggleTheme(); });
+        amsPaintThemeToggle(b);
+        made++;
+      }
+    }
+    return made;
+  }
+  document.addEventListener('ams:theme', function(){
+    document.querySelectorAll('[data-ams-ui-theme-toggle]').forEach(amsPaintThemeToggle);
+  });
 
   function initTopbarControls(){
     ensureThemeCSS();
     document.body.classList.remove('ms-dark-mode');
-    const settingsBtns=[...document.querySelectorAll('[title="Settings"]')];
+    /* FINAL POLISH 2B/2A: the theme toggle and the shared hamburger are installed
+       before anything else, and the stored theme is applied immediately so a Dark
+       user never sees a Light flash. */
+    applyTheme(currentTheme());
+    initThemeToggles(document);
+    AMSNav.init();
+    amsAdoptPanelSidebarFunctions();
+    /* Any Settings control that is NOT the converted top-nav gear keeps its own
+       behaviour (nothing legitimate is removed). */
+    const settingsBtns=[...document.querySelectorAll('[title="Settings"]')].filter(b=>!b.dataset.amsThemeToggle);
     settingsBtns.forEach(b=>{b.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();openSettings();});});
     document.querySelectorAll('.avatar,.who').forEach(a=>a.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();openProfileMenu();}));
     document.querySelectorAll('[title="Fullscreen"]').forEach(b=>{if(!b.dataset.msFull){b.dataset.msFull='1';b.addEventListener('click',(e)=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}else{document.exitFullscreen&&document.exitFullscreen();}});}});
-    document.querySelectorAll('[title="Logout"]').forEach(b=>{if(!b.dataset.msLogout){b.dataset.msLogout='1';/* GX fix: button ka apna confirm-wala logout() ho to doosra auto-logout handler NAHI lagana (warna Cancel par bhi logout ho jata tha) */const own=b.getAttribute('onclick')&&/logout\s*\(/i.test(b.getAttribute('onclick'));if(!own){b.addEventListener('click',()=>{window.API&&API.logout?API.logout():(clearAuthStorage(),location.href='/panel-login');});}}});
+    document.querySelectorAll('[title="Logout"]').forEach(b=>{if(!b.dataset.msLogout){b.dataset.msLogout='1';/* AMSCore fix: button ka apna confirm-wala logout() ho to doosra auto-logout handler NAHI lagana (warna Cancel par bhi logout ho jata tha) */const own=b.getAttribute('onclick')&&/logout\s*\(/i.test(b.getAttribute('onclick'));if(!own){b.addEventListener('click',()=>{window.API&&API.logout?API.logout():(clearAuthStorage(),location.href='/panel-login');});}}});
   }
-  /* ===== P18: Legal / Acceptable-Use gate (sab panels, logged-in users) ===== */
-  async function gxLegalGate(){
+  /* ===== P18 legal gate, restyled by FINAL POLISH §2E =====
+   * One shared "Terms and Conditions" dialog for every panel (Admin, Manager, Agent,
+   * Client and the Provider Management console all load api.js), styled by
+   * assets/skyline-chrome.css so Light and Dark both read well.
+   *
+   * Behaviour and records are unchanged: GET /legal/status decides whether the dialog
+   * is required for the current policy version, POST /legal/accept stores
+   * users.legal_version + users.legal_accepted_at and writes the legal_use_accept audit
+   * action, and once accepted the dialog never comes back (the server says
+   * required:false). Nothing here writes to any other table. */
+  const AMS_LEGAL_HTML = ''
+    + '<div class="ams-ui-legal-card" role="document">'
+    +   '<div class="ams-ui-legal-head">'
+    +     '<div class="ams-ui-legal-eyebrow">Skyline SMS</div>'
+    +     '<h2 class="ams-ui-legal-title" id="amsLegalTitle">Terms and Conditions</h2>'
+    +   '</div>'
+    +   '<div class="ams-ui-legal-body">'
+    +     '<p><b>About this panel.</b> Skyline SMS provides SMS numbers, messaging, allocation and reporting services to authorized users.</p>'
+    +     '<p><b>Your responsibility.</b> By continuing you confirm that you will use these services only for lawful and legitimate purposes, and that you will comply with the laws that apply to you and the rules of the services you use.</p>'
+    +     '<p><b>You must not use Skyline SMS numbers or messages for:</b></p>'
+    +     '<ul>'
+    +       '<li>fake accounts, fraud or scams;</li>'
+    +       '<li>spam or unsolicited bulk messaging;</li>'
+    +       '<li>impersonation, harassment or abuse of any person or service;</li>'
+    +       '<li>unauthorized access to systems, accounts or data;</li>'
+    +       '<li>any other unlawful activity.</li>'
+    +     '</ul>'
+    +     '<p>Acceptance is recorded against your user account for the current policy version.</p>'
+    +   '</div>'
+    +   '<label class="ams-ui-legal-agree" for="amsLegalChk">'
+    +     '<input type="checkbox" id="amsLegalChk">'
+    +     '<span>I have read and agree to these Terms and Conditions.</span>'
+    +   '</label>'
+    +   '<div class="ams-ui-legal-error" id="amsLegalErr" role="alert"></div>'
+    +   '<div class="ams-ui-legal-foot">'
+    +     '<span class="ams-ui-legal-note">You can continue once you accept.</span>'
+    +     '<button id="amsLegalBtn" class="ams-ui-legal-btn primary" type="button" disabled>Accept &amp; Continue</button>'
+    +   '</div>'
+    + '</div>';
+
+  async function amsLegalGate(){
     try{
       if(!TOKEN()) return;
       if(/panel-login/.test(location.pathname||'')) return;
+      if(document.body.classList.contains('ams-login')||document.body.classList.contains('ams-portal-login')) return;
       const st = await req('GET','/legal/status');
       if(!st.required) return;
+
       const ov=document.createElement('div');
-      ov.id='gxLegalGate';
-      ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
-      ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(210,215,220,.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:14px;';
-      ov.innerHTML = '<div style="background:#fff;color:#333;max-width:620px;width:100%;max-height:94vh;overflow:auto;border-radius:18px;border:1px solid rgba(190,195,205,.22);box-shadow:0 30px 90px rgba(0,0,0,.12);padding:24px 22px;font-family:inherit">'
-        + '<h2 style="margin:0 0 4px;font-size:19px;line-height:1.3">Skyline SMS &mdash; Legal Use &amp; Acceptable Use</h2>'
-        + '<p style="margin:12px 0;color:#555;font-size:13.5px;line-height:1.65"><b style="color:#333">About Skyline SMS:</b> Skyline SMS is an SMS management platform where authorized users can manage numbers, SMS activity, reports, allocations and related services.</p>'
-        + '<p style="margin:10px 0;color:#555;font-size:13.5px;line-height:1.65">By continuing, you confirm that you will use the numbers and SMS services provided through Skyline SMS only for lawful and legitimate purposes.</p>'
-        + '<p style="margin:10px 0;color:#555;font-size:13.5px;line-height:1.65">You must not use these numbers for fake accounts, fraud, scams, abuse, spam, impersonation, unauthorized access, or any other illegal activity. You are responsible for ensuring that your use complies with applicable laws and the rules of the services you use.</p>'
-        + '<p style="margin:10px 0 14px;color:#555;font-size:13.5px;line-height:1.65">By clicking Accept, you agree to these terms.</p>'
-        + '<label style="display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#333;cursor:pointer;padding:11px;border:1px solid rgba(190,195,205,.28);border-radius:12px"><input type="checkbox" id="gxLegalChk" style="width:18px;height:18px;accent-color:#30ABED;margin-top:1px;flex:none"><span>I agree to use Skyline SMS services only for lawful and legitimate purposes.</span></label>'
-        + '<div style="display:flex;justify-content:flex-end;margin-top:16px"><button id="gxLegalBtn" disabled style="opacity:.45;pointer-events:none;background:#007acc;color:#fff;border:0;border-radius:12px;padding:11px 24px;font-weight:700;font-size:14px;cursor:pointer">Accept &amp; Continue</button></div>'
-        + '<div id="gxLegalErr" style="color:#b42318;font-size:12.5px;margin-top:8px;display:none"></div>'
-        + '</div>';
+      ov.id='amsLegalGate';
+      ov.className='ams-ui-legal-overlay';
+      ov.setAttribute('role','dialog');
+      ov.setAttribute('aria-modal','true');
+      ov.setAttribute('aria-labelledby','amsLegalTitle');
+      ov.innerHTML=AMS_LEGAL_HTML;
       document.body.appendChild(ov);
       try{ document.body.style.overflow='hidden'; }catch(e){}
-      const chk=ov.querySelector('#gxLegalChk'), btn=ov.querySelector('#gxLegalBtn'), err=ov.querySelector('#gxLegalErr');
-      chk.addEventListener('change',()=>{ const on=chk.checked; btn.disabled=!on; btn.style.opacity=on?'1':'.45'; btn.style.pointerEvents=on?'auto':'none'; });
+
+      const chk=ov.querySelector('#amsLegalChk'), btn=ov.querySelector('#amsLegalBtn'), err=ov.querySelector('#amsLegalErr');
+      const close=()=>{ ov.remove(); try{ document.body.style.overflow=''; }catch(e){} };
+      chk.addEventListener('change',()=>{ btn.disabled=!chk.checked; if(chk.checked){ err.classList.remove('show'); err.textContent=''; } });
       btn.addEventListener('click', async ()=>{
-        try{ await req('POST','/legal/accept',{version:st.version}); ov.remove(); try{ document.body.style.overflow=''; }catch(e){} }
-        catch(e){ err.style.display='block'; err.textContent='Accept failed: '+e.message; }
+        btn.disabled=true;
+        try{
+          await req('POST','/legal/accept',{version:st.version});
+          close();
+        }catch(e){
+          err.textContent='Could not record your acceptance: '+(e&&e.message?e.message:'request failed')+'. Please try again.';
+          err.classList.add('show');
+          btn.disabled=!chk.checked;
+        }
       });
-    }catch(e){ /* gate must never break the panel */ }
+      /* the dialog is a gate: clicking the backdrop or pressing Escape must not dismiss it */
+      setTimeout(()=>{ try{ chk.focus(); }catch(e){} },60);
+    }catch(e){ /* the gate must never break the panel */ }
   }
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', gxLegalGate); } else { gxLegalGate(); }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', amsLegalGate); } else { amsLegalGate(); }
 
   window.API = {
     guard,
     role: ROLE,
-    user: () => STORE('ms_user'),
-    name: () => STORE('ms_name'),
+    user: () => STORE('ams_user'),
+    name: () => STORE('ams_name'),
     ukDate: ukDateString,
     ukToday: () => ukDateString(new Date()),
-    /* P22: shared progressive table painter (see paintRows) + copy-feedback helper,
-       used by the SMS Numbers lists in all four panels. */
-    paintRows: paintRows,
     /* P14: role-scoped distinct CLI list for report C-Level filters */
     smsClis: async (a, b) => { try { const p = new URLSearchParams(); if (a && typeof a === 'object') { Object.entries(a).forEach(([k, v]) => { if (v) p.set(k, String(v)); }); } else { if (a) p.set('from', a); if (b) p.set('to', b); } const r = await API.get('/sms/clis' + (p.toString() ? '?' + p.toString() : '')); return { clis: r.clis || [], items: r.items || [], from: r.from, to: r.to }; } catch (e) { return { clis: [], items: [] }; } },
     /* P18: role-scoped Number list for report datalist (same dataset as /sms/paged) */
@@ -824,23 +1055,20 @@
     logout: async () => { try{ await req('POST','/logout',{}); }catch(e){} clearAuthStorage(); location.href = '/panel-login'; },
     openSettings,
     openProfileMenu,
+    /* FINAL POLISH §2A/§2B shared panel chrome */
+    AMSNav,
+    setTheme: applyTheme,
+    theme: currentTheme,
+    initThemeToggles,
     paginateRows,
     waitNumberJob,
     upload,
   };
   function initLengthSelectObserver(){
     enhancePageSizeOptions(document);
-    const mo=new MutationObserver(muts=>{ if(window.__gxPainting) return; /* see paintRows */ clearTimeout(window.__msLenOptTimer); window.__msLenOptTimer=setTimeout(()=>muts.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1){ enhancePageSizeOptions(n); removePdfPrintButtons(n); } })),120); });
+    const mo=new MutationObserver(muts=>{ clearTimeout(window.__msLenOptTimer); window.__msLenOptTimer=setTimeout(()=>muts.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1){ enhancePageSizeOptions(n); removePdfPrintButtons(n); } })),120); });
     mo.observe(document.body,{childList:true,subtree:true});
   }
-  /* After a big progressive paint, run the per-row passes ONCE over the finished
-     table (they were skipped while painting, see paintRows). */
-  window.addEventListener('gx-paint-done', (e)=>{
-    const root=(e && e.detail && e.detail.container) || document;
-    try{ localizeTimes(root); }catch(_){}
-    try{ bindExportButtons(); }catch(_){}
-    try{ enhancePageSizeOptions(root); removePdfPrintButtons(root); }catch(_){}
-  });
   document.addEventListener('DOMContentLoaded', ()=>{ initExportButtons(); initActionFeedback(); initPanelHistory(); initIdleLogout(); initTopbarControls(); initRoutePersistence(); initTimeLocalization(); initLengthSelectObserver(); });
 
   })();

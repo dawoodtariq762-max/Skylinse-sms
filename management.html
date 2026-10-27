@@ -1,28 +1,77 @@
 <!DOCTYPE html>
-<html lang="en" class="gx-light">
-<head>
+<html lang="en" class="ams-light">
+<head><script src="/assets/skyline-storage.js?v=skyline-20261026-fullrebrand-final"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-3" />
-<title>SKYLINE SMS — Management Panel</title>
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-20261009"  data-brand-favicon />
+<title>Skyline SMS — Management Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
-.page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
+.page-head{border-bottom:1px solid #cfd2d8!important;padding-bottom:14px!important;}
 .page > .toolbar,.page > .table-wrap,.page > .card,.page > .grid2{position:relative!important;}
 .page > .toolbar:not(:first-child)::before,.page > .table-wrap:not(:first-child)::before,.page > .card:not(:first-child)::before,.page > .grid2:not(:first-child)::before{content:"";position:absolute;left:0;right:0;top:-10px;height:1px;opacity:.95;}
 .table-wrap + .table-wrap{margin-top:18px!important;}
-.toolbar + .table-wrap,.card + .table-wrap,.stats-grid + .toolbar,.stats-grid + .grid2{margin-top:18px!important;}</style>
+.toolbar + .table-wrap,.card + .table-wrap,.stats-grid + .toolbar,.stats-grid + .grid2{margin-top:18px!important;}
+/* Bulk TXT import — list of accumulated files (add / remove before importing) */
+.bulk-txt-list{margin-top:12px;}
+.bulk-txt-list:empty{margin-top:0;}
+.bulk-txt-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted,#424449);margin-bottom:6px;}
+.bulk-txt-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--border,#e4e6ea);border-radius:9px;margin-bottom:6px;background:var(--panel2,#f6f7f9);}
+.bulk-txt-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;}
+.bulk-txt-size{flex:0 0 auto;font-size:11.5px;color:var(--muted,#6e6d71);}
+.bulk-txt-remove{flex:0 0 auto;width:26px;height:26px;min-width:26px;line-height:1;border:1px solid var(--border,#e4e6ea);border-radius:7px;background:#fff;color:#a82e2a;font-size:16px;font-weight:700;cursor:pointer;padding:0;}
+.bulk-txt-remove:hover{background:#fbecec;border-color:#e0726e;}
+@media(max-width:600px){.bulk-txt-row{padding:8px 10px;}.bulk-txt-remove{width:32px;height:32px;min-width:32px;}}
+/* Technical Integration Guide — rendered markdown, readable and printable */
+.ig-doc{padding:22px 26px;color:var(--text,#191a1f);font-size:13.5px;line-height:1.65;overflow-wrap:break-word;}
+.ig-doc>*:first-child{margin-top:0!important;}
+.ig-doc h1,.ig-doc h2,.ig-doc h3,.ig-doc h4{line-height:1.25;margin:22px 0 9px;font-weight:800;}
+.ig-doc h1{font-size:23px;}
+.ig-doc h2{font-size:18px;border-bottom:1px solid var(--border,#e4e6ea);padding-bottom:6px;}
+.ig-doc h3{font-size:15px;}
+.ig-doc h4{font-size:13.5px;}
+.ig-doc p{margin:0 0 11px;}
+.ig-doc ul,.ig-doc ol{margin:0 0 12px;padding-left:22px;}
+.ig-doc li{margin:3px 0;}
+.ig-doc a{color:var(--accent2,#3256df);}
+.ig-doc code{background:var(--panel2,#f0f2f6);border:1px solid var(--border,#e4e6ea);border-radius:5px;padding:1px 5px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+.ig-doc pre{background:#191a1f;color:#e4e6ea;padding:13px 15px;border-radius:9px;overflow:auto;margin:0 0 14px;font-size:12px;}
+.ig-doc pre code{background:none;border:0;color:inherit;padding:0;font-size:12px;white-space:pre;}
+.ig-doc blockquote{border-left:4px solid var(--border2,#cfd2d8);margin:12px 0;padding:3px 14px;color:var(--muted,#424449);}
+.ig-doc hr{border:0;border-top:1px solid var(--border,#e4e6ea);margin:22px 0;}
+.ig-doc .ig-table-wrap,.ig-doc table{width:100%;overflow-x:auto;display:block;}
+.ig-doc table{border-collapse:collapse;margin:12px 0 16px;font-size:12.5px;}
+.ig-doc th,.ig-doc td{border:1px solid var(--border,#e4e6ea);padding:7px 10px;text-align:left;vertical-align:top;}
+.ig-doc th{background:var(--panel2,#f0f2f6);font-weight:800;}
+/* Source / last-updated line for the integration guide. It sits under the
+   document as a footer so the "Share with a provider" card stays a pure
+   call to action. */
+.ig-meta{margin-top:12px;color:var(--muted,#6e6d71);font-size:12px;text-align:right;padding-right:4px;}
+.ig-doc tbody tr:nth-child(even) td{background:var(--panel2,#f6f7f9);}
+@media(max-width:700px){
+  .ig-doc{padding:16px 14px;font-size:13px;}
+  .ig-doc h1{font-size:20px;}.ig-doc h2{font-size:16.5px;}.ig-doc h3{font-size:14.5px;}
+  .ig-doc pre{font-size:11.5px;padding:11px 12px;}
+}
+@media print{
+  .sidebar,.topbar,.page-head,.overlay,.hamburger{display:none!important;}
+  .main,.content,.page{margin:0!important;padding:0!important;}
+  .ig-doc{padding:0!important;font-size:11.5pt;}
+  .ig-doc pre{background:#f0f2f6!important;color:#111!important;border:1px solid #cfd2d8;}
+  .ig-doc h2{page-break-after:avoid;}
+  .ig-doc table,.ig-doc pre{page-break-inside:avoid;}
+}</style>
 <script>
 (function(){
   var expected='admin';
   try{
-    var token=sessionStorage.getItem('ms_token')||localStorage.getItem('ms_token');
-    var role=sessionStorage.getItem('ms_role')||localStorage.getItem('ms_role');
+    var token=sessionStorage.getItem('ams_token')||localStorage.getItem('ams_token');
+    var role=sessionStorage.getItem('ams_role')||localStorage.getItem('ams_role');
     if(!token || role!==expected){ location.replace('/panel-login'); return; }
     fetch('/api/me',{headers:{Authorization:'Bearer '+token}})
       .then(function(r){ if(!r.ok) throw new Error('auth'); return r.json(); })
       .then(function(u){ if(!u || u.role!==expected) throw new Error('role'); document.documentElement.style.visibility='visible'; })
-      .catch(function(){ sessionStorage.clear(); ['ms_token','ms_role','ms_user','ms_name'].forEach(k=>localStorage.removeItem(k)); location.replace('/panel-login'); });
-  }catch(e){ sessionStorage.clear(); ['ms_token','ms_role','ms_user','ms_name'].forEach(k=>localStorage.removeItem(k)); location.replace('/panel-login'); }
+      .catch(function(){ sessionStorage.clear(); ['ams_token','ams_role','ams_user','ams_name'].forEach(k=>localStorage.removeItem(k)); location.replace('/panel-login'); });
+  }catch(e){ sessionStorage.clear(); ['ams_token','ams_role','ams_user','ams_name'].forEach(k=>localStorage.removeItem(k)); location.replace('/panel-login'); }
 })();
 </script>
 <style>*{box-sizing:border-box;margin:0;padding:0;}
@@ -72,12 +121,12 @@ to{opacity:1;transform:translateY(0);}}
 .stat-card:hover{transform:translateY(-3px);}
 .stat-icon{width:48px;height:48px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .stat-icon svg{width:23px;height:23px;}
-.si-blue svg{stroke:#60a5fa;}
-.si-purple svg{stroke:#a78bfa;}
-.si-green svg{stroke:#4ade80;}
-.si-amber svg{stroke:#fbbf24;}
-.si-cyan svg{stroke:#22d3ee;}
-.si-red svg{stroke:#f87c8a;}
+.si-blue svg{stroke:#7fa9f7;}
+.si-purple svg{stroke:#8f7ceb;}
+.si-green svg{stroke:#17b380;}
+.si-amber svg{stroke:#f4cf94;}
+.si-cyan svg{stroke:#2bb6d6;}
+.si-red svg{stroke:#e0726e;}
 .stat-info h3{font-size:25px;font-weight:700;line-height:1;}
 .stat-info p{font-size:12.5px;margin-top:6px;}
 .stat-info .trend{font-size:11.5px;margin-top:5px;display:inline-flex;align-items:center;gap:3px;}
@@ -134,9 +183,9 @@ tbody tr:last-child td{border-bottom:none;}
 .tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:500;}
 .tag-client .x{cursor:pointer;opacity:.6;}
 .tag-client .x:hover{opacity:1;}
-.tag-mgr{border:1px solid #ddd;font-weight:600;}
-.tag-agt{border:1px solid #ddd;font-weight:600;}
-.tag-cli{border:1px solid #ddd;font-weight:600;}
+.tag-mgr{border:1px solid #cfd2d8;font-weight:600;}
+.tag-agt{border:1px solid #cfd2d8;font-weight:600;}
+.tag-cli{border:1px solid #cfd2d8;font-weight:600;}
 .mono{font-family:"Courier New",monospace;letter-spacing:.5px;}
 .msg-body{white-space:normal;max-width:360px;min-width:260px;line-height:1.55;font-size:13px;}
 .icon-btn{width:30px;height:30px;border-radius:7px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-right:4px;transition:.15s;}
@@ -156,7 +205,7 @@ tbody tr:last-child td{border-bottom:none;}
 .modal{border:1px solid var(--border2);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);}
 .modal-head h3{font-size:16px;font-weight:600;}
-.modal-close{border:none;cursor:pointer;font-size:22px;line-height:1;}
+.modal-close{border:none;background:transparent;cursor:pointer;font-size:26px;line-height:1;min-width:40px;min-height:40px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;}
 .modal-body{padding:20px 22px;}
 .form-group{margin-bottom:15px;}
 .form-group label{display:block;font-size:12.5px;margin-bottom:6px;font-weight:500;}
@@ -182,53 +231,52 @@ tbody tr:last-child td{border-bottom:none;}
 .stat-card.dash-metric .stat-info p{text-transform:uppercase!important;font-size:10.5px!important;font-weight:800!important;letter-spacing:.42px!important;margin:0 0 9px!important;}
 .stat-card.dash-metric .stat-info h3{font-size:22px!important;font-weight:850!important;margin:0!important;letter-spacing:.2px;}
 .stat-card.dash-metric .stat-info span{font-size:11px!important;display:block!important;margin-top:2px!important;}
-.dash-go{width:24px;height:24px;border-radius:50%;border:1px solid #ddd;display:grid;place-items:center;font-size:12px;font-weight:900;position:relative;z-index:1;}
+.dash-go{width:24px;height:24px;border-radius:50%;border:1px solid #cfd2d8;display:grid;place-items:center;font-size:12px;font-weight:900;position:relative;z-index:1;}
 .dash-note-card{padding:18px!important;border-radius:18px!important;}
 .dash-note-card .card-head{margin-bottom:12px!important;}
 .bar{border-radius:9px 9px 0 0!important;}
-.tag-mgr{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-agt{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-cli,.tag-client{border:1px solid #ddd!important;font-weight:800!important;}
+.tag-mgr{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-agt{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-cli,.tag-client{border:1px solid #cfd2d8!important;font-weight:800!important;}
 .cell-money{font-weight:800!important;}
-.tag-mgr{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-agt{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-cli,.tag-client{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-blue{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-green{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-amber{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-red{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-gray{border:1px solid #ddd!important;font-weight:800!important;}
+.tag-mgr{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-agt{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-cli,.tag-client{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-blue{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-green{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-amber{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-red{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-gray{border:1px solid #cfd2d8!important;font-weight:800!important;}
 body{font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif!important;font-size:14px!important;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
 table{font-size:13.5px!important;line-height:1.6!important;border-collapse:separate!important;border-spacing:0 3px!important;}
 thead th{font-weight:600!important;letter-spacing:.25px!important;}
 table td{font-weight:500!important;}
 .page-head h2{font-weight:600!important;}
 .card-head h3{font-weight:600!important;}
-.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #ddd!important;border-radius:8px!important;padding:5px 10px!important;font-weight:600!important;font-size:12px!important;line-height:1.15!important;letter-spacing:0!important;display:inline-flex;align-items:center;gap:4px;}
+.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #cfd2d8!important;border-radius:8px!important;padding:5px 10px!important;font-weight:600!important;font-size:12px!important;line-height:1.15!important;letter-spacing:0!important;display:inline-flex;align-items:center;gap:4px;}
 .cell-money{font-weight:700!important;}
 .payout-rate,.rate-cell{font-weight:700!important;}
 .msg-body{line-height:1.6!important;}
 .mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace!important;font-weight:600!important;}
 .filter-row label{font-weight:600;font-size:13px;}
 body{font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif!important;}
-.sidebar,.rail{border-right:1px solid #ddd!important;}
-.topbar,.tb1,.navshell{border-bottom:1px solid #ddd!important;}
+.sidebar,.rail{border-right:1px solid #cfd2d8!important;}
+.topbar,.tb1,.navshell{border-bottom:1px solid #cfd2d8!important;}
 .sidebar::before,.rail::before,.topbar::before,.tb1::before,.navshell::before{display:none!important;}
-.sb-brand,.rail-brand{border-bottom:1px solid #ddd!important;}
+.sb-brand,.rail-brand{border-bottom:1px solid #cfd2d8!important;}
 .sb-section,.sb-sec{font-weight:700!important;letter-spacing:.08em!important;}
 .nav-item svg,.tab svg,.ritem svg,.navtab svg,.sub-item svg,.rsubitem svg{stroke:currentColor!important;}
-.nav-item.active svg,.tab.active svg,.ritem.active svg{stroke:#FFFFFF!important;}
 .sub-item.active,.rsubitem.active{font-weight:700!important;}
 .page-head h2,.card-head h3{font-weight:700!important;}
 table{border-collapse:separate!important;border-spacing:0 3px!important;}
-thead th{font-weight:700!important;border-top:1px solid #ddd!important;border-bottom:1px solid #ddd!important;}
-tbody tr td{border-bottom:1px solid #ddd!important;}
+thead th{font-weight:700!important;border-top:1px solid #cfd2d8!important;border-bottom:1px solid #cfd2d8!important;}
+tbody tr td{border-bottom:1px solid #cfd2d8!important;}
 .dash-metric{border-radius:16px!important;}
 .btn{border-radius:10px!important;min-height:38px!important;font-weight:700!important;display:inline-flex;align-items:center;justify-content:center;gap:6px;line-height:1.1!important;}
-.btn-ghost{border:1px solid #ddd!important;}
+.btn-ghost{border:1px solid #cfd2d8!important;}
 .btn:hover{transform:translateY(-1px);}
-.avatar,.who .av{border:2px solid #ddd!important;}
-.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #ddd!important;border-radius:8px!important;font-weight:600!important;}
+.avatar,.who .av{border:2px solid #cfd2d8!important;}
+.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #cfd2d8!important;border-radius:8px!important;font-weight:600!important;}
 .cell-money{font-weight:700!important;}
 .payout-rate,.rate-cell{font-weight:700!important;}
 body{font-family:Inter,Roboto,"Segoe UI",Arial,sans-serif!important;letter-spacing:0!important;font-size:14px!important;}
@@ -265,22 +313,22 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 .content{padding:20px 14px!important;}}
 .sb-logo svg,.brand .logo svg,.rail .logo svg,.sb-brand .logo svg,.brand-logo .logo svg{stroke:#fff!important;}
 .sb-brand h1,.brand h1,.brand-text h1,.brand-logo h1{font-weight:700!important;letter-spacing:-.01em!important;}
-.powerx-logo-img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;border-radius:inherit!important;}
-.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo,.brand-logo .logo{padding:0!important;overflow:hidden!important;border:1px solid #ddd!important;}
+.skyline-sms-logo-img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;border-radius:inherit!important;}
+.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo,.brand-logo .logo{padding:0!important;overflow:hidden!important;border:1px solid #cfd2d8!important;}
 .brand-logo .logo{width:92px!important;height:92px!important;border-radius:22px!important;margin-bottom:16px!important;}
 .sb-logo{width:44px!important;height:44px!important;border-radius:13px!important;}
 .brand .logo,.sb-brand .logo{width:46px!important;height:46px!important;border-radius:13px!important;}
 .rail .logo{width:50px!important;height:50px!important;border-radius:14px!important;}
 .brand-panel .brand-logo{align-items:flex-start!important;}
 .brand-panel .brand-logo h1{font-size:24px!important;}
-.sidebar,.rail{border-right:1px solid #ddd!important;}
-.sb-brand,.rail-brand,.brand-text{border-bottom:1px solid #ddd!important;}
+.sidebar,.rail{border-right:1px solid #cfd2d8!important;}
+.sb-brand,.rail-brand,.brand-text{border-bottom:1px solid #cfd2d8!important;}
 .nav-item svg,.sub-item svg,.ritem svg,.rsubitem svg{stroke:currentColor!important;}
-.nav-item.active svg,.ritem.active svg,.tab.active svg{stroke:#0F172A!important;}
-.appbar{border-bottom:1px solid #ddd!important;}
-.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo{border:1px solid #ddd!important;}
-.topbar,.tb1{border-bottom:1px solid #ddd!important;}
-.page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
+.nav-item.active svg,.ritem.active svg,.tab.active svg{stroke:#191a1f!important;}
+.appbar{border-bottom:1px solid #cfd2d8!important;}
+.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo{border:1px solid #cfd2d8!important;}
+.topbar,.tb1{border-bottom:1px solid #cfd2d8!important;}
+.page-head{border-bottom:1px solid #cfd2d8!important;padding-bottom:14px!important;}
 .page > .toolbar,.page > .table-wrap,.page > .card,.page > .grid2{position:relative!important;}
 .page > .toolbar:not(:first-child)::before,.page > .table-wrap:not(:first-child)::before,.page > .card:not(:first-child)::before,.page > .grid2:not(:first-child)::before{content:"";position:absolute;left:0;right:0;top:-10px;height:1px;opacity:.95;}
 .table-wrap + .table-wrap{margin-top:18px!important;}
@@ -288,21 +336,33 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
 
 
-<link rel="stylesheet" href="/assets/galaxy.css?v=light-20260928"/><script src="/assets/galaxy.js?v=light-20260928" defer></script>
-<link rel="stylesheet" href="/assets/lamix-light.css?v=20260928-implementation"/>
-</head>
-<body class="gx-light gx-lamix">
+<link rel="stylesheet" href="/assets/skyline.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/assets/skyline-light.css?v=skyline-20261026-fullrebrand-final"/>
+<!-- FINAL POLISH 2C: shared theme-neutral geometry. Loaded LAST so Light and Dark
+     share exactly one layout (sizes, spacing, flex/grid, font metrics) while each
+     theme keeps painting its own colours. Generated by scripts/split-theme-geometry.py. -->
+<link rel="stylesheet" href="/assets/skyline-layout.css?v=skyline-20261026-fullrebrand-final"/>
+<!-- FINAL POLISH 2A/2B/2C/2D/2E: shared panel chrome (hamburger + sidebar,
+     sun/moon theme toggle, filter alignment contract, heading contrast,
+     Terms and Conditions dialog, dark dropdown paint). Loaded last. -->
+<link rel="stylesheet" href="/assets/skyline-chrome.css?v=skyline-20261027-three-fixes1"/>
+<link rel="stylesheet" href="/assets/skyline-ds.css?v=skyline-20261026-fullrebrand-final"/>
+<script src="/assets/skyline-ds.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/assets/skyline-sidebar-unify.css?v=skyline-20261026-fullrebrand-final"/>
+<link rel="stylesheet" href="/assets/skyline-motion.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline-motion.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/branding/runtime.css"/><script src="/branding/runtime.js" defer></script><link rel="stylesheet" href="/assets/skyline-panel.css?v=skyline-20261026-fullrebrand-final"/><link rel="stylesheet" href="/assets/skyline-unify.css?v=skyline-20261026-unify2"/><script src="/assets/skyline-cli-search.js?v=skyline-20261026-fullrebrand-final" defer></script></head>
+<body class="ams-light ams-panel ams-ui">
 <div class="layout">
   <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="sb-logo"><img class="powerx-logo-img" src="/assets/skyline-logo.svg?v=skyline-3" alt="Skyline SMS" /></div>
-      <div><h1>SKYLINE SMS</h1><small>Management Panel</small></div>
+      <div class="sb-logo"><img class="skyline-sms-logo-img" data-brand-logo src="/assets/skyline-logo-square.png?v=skyline-20261009" alt="Skyline SMS" /></div>
+      <div><h1 data-brand="name">Skyline SMS</h1><small>Management Panel</small></div>
     </div>
     <nav class="sb-nav">
       <div class="sb-section">Number Maintenance</div>
       <div class="nav-item" data-page="import"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Import Numbers</span></div>
-      <!-- SKYLINE: Import Test Numbers nav removed per spec -->
+      <!-- Skyline: Import Test Numbers nav removed per spec -->
 
       <div class="sb-section">Pricing</div>
       <div class="nav-item active" data-page="rates"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Rate Management</span></div>
@@ -318,6 +378,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
         <div class="sub-item" data-page="smppConnections"><span class="dot"></span> SMPP Connections</div>
         <div class="sub-item" data-page="systemLogs"><span class="dot"></span> System Logs</div>
         <div class="sub-item" data-page="backupManagement"><span class="dot"></span> Backups</div>
+        <div class="sub-item" data-page="integrationGuide"><span class="dot"></span> Integration Guide</div>
       </div>
           </nav>
   </aside>
@@ -332,7 +393,8 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
         
         <button class="tb-btn" title="Fullscreen" onclick="toggleFull()"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
         <div class="avatar">A</div>
-        <button class="tb-btn" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+        <a class="tb-btn ams-panel-switch" href="/admin" title="Open Admin Panel" data-tip="Open Admin Panel" aria-label="Open Admin Panel"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7h13"/><path d="M18 4l3 3-3 3"/><path d="M16 17H3"/><path d="M6 14l-3 3 3 3"/></svg></a>
+        <button class="tb-btn" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1 2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
         <button class="tb-btn" title="Logout" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
       </div>
     </header>
@@ -348,8 +410,8 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
         <div class="stat-card dash-metric d-orange"><div class="stat-info"><p>Money This Month</p><h3>$0.00</h3><span>Payout in this month</span></div><div class="dash-go">⌁</div></div>
       </div>
       <div class="grid2 dash-row">
-        <div class="card dash-note-card"><div class="card-head"><div><h3>Last 7 Days SMS & Payouts</h3><div class="sub">View summarized stats & reports</div></div><span class="chip">Live</span></div><div class="chart" id="weekChart"></div></div>
-        <div class="card dash-note-card dashboard-recent"><div class="card-head"><div><h3>Recent Activity</h3></div><span class="chip">Live</span></div><div class="muted" style="padding:18px">No recent activity yet</div></div>
+        <div class="card dash-note-card"><div class="card-head"><div><h3>Last 7 Days SMS & Payouts</h3><div class="sub">View summarized stats & reports</div></div></div><div class="chart" id="weekChart"></div></div>
+        <div class="card dash-note-card dashboard-recent"><div class="card-head"><div><h3>Recent Activity</h3></div></div><div class="muted" style="padding:18px">No recent activity yet</div></div>
       </div>
     </section>
 
@@ -365,21 +427,25 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
             </div>
             <input type="file" id="numFile" accept=".csv,.xlsx,.xls,.txt" style="display:none" onchange="handleFile('numFile','numFileInfo')" />
             <div class="form-group" style="margin-top:14px"><label>Assign to Range</label><select id="importRange"><option value="">Select Range</option></select></div>
-            <div class="form-group" style="margin-top:14px"><label>Provider</label><select id="importProvider"><option value="">— No Provider —</option></select><div class="hint">Range is provider se link hogi (Number → Range → Provider)</div></div>
+            <div class="form-group" style="margin-top:14px"><label>Provider</label><select id="importProvider"><option value="">— No Provider —</option></select></div>
             <div id="numFileInfo" class="hint"></div>
             <button class="btn btn-purple" style="margin-top:12px;width:100%" onclick="doImport('numFile')">Import Numbers</button>
           </div>
 <div class="card">
-          <div class="card-head"><div><h3>Bulk Number Import by TXT Files</h3><div class="sub">Select multiple .txt files. Each file name is used as Range Name, and file contents are numbers.</div></div></div>
+          <div class="card-head"><div><h3>Bulk Number Import by TXT Files</h3></div></div>
           <div class="form-grid" style="grid-template-columns:2fr 1fr;gap:14px;align-items:end">
-            <div class="form-group"><label>TXT Files (one range per file)</label><input type="file" id="bulkTxtFiles" accept=".txt,.csv" multiple /></div>
+            <div class="form-group"><label>TXT Files (one range per file)</label><input type="file" id="bulkTxtFiles" accept=".txt,.csv" multiple onchange="bulkTxtAddFiles(this)" /></div>
             <div class="form-group"><label><input type="checkbox" id="bulkCreateMissingRanges" style="width:auto" checked> Create missing ranges automatically</label></div>
           </div>
-          <div class="form-group" style="margin-top:12px"><label>Provider (is batch ki sab ranges)</label><select id="bulkImportProvider"><option value="">— No Provider —</option></select></div>
-          <button class="btn btn-purple" onclick="bulkImportTxtFiles()">Import Selected TXT Files</button>
-          <div class="hint" id="bulkTxtInfo" style="margin-top:10px">Example: <b>Nigeria.txt</b> will import all numbers inside it into range <b>Nigeria</b>.</div>
+          <div class="form-group" style="margin-top:12px"><label>Provider</label><select id="bulkImportProvider"><option value="">— No Provider —</option></select></div>
+          <div id="bulkTxtList" class="bulk-txt-list"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
+            <button class="btn btn-purple" onclick="bulkImportTxtFiles()">Import Selected TXT Files</button>
+            <button class="btn btn-ghost" type="button" onclick="bulkTxtClear()" id="bulkTxtClearBtn" style="display:none">Clear Files</button>
+          </div>
+          <div class="hint" id="bulkTxtInfo" style="margin-top:10px">Example: <b>Nigeria.txt</b> will import all numbers inside it into range <b>Nigeria</b>. You can open the file picker again to add more files — previously selected files are kept.</div>
         </div>
-          <!-- SKYLINE: Upload Ranges File card removed per spec (backend untouched) -->
+          <!-- Skyline: Upload Ranges File card removed per spec (backend untouched) -->
         </div>
 
         </section>
@@ -408,7 +474,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
         </div>
         <div class="card">
           <div class="card-head"><div><h3>File Format</h3><div class="sub">One number per line, or comma separated.</div></div></div>
-          <pre style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:14px;color:#0f2454;white-space:pre-wrap">923009990001
+          <pre style="background:#f6f7f9;border:1px solid var(--border);border-radius:12px;padding:14px;color:#0d111d;white-space:pre-wrap">923009990001
 923009990002
 923009990003</pre>
         </div>
@@ -422,7 +488,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       <!-- ========== RATE MANAGEMENT ========== -->
             <section class="page active" id="page-rates">
         <div class="page-head"><div><h2>Rate Management</h2><div class="breadcrumb"><b>Pricing</b> › Ranges &amp; Rates</div></div>
-          <div class="head-actions"><!-- SKYLINE: Import Ranges button removed per spec (import page remains via sidebar) --><button class="btn btn-purple" onclick="openRateModal(-1)">+ Add Range</button></div>
+          <div class="head-actions"><!-- Skyline: Import Ranges button removed per spec (import page remains via sidebar) --><button class="btn btn-purple" onclick="openRateModal(-1)">+ Add Range</button></div>
         </div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-head"><div><h3>Bulk Range Creation</h3><div class="sub">Enter one range name per line. Existing ranges will be skipped automatically.</div></div><button class="btn btn-green" onclick="bulkCreateRanges()">Create Ranges</button></div>
@@ -433,10 +499,41 @@ Bangladesh
 Canada
 Egypt
 Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit payout/currency later from the table below.</div></div>
-            <div><div class="form-group"><label>Default Currency</label><select id="bulkRangeCurrency"><option value="USD">USD</option><option value="EUR">EUR</option><option value="PKR">PKR</option></select></div><div class="form-group"><label>Payment Type</label><select id="bulkRangePaymentType"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly_30x45">Monthly (30x45)</option></select></div><button class="btn btn-purple" style="width:100%;margin-top:10px" onclick="bulkCreateRanges()">Create All</button></div>
+            <div><div class="form-group"><label>Default Currency</label><select id="bulkRangeCurrency"><option value="USD">USD</option><option value="EUR">EUR</option><option value="PKR">PKR</option></select></div><div class="form-group"><label>Payment Type</label><select id="bulkRangePaymentType"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly_30x45">Monthly (30x45)</option></select></div><div class="form-group"><label>Provider <span class="req">*</span></label><select id="bulkRangeProvider"><option value="">— Select Provider —</option></select></div><button class="btn btn-purple" style="width:100%;margin-top:10px" onclick="bulkCreateRanges()">Create All</button></div>
           </div>
         </div>
-        <!-- SKYLINE: combined Range+Test bulk import UI removed per spec (backend endpoint untouched) -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head"><div><h3>Bulk Range Import (File)</h3><div class="sub">Upload a file of complete range records — CSV, XLSX, XLS or TXT. Uses the same validations and the same range fields as "+ Add Range". Nothing is saved until the whole file is validated.</div></div></div>
+          <div class="form-grid" style="grid-template-columns:2fr 240px;gap:14px;align-items:end">
+            <div class="form-group">
+              <label>Range File</label>
+              <div class="upload-box" onclick="document.getElementById('rangeImportFile').click()">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+                <div id="rangeImportFileInfo">Choose a .csv / .xlsx / .xls / .txt file</div>
+              </div>
+              <input type="file" id="rangeImportFile" accept=".csv,.txt,.tsv,.xlsx,.xls" style="display:none" onchange="rangeImportFileChosen()" />
+              <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:600"><input type="checkbox" id="rangeImportUpdate" style="width:auto"> Update existing ranges (a range with the same name is updated instead of skipped)</label>
+              <div class="hint">Required column: <b>Range Name</b>. Accepted columns: Prefixes, Currency, Payment Type, Rate, Provider Rate, Country, Provider, Range Start, Range End, Status, Memo (Test Numbers and per-cycle rate columns are optional).<br>
+              <b>TXT files must be tab-separated</b> (same columns as the CSV sample) — CSV comma/semicolon/pipe and XLSX/XLS are detected automatically. Rate fills the column of the row's Payment Type (Daily → 1/1, Weekly → 7/1, Monthly → 30/45).</div>
+            </div>
+            <div>
+              <div class="form-group"><label>Download Sample</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-blue" onclick="downloadRangeImportSample('csv')">CSV</button>
+                  <button class="btn btn-green" onclick="downloadRangeImportSample('xlsx')">XLSX</button>
+                  <button class="btn btn-blue" onclick="downloadRangeImportSample('txt')">TXT</button>
+                </div>
+                <div class="hint">Sample = correct headers + 2 example rows, same columns as the importer.</div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button class="btn btn-blue" style="flex:1" onclick="importRangesFile(true)">Validate File</button>
+                <button class="btn btn-purple" style="flex:1" onclick="importRangesFile(false)">Import</button>
+              </div>
+            </div>
+          </div>
+          <div id="rangeImportReport" style="margin-top:14px"></div>
+        </div>
+        <!-- Skyline: combined Range+Test bulk import UI removed per spec (backend endpoint untouched) -->
 
         <div class="table-wrap" style="padding:16px 18px;margin-top:0">
           <div class="table-controls">
@@ -458,6 +555,19 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
 
       <section class="page" id="page-cliSearch">
         <div class="page-head"><div><h2>CLI Search</h2><div class="breadcrumb"><b>Reports</b> › CLI Search & Analytics</div></div></div>
+    <!-- Skyline-style CLI Search — ranges running this CLI in the last 24 hours -->
+    <p class="muted" style="margin:2px 0 14px">See which ranges a sender has been running on in the last 24 hours. Type the sender in full, exactly as it appears. Capital letters do not matter.</p>
+    <div class="toolbar"><div class="ams-panel-cli-fields">
+      <div class="ams-panel-field"><label for="amsCliSender">Sender (CLI)</label><input type="text" id="amsCliSender" placeholder="The full sender, e.g. facebook" autocomplete="off" onkeydown="if(event.key==='Enter')searchAmsCli()"/></div>
+      <div class="ams-panel-field"><label for="amsCliMessage">Message Text</label><input type="text" id="amsCliMessage" placeholder="Any words from the message" autocomplete="off" onkeydown="if(event.key==='Enter')searchAmsCli()"/></div>
+      <button type="button" onclick="searchAmsCli()">Search</button>
+    </div></div>
+    <div class="table-wrap" style="padding:16px 18px">
+      <div class="ams-panel-cli-head"><h3>Ranges Running This CLI</h3><div><label>Show</label> <select id="amsCliPerPage" onchange="renderAmsCliRanges()"><option>10</option><option selected>25</option><option>50</option><option>100</option><option>500</option><option>1000</option></select> <label>per page</label></div></div>
+      <div class="tscroll"><table><thead><tr><th>Range</th><th>Last Seen</th></tr></thead><tbody id="amsCliBody"><tr><td colspan="2" class="muted" style="text-align:center;padding:26px">No data available in table.</td></tr></tbody></table></div>
+      <div class="ams-panel-cli-pager"><div id="amsCliInfo">Showing 0 to 0 of 0 entries</div><div class="ams-panel-pages"><button type="button" id="amsCliBtnFirst" onclick="amsCliPage('first')" disabled>First</button><button type="button" id="amsCliBtnPrev" onclick="amsCliPage('prev')" disabled>Previous</button><button type="button" class="active" id="amsCliPageCur">1</button><button type="button" id="amsCliBtnNext" onclick="amsCliPage('next')" disabled>Next</button><button type="button" id="amsCliBtnLast" onclick="amsCliPage('last')" disabled>Last</button></div></div>
+    </div>
+    <h3 style="margin:22px 0 10px;font-size:13px;letter-spacing:.8px;text-transform:uppercase">CLI Search &amp; Analytics</h3>
         <div class="toolbar">
           <div class="filter-row" style="align-items:flex-start">
             <div style="position:relative;min-width:260px"><label>CLI / Sender ID</label><input type="text" id="cliSearchInput" placeholder="Type prefix: T, Ti, Whats..." autocomplete="off" oninput="loadCliSuggestions()"/><div id="cliSuggestBox" style="position:absolute;left:0;right:0;top:64px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 16px 36px rgba(10,10,11,.14);z-index:20;display:none;max-height:240px;overflow:auto"></div></div>
@@ -477,7 +587,6 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
       </section>
 
       <!-- CDR STAT PAGES (built via JS) -->
-      <section class="page" id="page-smsReport"></section>
       <section class="page" id="page-smsDetail"></section>
       <section class="page" id="page-clientStats"></section>
       <section class="page" id="page-agentStats"></section>
@@ -505,10 +614,10 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
           <div class="stat-card dash-metric d-orange"><div class="stat-info"><p>Log Retention</p><h3 id="ciRetentionCard">30 Days</h3><span>Webhook log retention</span></div><div class="dash-go">↺</div></div>
         </div>
         <div class="card" style="margin-bottom:16px">
-          <div class="card-head"><div><h3>HTTP Callback Configuration</h3><div class="sub">HTTP-only carrier integration. Configure allowed IPs, callback URL, retention and optional future HTTP auth tokens.</div></div></div>
+          <div class="card-head"><div><h3>HTTP Callback Configuration</h3></div></div>
           <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;gap:14px">
             <div class="form-group"><label>Integration Status</label><select id="ciStatus"><option value="disabled">Disabled</option><option value="enabled">Enabled</option></select></div>
-            <div class="form-group"><label>Allowed Carrier IP List</label><input id="ciIp" placeholder="51.77.64.61, 51.77.64.62, 127.0.0.1" /><div class="hint">Comma, space or new-line separated IP addresses.</div></div>
+            <div class="form-group"><label>Allowed Carrier IP List</label><input id="ciIp" placeholder="51.77.64.61, 51.77.64.62, 127.0.0.1" /><div class="hint">Comma, space or new-line separated IP addresses.</div><div class="hint" id="ciEffectiveIps" style="margin-top:6px"></div></div>
             <div class="form-group"><label>Webhook Log Retention</label><select id="ciRetention"><option value="7">7 Days</option><option value="30">30 Days</option><option value="90">90 Days</option><option value="180">180 Days</option></select></div>
           </div>
           <div class="form-group"><label>HTTP Callback URL</label><div style="display:flex;gap:8px;align-items:center"><input id="ciCallback" placeholder="https://yourdomain.com/api/incoming-sms"/><button class="btn btn-blue btn-sm"  onclick="copyCarrierUrl()" type="button">Copy</button><button class="btn btn-green"  onclick="testCarrierConnection()" type="button">Test Connection</button></div><div class="hint">Send this URL to the carrier. The URL must end with <b>/api/incoming-sms</b>.</div></div>
@@ -516,8 +625,8 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
             <div class="form-group"><label>Future API Key</label><input id="ciApiKey" placeholder="Optional / future" /></div>
             <div class="form-group"><label>Future Auth Token</label><input id="ciToken" placeholder="Optional / future" /></div>
           </div>
-          <div class="card" style="margin:10px 0 14px;padding:14px;background:#F8FAFC!important">
-            <div class="card-head" style="margin-bottom:8px"><div><h3 style="font-size:14px">HTTP Integration Active</h3><div class="sub">HTTP callback is active. API polling module is removed; use HTTP incoming endpoint only.</div></div></div>
+          <div class="card" style="margin:10px 0 14px;padding:14px;background:#f6f7f9!important">
+            <div class="card-head" style="margin-bottom:8px"><div><h3 style="font-size:14px">HTTP Integration Active</h3></div></div>
             <div class="hint"><b>Production endpoint:</b> <code>POST /api/incoming-sms</code></div>
             <div class="hint" style="margin-top:6px"><b>Accepted content types:</b> application/json, application/x-www-form-urlencoded, multipart/form-data</div>
           </div></div>
@@ -526,18 +635,6 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
           <button class="btn btn-purple" onclick="saveCarrierSettings()">Save HTTP Settings</button>
         </div>
 
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-head"><div><h3>IP Entries — Provider + IP</h3><div class="sub">IP technical value hai; Provider naam sirf identification/management ke liye. Enabled IPs ingestion allowlist mein hoti hain.</div></div></div>
-          <div class="form-grid" style="grid-template-columns:2fr 2fr auto;gap:12px;align-items:end">
-            <div class="form-group"><label>Provider</label><input id="aiName" list="provNames" placeholder="e.g. Example Provider" /></div>
-            <div class="form-group"><label>IP Address</label><input id="aiIp" placeholder="123.123.123.123" /></div>
-            <button class="btn btn-green" style="margin-bottom:1px" onclick="addActivityIp()">Add IP</button>
-          </div>
-          <div class="table-wrap" style="margin-top:10px"><div class="tscroll"><table>
-            <thead><tr><th>Provider</th><th>IP Address</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="aiBody"></tbody>
-          </table></div><div class="table-foot"><div class="info" id="aiInfo"></div></div></div>
-        </div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-head"><div><h3>HTTP Webhook Logs</h3><div class="sub">Incoming carrier requests and system responses for debugging.</div></div><div class="head-actions"><button class="btn btn-blue"  onclick="loadCarrierWebhookLogs()">Refresh Logs</button><button class="btn btn-red"  onclick="clearCarrierWebhookLogs()">Clear Logs</button><button class="btn btn-green" onclick="exportCarrierLogsCsv()">Export CSV / Excel</button></div></div>
           <div class="table-wrap"><div class="tscroll"><table>
@@ -581,7 +678,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
           <button class="btn btn-ghost"  onclick="document.getElementById('testCliFilter').value='';document.getElementById('testRange').value='';renderTest()">Reset</button>
         </div></div>
         <div class="card" style="margin-bottom:16px;border:1px solid rgba(212,175,55,.35)">
-          <div class="card-head"><div><h3>Demo Traffic Generator</h3><div class="sub">Admin-only: generate fake/demo OTP messages on Test Numbers for display traffic.</div></div><button class="btn btn-red btn-sm"  onclick="clearAdminFakeTraffic()">Clear Demo Traffic</button></div>
+          <div class="card-head"><div><h3>Demo Traffic Generator</h3></div><button class="btn btn-red btn-sm"  onclick="clearAdminFakeTraffic()">Clear Demo Traffic</button></div>
           <div class="form-grid" style="grid-template-columns:140px auto;gap:12px;align-items:end;margin-bottom:12px">
             <div class="form-group"><label>Limit</label><input id="adminFakeDefaultLimit" type="number" min="1" max="1000" value="25"></div>
             <button class="btn btn-purple" onclick="generateAdminDefaultFake()">Generate Default Demo</button>
@@ -592,7 +689,6 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
             <div class="form-group"><label>Message Body</label><input id="adminFakeMsg" placeholder="Use {code}, {number}, {service}, {range}, {index}"></div>
             <button class="btn btn-blue" onclick="generateAdminCustomFake()">Generate Custom</button>
           </div>
-          <div class="hint" style="margin-top:10px">Demo messages are marked as <b>source=test_panel_fake</b>. Public Test Panel users can view them, but cannot generate or delete them.</div>
         </div>
         <div class="two-col">
           <div>
@@ -633,14 +729,26 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
           <div class="stat-card dash-metric d-orange"><div class="stat-info"><p>Backup Folder</p><h3 id="bkFolder">—</h3><span>Persistent storage path</span></div><div class="dash-go">↺</div></div>
           <div class="stat-card dash-metric d-pink"><div class="stat-info"><p>Database File</p><h3 id="bkDbFile">—</h3><span>Active database path</span></div><div class="dash-go">●</div></div>
         </div>
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-head"><div><h3>VPS Backup Settings</h3><div class="sub">Current VPS setup stores automatic backups outside the app folder. Recommended: <b>BACKUP_DIR=/root/powerx-sms-backups</b>.</div></div></div>
-          <div class="hint">Automatic backups run every <b>BACKUP_INTERVAL_HOURS</b> hours and old backups are removed after <b>BACKUP_RETENTION_DAYS</b> days.</div>
-        </div>
         <div class="table-wrap"><div class="tscroll"><table>
           <thead><tr><th>File</th><th>Created</th><th>Modified</th><th>Size</th><th>Actions</th></tr></thead>
           <tbody id="backupBody"></tbody>
         </table></div><div class="table-foot"><div class="info" id="backupInfo"></div></div></div>
+      </section>
+
+      <!-- ========== SYSTEM MASTER: TECHNICAL INTEGRATION GUIDE ========== -->
+      <section class="page" id="page-integrationGuide">
+        <div class="page-head"><div><h2>Technical Integration Guide</h2><div class="breadcrumb"><b>System Master</b> › Provider Integration Documentation</div></div>
+          <div class="head-actions">
+            <button class="btn btn-blue" onclick="loadIntegrationGuide()">Refresh</button>
+            <button class="btn btn-green" onclick="copyIntegrationGuide()">Copy</button>
+            <button class="btn btn-purple" onclick="downloadIntegrationGuide()">Download Markdown</button>
+            <button class="btn btn-ghost" onclick="printIntegrationGuide()">Print / PDF</button>
+          </div></div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head"><div><h3>Share with a provider</h3><div class="sub">Provider-facing guide for HTTP incoming delivery, SMPP and API provider sync. It contains placeholders only — no credentials, tokens or internal secrets are included.</div></div></div>
+        </div>
+        <div class="card ig-doc" id="igBody"><div class="muted" style="padding:18px;text-align:center">Loading guide…</div></div>
+        <div class="ig-meta" id="igMeta"></div>
       </section>
 
       <!-- ========== SYSTEM MASTER: API PROVIDERS ========== -->
@@ -652,7 +760,6 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
           <thead><tr><th>Provider</th><th>Connection</th><th>Payment Term</th><th>Currency</th><th>Numbers</th><th>Messages</th><th>Unpaid Payout</th><th>Last Payment</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="provBody"></tbody>
         </table></div><div class="table-foot"><div class="info" id="provInfo"></div></div></div>
-        <div class="hint" style="margin-top:10px">Providers sirf manually bante hain (integrations se auto-create nahi hote). Credentials connection pages par hi rehte hain (HTTP / API / SMPP). Unpaid = lifetime payout − settled; partial payment allowed.</div>
       </section>
 
       <div class="modal-overlay" id="provModal"><div class="modal" style="max-width:540px">
@@ -744,9 +851,9 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
           <div class="stat-card dash-metric d-pink"><div class="stat-info"><p>Errors</p><h3 id="smErrors">0</h3><span id="smErrText">Connections in error state</span></div><div class="dash-go">!</div></div>
         </div>
         <div class="card" style="margin-bottom:16px">
-          <div class="card-head"><div><h3>How this works</h3><div class="sub">SMPP is an additional channel. It runs alongside the HTTP callback and the API Providers sync — all three write into the same SMS records, and none of them affect the others.</div></div></div>
-          <div class="hint"><b>Client mode</b> — Skyline SMS connects out to your provider's SMPP server. You need their host, port, system&nbsp;ID and password.<br>
-          <b>Server mode</b> — Skyline SMS listens on a port and your carrier connects in. You choose the system&nbsp;ID and password and give them to the carrier, plus this server's IP and the port.<br>
+          <div class="card-head"><div><h3>How this works</h3><div class="sub">SMPP connects <span data-brand-replace="name">Skyline SMS</span> to a carrier's SMS infrastructure over a persistent TCP session. Choose <b>Client mode</b> when Skyline SMS binds out to the carrier's SMPP server, or <b>Server mode</b> when the carrier binds in to the SMPP server hosted by Skyline SMS. Configure the correct host, port, system ID, password, bind type, allowed IPs and reconnection settings for the selected mode. Incoming messages are validated and de-duplicated before they are recorded.</div></div></div>
+          <div class="hint"><b>Client mode</b> — <span data-brand-replace="name">Skyline SMS</span> connects out to your provider's SMPP server. You need their host, port, system&nbsp;ID and password.<br>
+          <b>Server mode</b> — <span data-brand-replace="name">Skyline SMS</span> listens on a port and your carrier connects in. You choose the system&nbsp;ID and password and give them to the carrier, plus this server's IP and the port.<br>
           Reconnection is automatic with backoff. Incoming messages are de-duplicated, so a redelivered message is never counted twice.</div>
         </div>
         <div class="table-wrap"><div class="tscroll"><table>
@@ -765,30 +872,17 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
       <!-- ========== SYSTEM MASTER: SMS CLI LIMIT ========== -->
       <section class="page" id="page-cliLimit">
         <div class="page-head"><div><h2>SMS CLI Limit</h2><div class="breadcrumb"><b>System Master</b> › CLI Limit</div></div></div>
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-head"><div><h3>Set a CLI Limit</h3><div class="sub">Select a CLI and set a limit. These limits are visible to managers only.</div></div></div>
-          <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;gap:14px">
-            <div class="form-group"><label>Select CLI <span class="req">*</span></label>
+        <div class="card ams-ui-cli-form">
+          <div class="card-head"><div><h3>Set a CLI Limit</h3><div class="sub">Select a CLI and set its daily limit. The limit applies to that CLI on every range. Daily limit resets at the start of each new day (UK time).</div></div></div>
+          <div class="ams-ui-cli-row">
+            <div class="form-group ams-ui-cli-sel"><label for="climCli">Select CLI <span class="req">*</span></label>
               <select id="climCli"><option value="">Choose CLI</option></select></div>
-            <div class="form-group"><label>Limit Type <span class="req">*</span></label>
-              <select id="climType" onchange="climTypeChange()">
-                <option value="overall">Overall (jis ne jitni laga li)</option>
-                <option value="specific">Specific Manager</option>
-              </select></div>
-            <div class="form-group" id="climMgrGroup" style="display:none"><label>Manager</label>
-              <select id="climMgr"></select></div>
-          </div>
-          <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
-            <div class="form-group"><label>Limit (SMS count) <span class="req">*</span></label><input type="number" id="climLimit" placeholder="e.g. 500"/></div>
-            <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-purple" onclick="addCliLimit()" style="width:100%">Set Limit</button></div>
-          </div>
-          <div class="hint" style="color:#5c6a86">
-            <b>Overall:</b> shared limit across all managers. &nbsp;•&nbsp;
-            <b>Specific:</b> set a separate limit for each manager.
+            <div class="form-group ams-ui-cli-num"><label for="climLimit">Daily Limit (SMS count)</label><input type="number" id="climLimit" min="1" placeholder="e.g. 500"/></div>
+            <div class="form-group ams-ui-cli-act"><button class="btn btn-blue" onclick="addCliLimit()">Set Limit</button></div>
           </div>
         </div>
-        <div class="table-wrap"><div class="tscroll"><table>
-          <thead><tr><th>CLI</th><th>Type</th><th>Manager</th><th>Limit</th><th>Used</th><th>Remaining</th><th>Action</th></tr></thead>
+        <div class="table-wrap ams-ui-cli-table"><div class="tscroll"><table>
+          <thead><tr><th>CLI (Sender)</th><th>Daily Limit</th><th>Used Today</th><th>Remaining</th><th style="width:90px">Action</th></tr></thead>
           <tbody id="climBody"></tbody>
         </table></div><div class="table-foot"><div class="info" id="climInfo"></div></div></div>
       </section>
@@ -802,7 +896,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
         </div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-head"><div><h3>CLI Daily Limits</h3><div class="sub">Set a daily limit per CLI. Counts are combined across all ranges and numbers.</div></div><button class="btn btn-blue"  onclick="loadLimitManagement()">Refresh</button></div>
-          <div class="card" style="margin:0 0 12px;padding:14px;background:#F8FAFC!important">
+          <div class="card" style="margin:0 0 12px;padding:14px;background:#f6f7f9!important">
             <div style="font-weight:800;margin-bottom:10px">Manually Add CLI Limit</div>
             <div class="form-grid" style="grid-template-columns:2fr 1fr auto;gap:12px;align-items:end">
               <div class="form-group"><label>CLI / Sender (any format)</label><input id="lmCliManual" placeholder="e.g. Microsoft, 12345, Affirm"></div>
@@ -858,13 +952,13 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
       <div class="form-group"><label>Provider Rate 7/7 <span class="muted" style="font-weight:400">(internal)</span></label><input type="text" id="pr3" placeholder="0.008 or NA" /></div>
       <div class="form-group"><label>Provider Rate 30/45 <span class="muted" style="font-weight:400">(internal)</span></label><input type="text" id="pr4" placeholder="0.008 or NA" /></div>
     </div>
-    <div class="form-grid"><div class="form-group"><label>Country</label><input type="text" id="rCountry" placeholder="e.g. Pakistan" /></div><div class="form-group"><label>Provider (reference)</label><input type="text" id="rProvider" placeholder="e.g. Provider 9AFE" /><div class="hint">Reference only — actual connections are managed under SMS Providers / SMPP.</div></div></div>
+    <div class="form-grid"><div class="form-group"><label>Country</label><input type="text" id="rCountry" placeholder="e.g. Pakistan" /></div><div class="form-group"><label>Provider <span class="req">*</span></label><select id="rProvider"><option value="">— Select Provider —</option></select><div class="hint">Required — must be a provider from Provider Management. Create the provider there first if needed.</div></div></div>
     <div class="form-grid"><div class="form-group"><label>Currency Rate</label><input type="text" id="rCurRate" placeholder="e.g. 278.50" /></div><div class="form-group"><label>CLI Limit</label><input type="text" id="rCli" placeholder="e.g. 100/day" /></div></div>
     <div class="form-grid"><div class="form-group"><label>Range Start</label><input type="text" id="rStart" placeholder="92300123456" /></div><div class="form-group"><label>Range End</label><input type="text" id="rEnd" placeholder="92300999999" /></div><div class="form-group"><label>Status</label><select id="rStatus"><option>Active</option><option>Inactive</option></select></div></div>
     <div class="form-group"><label>Memo</label><input type="text" id="rMemo" placeholder="Optional note" /></div>
     <!-- PART 4: AGENT SELF-ALLOCATION LIMITS (per-range) -->
     <div style="border-top:1px solid var(--border2);padding-top:14px;margin-top:10px">
-      <h4 style="margin:0 0 10px 0;font-size:13.5px;color:var(--accent,#30abed)">Agent Self-Allocation Settings</h4>
+      <h4 style="margin:0 0 10px 0;font-size:13.5px;color:var(--accent,#1f90f3)">Agent Self-Allocation Settings</h4>
       <div class="form-grid">
         <div class="form-group">
           <label class="switch"><input type="checkbox" id="rSelfAllocEnabled" checked/> Enable Agent Self-Allocation</label>
@@ -900,8 +994,8 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
     </div>
     <div class="form-group"><label>Mode <span class="req">*</span></label>
       <select id="smMode" onchange="smModeChange()">
-        <option value="client">Client — Skyline SMS connects out to the provider</option>
-        <option value="server">Server — the carrier connects in to Skyline SMS</option>
+        <option value="client">Client — <span data-brand-replace="name">Skyline SMS</span> connects out to the provider</option>
+        <option value="server">Server — the carrier connects in to <span data-brand-replace="name">Skyline SMS</span></option>
       </select>
       <div class="hint" id="smModeHint"></div>
     </div>
@@ -1010,7 +1104,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
       <div class="form-group"><label>Overlap Window (seconds)</label><input type="number" id="apOverlap" value="30" min="0" max="3600" /><div class="hint">Re-checks this many seconds back so no SMS is missed. Duplicates are blocked automatically.</div></div>
       <div class="form-group"><label>Response Array Path</label><input type="text" id="apRecPath" placeholder="data" /><div class="hint">Where the records array is, e.g. <b>data</b>.</div></div>
     </div>
-    <div class="section-title" style="margin:14px 0 8px">Field Mapping <span class="muted" style="font-weight:500">(provider field → Skyline SMS field)</span></div>
+    <div class="section-title" style="margin:14px 0 8px">Field Mapping <span class="muted" style="font-weight:500">(provider field → <span data-brand-replace="name">Skyline SMS</span> field)</span></div>
     <div class="form-grid">
       <div class="form-group"><label>Number</label><input type="text" id="apMapNumber" placeholder="num" /></div>
       <div class="form-group"><label>CLI / Sender</label><input type="text" id="apMapCli" placeholder="cli" /></div>
@@ -1021,7 +1115,7 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
     </div>
     <div class="form-grid">
       <div class="form-group"><label>Payout (optional)</label><input type="text" id="apMapPayout" placeholder="payout" /><div class="hint">Used only as an indicator. Payout is always calculated from panel rate cards; a provider payout of 0 marks the SMS non-payable.</div></div>
-      <div class="form-group"><label>Unique ID (optional)</label><input type="text" id="apMapRef" placeholder="Leave empty if not provided" /><div class="hint">If the provider sends no id, Skyline SMS generates a fingerprint to prevent duplicates.</div></div>
+      <div class="form-group"><label>Unique ID (optional)</label><input type="text" id="apMapRef" placeholder="Leave empty if not provided" /><div class="hint">If the provider sends no id, <span data-brand-replace="name">Skyline SMS</span> generates a fingerprint to prevent duplicates.</div></div>
     </div>
     <div class="hint" id="apTestResult" style="margin-top:12px"></div>
   </div>
@@ -1057,12 +1151,12 @@ Nigeria"></textarea><div class="hint">Default rates will be NA. You can edit pay
 </div></div>
 
 
-<script src="/api.js?v=20260728-agent-manager-allocation-final"></script>
+<script src="/api.js?v=skyline-20261027-three-fixes1"></script>
 <script>
 /* auth guard — management uses admin credentials */
 if(window.API){ API.guard('admin'); }
-window.PX_PANEL_MODE='management';
-const MANAGEMENT_ALLOWED_PAGES=new Set(['import','testImport','rates','cliLimit','limitManagement','carrierIntegration','apiProviders','smppConnections','systemLogs','backupManagement','providers']);
+window.AMS_PANEL_MODE='management';
+const MANAGEMENT_ALLOWED_PAGES=new Set(['import','testImport','rates','cliLimit','limitManagement','carrierIntegration','apiProviders','smppConnections','systemLogs','backupManagement','providers','integrationGuide']);
 function normalizePanelPage(id){ id=String(id||'rates'); return MANAGEMENT_ALLOWED_PAGES.has(id)?id:'rates'; }
 function applyPanelSplitUi(){ /* Management Panel keeps maintenance/config modules only. */ }
 /* =============== NAV =============== */
@@ -1091,7 +1185,7 @@ function openSidebar(){ document.getElementById('sidebar').classList.add('show')
 function closeSidebar(){ document.getElementById('sidebar').classList.remove('show'); document.getElementById('overlay').classList.remove('show'); }
 function toggleFull(){ if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}else{document.exitFullscreen&&document.exitFullscreen();} }
 function closeModal(id){const el=document.getElementById(id);if(el)el.classList.remove('show');}
-function logout(){ if(confirm('Do you want to logout?')){ if(window.API&&API.logout){API.logout();}else{try{sessionStorage.clear();['ms_token','ms_role','ms_user','ms_name'].forEach(k=>localStorage.removeItem(k));}catch(e){} window.location.href='/panel-login';} } }
+function logout(){ if(confirm('Do you want to logout?')){ if(window.API&&API.logout){API.logout();}else{try{sessionStorage.clear();['ams_token','ams_role','ams_user','ams_name'].forEach(k=>localStorage.removeItem(k));}catch(e){} window.location.href='/panel-login';} } }
 function tick(){const d=new Date();const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const p=n=>String(n).padStart(2,'0');
   document.getElementById('clock').textContent=days[d.getDay()]+', '+d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());}
 setInterval(tick,1000);tick();
@@ -1182,16 +1276,16 @@ function renderRates(){
   let rows=(ratesData||[]).filter(r=>(r.name||'').toLowerCase().includes(q)||(r.test_number||'').includes(q));
   const pag=API.paginateRows('adminRates',rows,len,'ratesInfo',renderRates);const total=pag.total;rows=pag.rows;
   document.getElementById('ratesBody').innerHTML=rows.map(r=>`<tr>
-    <td data-label="Range"><b>${r.name}</b></td><td data-label="Prefix" class="muted">${r.prefix||'—'}</td><td data-label="Country" class="muted">${r.country||'—'}</td><td data-label="Provider" class="muted">${r.provider||'—'}</td><td data-label="Test Number" class="muted">${(()=>{const t=String(r.test_number||'').trim();if(!t)return '—';const parts=t.split(/[,]/).map(s=>s.trim()).filter(Boolean);return parts[0]+(parts.length>1?' +'+(parts.length-1)+' more':'');})()}</td></td><td data-label="Currency"><span class="tag tag-green">${r.currency}</span></td><td data-label="Pay"><span class="tag tag-blue">${(window.GX&&GX.payterm?GX.payterm(r.payment_type):r.payment_type)||'7/1'}</span></td>
+    <td data-label="Range"><b>${r.name}</b></td><td data-label="Prefix" class="muted">${r.prefix||'—'}</td><td data-label="Country" class="muted">${r.country||'—'}</td><td data-label="Provider" class="muted">${r.provider||'—'}</td><td data-label="Test Number" class="muted">${(()=>{const t=String(r.test_number||'').trim();if(!t)return '—';const parts=t.split(/[,]/).map(s=>s.trim()).filter(Boolean);return parts[0]+(parts.length>1?' +'+(parts.length-1)+' more':'');})()}</td></td><td data-label="Currency"><span class="tag tag-green">${r.currency}</span></td><td data-label="Pay"><span class="tag tag-blue">${(window.AMSCore&&AMSCore.payterm?AMSCore.payterm(r.payment_type):r.payment_type)||'7/1'}</span></td>
     <td data-label="1/1">${fmtRate(r.rate_1_1)}</td><td data-label="7/1">${fmtRate(r.rate_7_1)}</td><td data-label="7/7">${fmtRate(r.rate_7_7)}</td><td data-label="30/45">${fmtRate(r.rate_30_45)}</td><td data-label="Prov. Rate" class="muted" style="font-size:11.5px;white-space:nowrap" title="Provider Rate (admin-internal): 1/1 · 7/1 · 7/7 · 30/45">${[r.provider_rate_1_1,r.provider_rate_7_1,r.provider_rate_7_7,r.provider_rate_30_45].map(v=>(v&&v!=='NA')?v:'—').join(' · ')}</td><td data-label="Status">${(r.status||'Active')==='Active'?'<span class="tag tag-green">Active</span>':'<span class="tag tag-red">'+(r.status||'Active')+'</span>'}</td><td data-label="Memo" class="muted">${r.memo||'—'}</td>
-    <td style="white-space:nowrap"><button type="button" class="gx-btn gx-amber"  onclick="openRateModal(${r.id})" data-tip="Set rate" title="Set rate" aria-label="Set rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></button>
+    <td style="white-space:nowrap"><button type="button" class="ams-btn ams-amber"  onclick="openRateModal(${r.id})" data-tip="Set rate" title="Set rate" aria-label="Set rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></button>
     <button class="icon-btn btn-red" onclick="delRate(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></td></tr>`).join('');
   document.getElementById('ratesInfo').textContent=`Showing ${rows.length} of ${total} ranges`;
 }
 let editRateId=-1;
-function openRateModal(id){editRateId=id;document.getElementById('rateModalTitle').textContent=id<0?'Add Range':'Edit Range';
+async function openRateModal(id){editRateId=id;document.getElementById('rateModalTitle').textContent=id<0?'Add Range':'Edit Range';
   const r=id<0?{name:'',prefix:'',test_number:'',currency:'USD',payment_type:'weekly',rate_1_1:'',rate_7_1:'',rate_7_7:'',rate_30_45:'',memo:'',country:'',provider:'',currency_rate:'',cli_limit:'',range_start:'',range_end:'',status:'Active',provider_rate_1_1:'',provider_rate_7_1:'',provider_rate_7_7:'',provider_rate_30_45:''}:(ratesData.find(x=>x.id===id)||{});
-  rName.value=r.name||'';rPrefix.value=r.prefix||'';rTest.value=r.test_numbers||r.test_number||'';rCur.value=r.currency||'USD';if(document.getElementById('rPaymentType'))rPaymentType.value=r.payment_type||'weekly';r1.value=r.rate_1_1||'';r2.value=r.rate_7_1||'';r3.value=r.rate_7_7||'';r4.value=r.rate_30_45||'';rMemo.value=r.memo||'';if(document.getElementById('rCountry')){rCountry.value=r.country||'';rProvider.value=r.provider||'';rCurRate.value=r.currency_rate||'';rCli.value=r.cli_limit||'';rStart.value=r.range_start||'';rEnd.value=r.range_end||'';rStatus.value=r.status||'Active';}
+  rName.value=r.name||'';rPrefix.value=r.prefix||'';rTest.value=r.test_numbers||r.test_number||'';rCur.value=r.currency||'USD';if(document.getElementById('rPaymentType'))rPaymentType.value=r.payment_type||'weekly';r1.value=r.rate_1_1||'';r2.value=r.rate_7_1||'';r3.value=r.rate_7_7||'';r4.value=r.rate_30_45||'';rMemo.value=r.memo||'';if(document.getElementById('rCountry')){rCountry.value=r.country||'';await fillRangeProviderDropdown();rProvider.value=r.provider||'';if(r.provider && !Array.from(rProvider.options).some(o=>o.value===r.provider)){var opt=document.createElement('option');opt.value=r.provider;opt.textContent=r.provider+' (existing)';rProvider.appendChild(opt);rProvider.value=r.provider;}rCurRate.value=r.currency_rate||'';rCli.value=r.cli_limit||'';rStart.value=r.range_start||'';rEnd.value=r.range_end||'';rStatus.value=r.status||'Active';}
   /* P19k #4: provider rates (admin-internal) */
   pr1.value=(r.provider_rate_1_1&&r.provider_rate_1_1!=='NA')?r.provider_rate_1_1:'';pr2.value=(r.provider_rate_7_1&&r.provider_rate_7_1!=='NA')?r.provider_rate_7_1:'';pr3.value=(r.provider_rate_7_7&&r.provider_rate_7_7!=='NA')?r.provider_rate_7_7:'';pr4.value=(r.provider_rate_30_45&&r.provider_rate_30_45!=='NA')?r.provider_rate_30_45:'';
   const saEn = document.getElementById('rSelfAllocEnabled'); if(saEn) saEn.checked = r.self_alloc_enabled !== undefined ? !!r.self_alloc_enabled : true;
@@ -1199,6 +1293,7 @@ function openRateModal(id){editRateId=id;document.getElementById('rateModalTitle
   const saPer = document.getElementById('rSelfAllocPeriods'); if(saPer) saPer.value = r.self_alloc_periods || 'weekly,monthly';
   document.getElementById('rateModal').classList.add('show');}
 async function saveRate(){if(!rName.value.trim()){alert('Range name is required.');return;}
+  if(!rProvider.value.trim()){alert('Provider is required — select a provider from Provider Management.');return;}
   const body={name:rName.value.trim(),prefix:rPrefix.value.trim(),test_number:rTest.value.trim(),test_numbers:rTest.value.trim(),currency:rCur.value,rate_1_1:r1.value.trim()||'NA',rate_7_1:r2.value.trim()||'NA',rate_7_7:r3.value.trim()||'NA',rate_30_45:r4.value.trim()||'NA',memo:rMemo.value.trim(),payment_type:(document.getElementById('rPaymentType')?.value||'weekly_7_1'),country:(rCountry?.value||'').trim(),provider:(rProvider?.value||'').trim(),currency_rate:(rCurRate?.value||'').trim(),cli_limit:(rCli?.value||'').trim(),range_start:(rStart?.value||'').trim(),range_end:(rEnd?.value||'').trim(),status:(rStatus?.value||'Active'),
     /* P19k #4 */
     provider_rate_1_1:pr1.value.trim()||'NA',provider_rate_7_1:pr2.value.trim()||'NA',provider_rate_7_7:pr3.value.trim()||'NA',provider_rate_30_45:pr4.value.trim()||'NA',
@@ -1216,7 +1311,7 @@ async function importRangeTestBulkFile(){
   fd.append('currency',document.getElementById('rangeTestBulkCurrency')?.value||'USD');
   fd.append('payment_type',document.getElementById('rangeTestBulkPaymentType')?.value||'weekly_7_1');
   try{
-    const token=sessionStorage.getItem('ms_token');
+    const token=sessionStorage.getItem('ams_token');
     const res=await fetch('/api/ranges/import-test-bulk',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});
     const data=await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(data.error||('HTTP '+res.status));
@@ -1231,15 +1326,102 @@ Test numbers added: ${data.added_test_numbers||0}`);
   }catch(e){alert('❌ '+e.message)}
 }
 
+/* =========================================================================
+ * BULK RANGE IMPORT (file) — P19k #2/#3/#4
+ * The server (/api/ranges/import-file) parses + validates the WHOLE file first
+ * and only then writes inside one transaction; it reuses the same range columns
+ * and the same normalizers as "+ Add Range". This UI only uploads the file and
+ * renders the returned summary — it never creates ranges by itself.
+ * ========================================================================= */
+function rangeImportFileChosen(){
+  const f=document.getElementById('rangeImportFile')?.files?.[0];
+  const info=document.getElementById('rangeImportFileInfo');
+  if(info) info.textContent=f?`${f.name} (${Math.max(1,Math.round((f.size||0)/1024))} KB)`:'Choose a .csv / .xlsx / .xls / .txt file';
+  const rep=document.getElementById('rangeImportReport'); if(rep) rep.innerHTML='';
+}
+async function downloadRangeImportSample(format){
+  try{
+    const token=sessionStorage.getItem('ams_token')||localStorage.getItem('ams_token');
+    const res=await fetch('/api/ranges/import-sample?format='+encodeURIComponent(format),{headers:{Authorization:'Bearer '+token}});
+    if(!res.ok){ const j=await res.json().catch(()=>({})); throw new Error(j.error||('HTTP '+res.status)); }
+    const blob=await res.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='skyline-sms-range-import-sample.'+(format==='xls'?'xlsx':format);
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+  }catch(e){ alert('❌ Sample download failed: '+e.message); }
+}
+function rangeImportReportHtml(d){
+  const esc=v=>String(v===undefined||v===null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const chip=(label,val,cls)=>`<span class="ams-chip" style="display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:700;margin:0 8px 8px 0;background:${cls}">${label}: ${val}</span>`;
+  let html=`<div style="display:flex;flex-wrap:wrap;align-items:center">
+    ${chip('Rows in file',d.total,'#eeedfc')}
+    ${chip('Valid',d.valid,'#e3f6ef')}
+    ${chip('Invalid',d.invalid,d.invalid?'#fbecec':'#eeedfc')}
+    ${chip('Imported',d.imported,'#e3f6ef')}
+    ${chip('Updated',d.updated,'#e3f6ef')}
+    ${chip('Skipped (already exists)',d.skipped,'#fcf1e2')}
+    ${d.dry_run?'<span class="ams-chip" style="background:#f0f2f6">Validation only — nothing was saved</span>':''}
+  </div>`;
+  if(d.unknown_columns&&d.unknown_columns.length) html+=`<div class="hint" style="color:#8a5608">Ignored unknown column(s): ${esc(d.unknown_columns.join(', '))}</div>`;
+  if((d.errors||[]).length){
+    html+=`<div style="margin-top:8px"><b>Row errors (${d.errors.length}) — these rows were NOT created:</b>
+      <div class="tscroll" style="max-height:260px;overflow:auto;margin-top:6px"><table><thead><tr><th>Row</th><th>Field</th><th>Problem</th><th>Value</th></tr></thead><tbody>`
+      + d.errors.map(e=>`<tr><td>${e.row}</td><td>${esc((e.errors||[]).map(x=>x.field).join(', '))}</td><td>${esc((e.errors||[]).map(x=>x.message).join(' · '))}</td><td class="muted">${esc((e.errors||[]).map(x=>x.value).join(', '))}</td></tr>`).join('')
+      + `</tbody></table></div></div>`;
+  }
+  if((d.skipped_rows||[]).length){
+    html+=`<div style="margin-top:8px"><b>Skipped rows (${d.skipped_rows.length})</b>
+      <div class="tscroll" style="max-height:160px;overflow:auto;margin-top:6px"><table><thead><tr><th>Row</th><th>Range</th><th>Reason</th></tr></thead><tbody>`
+      + d.skipped_rows.map(r=>`<tr><td>${r.row}</td><td>${esc(r.name)}</td><td>${esc(r.reason||'')}</td></tr>`).join('')
+      + `</tbody></table></div></div>`;
+  }
+  if((d.created||[]).length){
+    html+=`<div style="margin-top:8px"><b>Created ranges</b><div class="hint">${d.created.map(c=>esc(c.name)).join(', ')}</div></div>`;
+  }
+  return html;
+}
+async function importRangesFile(validateOnly){
+  const file=document.getElementById('rangeImportFile')?.files?.[0];
+  if(!file){ alert('Choose a CSV / XLSX / XLS / TXT file first — or use "Download Sample" to get the correct format.'); return; }
+  const fd=new FormData();
+  fd.append('file',file);
+  if(validateOnly) fd.append('dry_run','1');
+  if(document.getElementById('rangeImportUpdate')?.checked) fd.append('update_existing','1');
+  const rep=document.getElementById('rangeImportReport');
+  if(rep) rep.innerHTML='<div class="hint">Reading and validating the file…</div>';
+  try{
+    const d=await API.upload('/ranges/import-file',fd);
+    if(rep) rep.innerHTML=rangeImportReportHtml(d)||'<div class="hint">Nothing to report.</div>';
+    if(!validateOnly && (d.imported||d.updated)){
+      /* The import result is already on screen; a failure while refreshing the rate
+         table must never overwrite it (loadRates -> renderAlloc has a pre-existing
+         null-element error on this page — unrelated to the import). */
+      try{ await loadRates(); }
+      catch(refreshErr){
+        if(rep){ const n=document.createElement('div'); n.className='hint'; n.style.color='#8a5608';
+          n.textContent='Note: the rate table could not refresh automatically ('+String(refreshErr.message||refreshErr)+') — reload the page to see the new ranges. The import itself succeeded.'; rep.appendChild(n); }
+      }
+    }
+  }catch(e){
+    if(rep) rep.innerHTML=`<div class="hint" style="color:#a82e2a"><b>Import failed:</b> ${String(e.message||e)}</div>`;
+    else alert('❌ '+e.message);
+  }
+}
+async function afterBulkRangeChange(){ try{ await loadRates(); }catch(_){} }
+
 async function bulkCreateRanges(){
   const text=(document.getElementById('bulkRangeNames')?.value||'').trim();
   const currency=document.getElementById('bulkRangeCurrency')?.value||'USD';
   const payment_type=document.getElementById('bulkRangePaymentType')?.value||'weekly';
+  const provider=(document.getElementById('bulkRangeProvider')?.value||'').trim();
+  if(!provider){alert('Provider is required — select a provider from Provider Management.');return;}
   if(!text){alert('Enter range names first.');return;}
   const names=text.split(/[\r\n,;]+/).map(x=>x.trim()).filter(Boolean);
   if(!names.length){alert('Enter valid range names.');return;}
   try{
-    const r=await API.post('/ranges/bulk-create',{names,currency,payment_type});
+    const r=await API.post('/ranges/bulk-create',{names,currency,payment_type,provider});
     alert(`✅ Bulk range creation complete.
 Inserted: ${r.inserted||0}
 Restored: ${r.restored||0}
@@ -1261,7 +1443,12 @@ async function delRate(id){
 
 /* =============== ALLOCATION (working) =============== */
 function renderAlloc(){
-  const len=document.getElementById('allocLen').value,q=(document.getElementById('allocSearch').value||'').toLowerCase();
+  /* B1c fix: the Management panel has no allocation view (that admin page was removed).
+     Guard the stale renderer so live flows calling loadRates() are not aborted. */
+  const lenEl=document.getElementById('allocLen'),searchEl=document.getElementById('allocSearch'),
+        bodyEl=document.getElementById('allocBody'),infoEl=document.getElementById('allocInfo');
+  if(!lenEl||!searchEl||!bodyEl||!infoEl) return;
+  const len=lenEl.value,q=(searchEl.value||'').toLowerCase();
   let rows=allocData.map((r,i)=>({...r,_i:i})).filter(r=>r.range.toLowerCase().includes(q));
   const pag=API.paginateRows('adminAlloc',rows,len,'allocInfo',renderAlloc);const total=pag.total;rows=pag.rows;
   document.getElementById('allocBody').innerHTML=rows.map(r=>`<tr>
@@ -1272,8 +1459,8 @@ function renderAlloc(){
     <td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       <select id="am${r._i}" style="width:auto;padding:7px 9px">${managers.map(m=>`<option>${m}</option>`).join('')}</select>
       <input type="number" class="allocate-num" placeholder="Qty" id="al${r._i}"/>
-      <button type="button" class="gx-btn gx-green"  onclick="allocRow(${r._i})" data-tip="Allocate" title="Allocate" aria-label="Allocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button></div></td>
-    <td><div style="display:flex;gap:6px;align-items:center"><input type="number" class="allocate-num" placeholder="Qty" id="ul${r._i}"/><button type="button" class="gx-btn gx-amber"  onclick="unallocRow(${r._i})" data-tip="Unallocate" title="Unallocate" aria-label="Unallocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button></div></td>
+      <button type="button" class="ams-btn ams-green"  onclick="allocRow(${r._i})" data-tip="Allocate" title="Allocate" aria-label="Allocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button></div></td>
+    <td><div style="display:flex;gap:6px;align-items:center"><input type="number" class="allocate-num" placeholder="Qty" id="ul${r._i}"/><button type="button" class="ams-btn ams-amber"  onclick="unallocRow(${r._i})" data-tip="Unallocate" title="Unallocate" aria-label="Unallocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button></div></td>
   </tr>`).join('');
   document.getElementById('allocInfo').textContent=`Showing ${rows.length} of ${total} ranges`;
 }
@@ -1332,12 +1519,12 @@ function renderNumbers(){
   if(numSort.key){rows.sort((a,b)=>((a[numSort.key]||'')+'').localeCompare((b[numSort.key]||'')+'',undefined,{numeric:true})*numSort.dir);}
   const pag=API.paginateRows('adminNumbers',rows,len,'numbersInfo',renderNumbers);const total=pag.total;rows=pag.rows;
   document.getElementById('numbersBody').innerHTML=rows.map(r=>`<tr>
-    ${window.PX_PANEL_MODE==='admin_light'?'':`<td><input type="checkbox" class="rowchk" data-id="${r._id}" onchange="updateSelInfo()"/></td>`}
+    ${window.AMS_PANEL_MODE==='admin_light'?'':`<td><input type="checkbox" class="rowchk" data-id="${r._id}" onchange="updateSelInfo()"/></td>`}
     <td>${r.range}</td><td class="muted">${r.prefix||'—'}</td><td><b>${r.number}</b></td>
     <td>${r.myPay}<br><span class="cell-sub cell-money">${r.myVal}</span></td>
-    <td>${r.client?`<span class="tag ${r.ownerType==='agent'?'tag-agt':'tag-mgr'}">${r.ownerType==='agent'?'Agent':'Manager'}: ${r.client}${window.PX_PANEL_MODE==='admin_light'?'':` <span class="x" onclick="unassignOne(${r._id})">✕</span>`}</span>`:`<span class="tag tag-gray">Unallocated</span>`}</td>
+    <td>${r.client?`<span class="tag ${r.ownerType==='agent'?'tag-agt':'tag-mgr'}">${r.ownerType==='agent'?'Agent':'Manager'}: ${r.client}${window.AMS_PANEL_MODE==='admin_light'?'':` <span class="x" onclick="unassignOne(${r._id})">✕</span>`}</span>`:`<span class="tag tag-gray">Unallocated</span>`}</td>
     <td>${r.payType}<br><span class="cell-sub">${r.payVal}</span></td>
-    <td class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="${window.PX_PANEL_MODE==='admin_light'?7:8}" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`;
+    <td class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="${window.AMS_PANEL_MODE==='admin_light'?7:8}" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`;
   document.getElementById('numbersInfo').textContent=`Showing ${rows.length} of ${total} numbers`; updateSelInfo();
 }
 function toggleAll(cb){document.querySelectorAll('.rowchk').forEach(c=>c.checked=cb.checked);updateSelInfo();}
@@ -1386,7 +1573,21 @@ async function openAllocAll(){const ids=getSelectedIds();if(!ids.length){alert('
   document.getElementById('allocAllModal').classList.add('show');}
 async function confirmAllocAll(){const ids=getSelectedIds();const target=document.getElementById('aaClient').value,pt=document.getElementById('aaPayterm').value,po=document.getElementById('aaPayout').value;
   if(!target){alert('Select a manager.');return;}
-  try{ await API.post('/numbers/allocate',{ids,target_id:+target,payterm:pt,payout:po}); closeModal('allocAllModal');alert(`✅ ${ids.length} numbers allocated.`);loadNumbers(); }catch(e){ alert('❌ '+e.message); }}
+  const body={ids,target_id:+target,payterm:pt,payout:po};
+  try{
+    /* Same ownership rule as the Admin/Manager/Agent panels: numbers already
+       allocated to somebody else are reported as `blocked` and are only reassigned
+       after an explicit confirmation (force=true). */
+    let res=await API.post('/numbers/allocate',body);
+    const blocked=(res&&res.blocked_ids)||[];
+    if(blocked.length){
+      if(confirm(`⚠ ${blocked.length} of the ${ids.length} selected numbers are already allocated to another user/client.\n\nReassign those ${blocked.length} numbers to the selected target? This moves them away from their current owner.\n\nOK = reassign · Cancel = leave them allocated as they are.`)){
+        res=await API.post('/numbers/allocate',Object.assign({},body,{ids:blocked,force:true}));
+      }
+    }
+    closeModal('allocAllModal');
+    const done=(res&&res.allocated!=null)?res.allocated:ids.length, left=(res&&res.blocked)?res.blocked:0;
+    alert(`✅ ${done} numbers allocated.`+(left?`\n⏭ ${left} numbers were left unchanged (already allocated).`:'')); loadNumbers(); }catch(e){ alert('❌ '+e.message); }}
 
 /* ===== SMART DIVIDE (Admin -> Managers, unallocated auto-divide) ===== */
 async function openSmart(){
@@ -1463,7 +1664,10 @@ function extractNumbersFromText(text) {
   }
   return out;
 }
-async function doImport(inputId){const f=document.getElementById(inputId).files[0];
+async function doImport(inputId){
+  /* B1c fix: the old "upload ranges file" card no longer exists in this panel; a
+     missing input must show the normal message instead of a TypeError. */
+  const inp=document.getElementById(inputId);const f=inp&&inp.files&&inp.files[0];
   if(!f){alert("Please select a file first.");return;}
   if(inputId==="numFile"){
     const rg=document.getElementById("importRange").value; if(!rg){alert("Enter the range name where numbers should be added.");return;}
@@ -1498,15 +1702,86 @@ async function doImport(inputId){const f=document.getElementById(inputId).files[
       if(!rows.length){alert("No range rows found. Use CSV/TSV template.");return;}
       const r=await API.post("/ranges/import",{ranges:rows,update_existing:true});
       alert(`✅ Ranges imported. Inserted: ${r.inserted||0}, Updated: ${r.updated||0}, Skipped: ${r.skipped||0}`);
-      document.getElementById("rangeFile").value="";document.getElementById("rangeFileInfo").innerHTML="";await loadRates();
+      const rf=document.getElementById("rangeFile"),rfi=document.getElementById("rangeFileInfo");
+      if(rf)rf.value=""; if(rfi)rfi.innerHTML=""; await loadRates();
     }catch(e){alert("❌ "+e.message)}
   }
 }
+/* ---------- Bulk TXT import: accumulating file selection ----------
+   A native <input type="file" multiple> replaces its FileList on every pick, so
+   picking one file at a time used to drop the earlier ones. The selection is now
+   kept in an array, merged on every change (de-duplicated by name + size +
+   lastModified), and written back into the input with a DataTransfer so the
+   native control and the panel always agree. The import loop reads the same
+   array, so every listed file is really imported. */
+let bulkTxtSelected=[];
+function bulkTxtKey(f){ return String(f.name||'').toLowerCase()+'|'+(f.size||0); }
+function bulkTxtSupported(name){ return /\.(txt|csv)$/i.test(String(name||'')); }
+function bulkTxtSyncInput(){
+  const input=document.getElementById('bulkTxtFiles');
+  if(!input) return;
+  try{
+    const dt=new DataTransfer();
+    bulkTxtSelected.forEach(f=>dt.items.add(f));
+    input.files=dt.files;
+  }catch(e){ /* very old browsers: bulkTxtSelected stays the source of truth */ }
+}
+function bulkTxtAddFiles(input){
+  const picked=[...((input&&input.files)||[])];
+  const have=new Set(bulkTxtSelected.map(bulkTxtKey));
+  let added=0, dupes=0; const rejected=[];
+  for(const f of picked){
+    if(!bulkTxtSupported(f&&f.name)){ rejected.push(String((f&&f.name)||'unnamed file')); continue; }
+    const k=bulkTxtKey(f);
+    if(have.has(k)){ dupes++; continue; }
+    have.add(k); bulkTxtSelected.push(f); added++;
+  }
+  bulkTxtSyncInput();
+  renderBulkTxtList();
+  const info=document.getElementById('bulkTxtInfo');
+  if(info){
+    const parts=[];
+    if(added) parts.push(added+' file(s) added');
+    if(dupes) parts.push(dupes+' already selected');
+    if(rejected.length) parts.push('not a .txt/.csv file: '+rejected.join(', '));
+    if(parts.length) info.innerHTML='<b>'+bulkTxtSelected.length+' file(s) selected.</b> '+parts.join(' · ');
+  }
+  if(rejected.length) alert('❌ Unsupported file type. Only .txt and .csv files can be imported:\n\n'+rejected.join('\n'));
+}
+function bulkTxtRemoveFile(idx){
+  if(idx<0||idx>=bulkTxtSelected.length) return;
+  bulkTxtSelected.splice(idx,1);
+  bulkTxtSyncInput(); renderBulkTxtList();
+  const info=document.getElementById('bulkTxtInfo');
+  if(info) info.innerHTML='<b>'+bulkTxtSelected.length+' file(s) selected.</b>';
+}
+function bulkTxtClear(){
+  bulkTxtSelected=[];
+  const input=document.getElementById('bulkTxtFiles');
+  try{ if(input) input.value=''; }catch(e){}
+  renderBulkTxtList();
+  const info=document.getElementById('bulkTxtInfo');
+  if(info) info.innerHTML='No files selected.';
+}
+function renderBulkTxtList(){
+  const box=document.getElementById('bulkTxtList');
+  const clearBtn=document.getElementById('bulkTxtClearBtn');
+  if(clearBtn) clearBtn.style.display=bulkTxtSelected.length?'':'none';
+  if(!box) return;
+  if(!bulkTxtSelected.length){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="bulk-txt-head"><b>${bulkTxtSelected.length} file(s) selected</b><span>${bulkTxtSelected.reduce((a,f)=>a+(f.size||0),0).toLocaleString()} bytes total</span></div>`+
+    bulkTxtSelected.map((f,i)=>`<div class="bulk-txt-row"><span class="bulk-txt-name">${String(f.name||'').replace(/[<>&]/g,'')}</span><span class="bulk-txt-size">${(f.size||0).toLocaleString()} B</span><button type="button" class="bulk-txt-remove" onclick="bulkTxtRemoveFile(${i})" title="Remove ${String(f.name||'').replace(/"/g,'')}" aria-label="Remove file">×</button></div>`).join('');
+}
 async function bulkImportTxtFiles(){
-  const files=[...(document.getElementById("bulkTxtFiles").files||[])];
-  if(!files.length){alert("Select TXT files first.");return;}
+  const input=document.getElementById('bulkTxtFiles');
+  /* Native FileList is the fallback for browsers without DataTransfer support. */
+  if(!bulkTxtSelected.length && input && input.files && input.files.length) bulkTxtSelected=[...input.files];
+  const files=bulkTxtSelected.slice();
+  if(!files.length){ alert("Select TXT files first."); return; }
+  const unsupported=files.filter(f=>!bulkTxtSupported(f.name)).map(f=>f.name);
+  if(unsupported.length){ alert("❌ Unsupported file type. Only .txt and .csv files can be imported:\n\n"+unsupported.join("\n")); return; }
   const createMissing=document.getElementById("bulkCreateMissingRanges").checked;
-  let started=0,failed=0;
+  let started=0,failed=0; const failedNames=[];
   for(const f of files){
     const rangeName=f.name.replace(/\.[^.]+$/,"").trim();
     const isExcel = /\.(xlsx|xls)$/i.test(f.name);
@@ -1526,12 +1801,13 @@ async function bulkImportTxtFiles(){
         if (prov) await assignRangeProvider(rangeName, prov);
         if (r.background && r.job) { showImportJob(r.job); pollImportJob(r.job.job_id); }
         started++;
-      } catch (e) { console.warn("bulk file failed", f.name, e); failed++; }
+      } catch (e) { console.warn("bulk file failed", f.name, e); failed++; failedNames.push(f.name); }
       continue;
     }
-    const text=await f.text();
+    let text='';
+    try{ text=await f.text(); }catch(e){ failed++; failedNames.push(f.name); continue; }
     const nums=extractNumbersFromText(text);
-    if(!rangeName||!nums.length){failed++;continue;}
+    if(!rangeName||!nums.length){failed++;failedNames.push(f.name);continue;}
     try{
       if(createMissing && !(ratesData||[]).some(r=>String(r.name).toLowerCase()===rangeName.toLowerCase())){
         await API.post("/ranges/import",{ranges:[{Range:rangeName,Currency:"USD","30/45":"0"}],update_existing:false});
@@ -1540,9 +1816,11 @@ async function bulkImportTxtFiles(){
       const r=await API.post("/numbers/import",{range_name:rangeName,numbers:nums,file_name:f.name});
       await assignRangeProvider(rangeName,document.getElementById("bulkImportProvider")?.value);
       if(r.background&&r.job){showImportJob(r.job);pollImportJob(r.job.job_id);} started++;
-    }catch(e){console.warn("bulk file failed",f.name,e);failed++;}
+    }catch(e){console.warn("bulk file failed",f.name,e);failed++;failedNames.push(f.name);}
   }
-  bulkTxtInfo.innerHTML=`Started imports: <b>${started}</b>, Failed/skipped files: <b>${failed}</b>`;
+  /* Consumed: start the next batch from an empty selection. */
+  bulkTxtClear();
+  bulkTxtInfo.innerHTML=`Imported <b>${started}</b> of <b>${files.length}</b> selected file(s). Failed/skipped: <b>${failed}</b>${failedNames.length?' ('+failedNames.join(', ')+')':''}`;
   await loadImportBatches();
 }
 
@@ -1551,7 +1829,7 @@ const roleMeta={manager:{title:'Managers',crumb:'Managers',singular:'Manager'},a
 function buildUserPage(role){const m=roleMeta[role];
   document.getElementById('page-'+role+'s').innerHTML=`
   <div class="page-head"><div><h2>${m.title}</h2><div class="breadcrumb"><b>Users Master</b> › ${m.crumb}</div></div>
-    <div class="head-actions"><button class="btn btn-blue"  onclick="openUserModal('${role}',-1)">+ Add</button><button type="button" class="gx-btn danger"  onclick="deleteSelectedUsers('${role}')" data-tip="Delete" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button></div></div>
+    <div class="head-actions"><button class="btn btn-blue"  onclick="openUserModal('${role}',-1)">+ Add</button><button type="button" class="ams-btn danger"  onclick="deleteSelectedUsers('${role}')" data-tip="Delete" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button></div></div>
   <div class="table-wrap" style="padding:16px 18px;margin-top:0"><div style="font-weight:600;margin-bottom:12px">MANAGE ${m.title.toUpperCase()}</div>
     <div class="table-controls"><div class="tc-left"><label>Show Records:</label>
       <select id="${role}Len" onchange="renderUsers('${role}')"><option>10</option><option selected>25</option><option>50</option><option>100</option><option value="All">All</option></select>
@@ -1572,7 +1850,6 @@ async function loadUsers(role){
   if(role==='manager'){
     fillSelect('allocManager',(usersData.manager||[]).map(m=>m.username));
     fillAdminOwnerSelects();
-    fillSelect('climMgr',(usersData.manager||[]).map(m=>m.username),false);
     if(document.getElementById('managerSBody')) renderEntityStats('manager');
   }
   if(role==='agent') fillAdminOwnerSelects();
@@ -1627,40 +1904,6 @@ function aggregate(records, groupKey){
   return Object.values(map);
 }
 function expBtns(){return `<div class="exp-btns"><button class="btn btn-blue" >Copy</button><button class="btn btn-blue" >CSV</button><button class="btn btn-green" >Excel</button></div>`;}
-
-/* ---- SMS Report (summary) ---- */
-function buildSmsReport(){
-  document.getElementById('page-smsReport').innerHTML=`
-  <div class="page-head"><div><h2>SMS Report</h2><div class="breadcrumb"><b>CDR Stats</b> › SMS Report</div></div></div>
-  <div class="toolbar"><div class="filter-row"><label>From</label><input type="date" id="srFrom"/><label>To</label><input type="date" id="srTo"/><button class="btn btn-red"  onclick="renderSmsReport()">Filter</button><button class="btn btn-ghost"  onclick="srFrom.value=todayStr();srTo.value=todayStr();srSearch.value='';renderSmsReport()">Today</button></div></div>
-  <div class="table-wrap" style="padding:16px 18px;margin-top:0"><div class="table-controls"><div class="tc-left"><label>Show Records:</label>
-    <select id="srLen" onchange="renderSmsReport()"><option>10</option><option selected>25</option><option>50</option><option value="All">All</option></select>${expBtns()}</div>
-    <div class="tc-right"><label>Search:</label><input type="text" id="srSearch" oninput="renderSmsReport()" placeholder="Search..."/></div></div></div>
-  <div class="table-wrap"><div class="tscroll"><table>
-    <thead><tr><th>Date</th><th>Manager</th><th>Range</th><th>Number</th><th>CLI</th><th>Payout Rate</th><th>SMS (Message Body)</th></tr></thead><tbody id="srBody"></tbody></table></div>
-    <div class="table-foot"><div class="info" id="srInfo"></div><div class="info" id="srPayoutInfo"></div></div></div>`;
-  setDefaultDates('srFrom','srTo'); renderSmsReport();
-}
-async function loadSmsRecords(){
-  try{ smsRecords=await API.get('/sms'); }catch(e){ smsRecords=[]; }
-  // manager summary from real data
-  const byMgr={};
-  smsRecords.forEach(r=>{const m=r.manager_name||'—';byMgr[m]=(byMgr[m]||0)+1;});
-  const sumBody=document.getElementById('mgrSumBody');
-  if(sumBody) sumBody.innerHTML=Object.keys(byMgr).map(m=>
-    `<tr><td><span class="tag tag-mgr">${m}</span></td><td><span class="tag tag-agt">—</span></td><td><span class="tag tag-cli">—</span></td><td class="cell-money">${byMgr[m].toLocaleString()}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:16px">No records found</td></tr>`;
-  renderSmsReport();
-}
-function renderSmsReport(){
-  const len=document.getElementById('srLen').value,q=(document.getElementById('srSearch').value||'').toLowerCase();
-  let base=dateFiltered(smsRecords,'srFrom','srTo');
-  const byMgr={};base.forEach(r=>{const m=r.manager_name||'—';byMgr[m]=(byMgr[m]||0)+1;});const sumBody=document.getElementById('mgrSumBody');if(sumBody)sumBody.innerHTML=Object.keys(byMgr).map(m=>`<tr><td><span class="tag tag-mgr">${m}</span></td><td><span class="tag tag-agt">—</span></td><td><span class="tag tag-cli">—</span></td><td class="cell-money">${byMgr[m].toLocaleString()}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:16px">No records found</td></tr>`;
-  let filtered=base.filter(r=>[r.manager_name,r.range_name,r.number,r.cli,r.message,r.payout_rate].join(' ').toLowerCase().includes(q));
-  const pag=API.paginateRows('adminSmsReport',filtered,len,'srInfo',renderSmsReport);const total=pag.total;let rows=pag.rows;
-  document.getElementById('srBody').innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-mgr">${r.manager_name||'—'}</span></td><td>${r.range_name||'—'}</td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
-  document.getElementById('srInfo').textContent=`Showing ${rows.length} of ${total} records`;
-  const pi=document.getElementById('srPayoutInfo'); if(pi) pi.textContent=`Visible total payout: ${money(sumPay(rows))}`;
-}
 
 /* ---- SMS Detailed Report (combinable advanced filters) ---- */
 function buildSmsDetail(){
@@ -1749,7 +1992,6 @@ function buildEntityStats(kind){
   const extraCols = kind==='client'?'<th>Manager</th><th>Agent</th>':(kind==='agent'?'<th>Manager</th><th>Clients</th>':'<th>Agents</th><th>Clients</th>');
   document.getElementById('page-'+kind+'Stats').innerHTML=`
   <div class="page-head"><div><h2>${titles[kind]}</h2><div class="breadcrumb"><b>CDR Stats</b> › ${titles[kind]}</div></div></div>
-  <div class="stats-grid" id="${kind}Totals"></div>
   <div class="toolbar"><div class="filter-row"><label>From</label><input type="date" id="${kind}From"/><label>To</label><input type="date" id="${kind}To"/>${filterHtml}<button class="btn btn-red"  onclick="renderEntityStats('${kind}')">Filter</button><button class="btn btn-ghost"  onclick="entReset('${kind}')">Reset</button></div></div>
   <div class="table-wrap" style="padding:16px 18px;margin-top:0"><div class="table-controls"><div class="tc-left"><label>Show Records:</label>
     <select id="${kind}SLen" onchange="renderEntityStats('${kind}')"><option>10</option><option selected>25</option><option>50</option><option value="All">All</option></select>${expBtns()}</div>
@@ -1757,35 +1999,24 @@ function buildEntityStats(kind){
   <div class="table-wrap"><div class="tscroll"><table>
     <thead><tr><th>${roleMeta[kind].singular}</th>${extraCols}<th>Total SMS</th><th>Payment ($)</th></tr></thead><tbody id="${kind}SBody"></tbody></table></div>
     <div class="table-foot"><div class="info" id="${kind}SInfo"></div></div></div>`;
-  setDefaultDates(kind+'From',kind+'To'); buildTotalsCards(kind);
+  setDefaultDates(kind+'From',kind+'To');
   renderEntityStats(kind);
-}
-function totalIcon(cls,svg){return `<div class="stat-icon ${cls}">${svg}</div>`;}
-function buildTotalsCards(kind){
-  // Grand totals for ALL data (no filter) — always visible
-  const base=dateFiltered(cdrData,kind+'From',kind+'To');
-  const totalSms=base.reduce((a,b)=>a+b.sms,0);
-  const totalPay=sumPay(base);
-  let countLabel='', countVal=0;
-  if(kind==='manager'){countLabel='Total Managers';countVal=managers.length;}
-  else if(kind==='agent'){countLabel='Total Agents';countVal=agentsOf().length;}
-  else {countLabel='Total Clients';countVal=clientsOf().length;}
-  const el=document.getElementById(kind+'Totals');
-  if(el) el.innerHTML=`
-    <div class="stat-card">${totalIcon('si-purple','<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>')}<div class="stat-info"><h3>${countVal}</h3><p>${countLabel}</p></div></div>
-    <div class="stat-card">${totalIcon('si-blue','<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>')}<div class="stat-info"><h3>${totalSms.toLocaleString()}</h3><p>Total SMS (all)</p></div></div>
-    <div class="stat-card">${totalIcon('si-green','<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>')}<div class="stat-info"><h3>$ ${cleanDec(totalPay)}</h3><p>Total Payment (all)</p></div></div>`;
 }
 function entMgrChange(kind){const m=document.getElementById(kind+'FMgr').value;if(kind==='client'){fillSelect(kind+'FAgt',agentsOf(m));document.getElementById(kind+'FAgt').children[0].textContent='Filter Agent';}}
 function entReset(kind){const mgr=document.getElementById(kind+'FMgr');if(mgr)mgr.value='';const agt=document.getElementById(kind+'FAgt');if(agt)agt.innerHTML='<option value="">Filter Agent</option>';document.getElementById(kind+'SSearch').value='';const f=document.getElementById(kind+'From'),t=document.getElementById(kind+'To');if(f)f.value=todayStr();if(t)t.value=todayStr();renderEntityStats(kind);}
 function statsFor(kind,name){const recs=cdrData.filter(r=>r[kind]===name&&dateInRange(r.date,kind+'From',kind+'To'));return {sms:recs.reduce((a,b)=>a+b.sms,0),pay:sumPay(recs)};}
 function renderEntityStats(kind){
-  setDefaultDates(kind+'From',kind+'To'); buildTotalsCards(kind);
-  const len=document.getElementById(kind+'SLen').value,q=(document.getElementById(kind+'SSearch').value||'').toLowerCase();
+  /* B1c fix: these stats views are not part of this panel any more (built only when
+     deep-linked); never let a missing container abort the caller. */
+  if(!document.getElementById(kind+'SBody')) return;
+  setDefaultDates(kind+'From',kind+'To');
+  const lenEl=document.getElementById(kind+'SLen'),searchEl=document.getElementById(kind+'SSearch');
+  if(!lenEl||!searchEl) return;
+  const len=lenEl.value,q=(searchEl.value||'').toLowerCase();
   let list=[];
   if(kind==='manager'){ list=managers.map(m=>({name:m})); }
-  else if(kind==='agent'){ const m=document.getElementById('agentFMgr').value; list=agentsOf(m).map(a=>({name:a,manager:managerOfAgent(a)})); }
-  else { const m=document.getElementById('clientFMgr').value,a=document.getElementById('clientFAgt').value; list=clientsOf(m,a).map(c=>{const o=ownerOfClient(c);return {name:c,manager:o.manager,agent:o.agent};}); }
+  else if(kind==='agent'){ const m=(document.getElementById('agentFMgr')||{value:''}).value; list=agentsOf(m).map(a=>({name:a,manager:managerOfAgent(a)})); }
+  else { const m=(document.getElementById('clientFMgr')||{value:''}).value,a=(document.getElementById('clientFAgt')||{value:''}).value; list=clientsOf(m,a).map(c=>{const o=ownerOfClient(c);return {name:c,manager:o.manager,agent:o.agent};}); }
   list=list.map(x=>({...x,st:statsFor(kind,x.name)})).filter(x=>x.st.sms>0).filter(x=>x.name.toLowerCase().includes(q));
   const pag=API.paginateRows('adminEntity'+kind,list,len,kind+'SInfo',()=>renderEntityStats(kind));const total=pag.total;list=pag.rows;
   document.getElementById(kind+'SBody').innerHTML=list.map(x=>{
@@ -1793,7 +2024,7 @@ function renderEntityStats(kind){
     if(kind==='client'){nameTag=`<span class="tag tag-cli">${x.name}</span>`;extra=`<td><span class="tag tag-mgr">${x.manager}</span></td><td><span class="tag tag-agt">${x.agent}</span></td>`;}
     else if(kind==='agent'){nameTag=`<span class="tag tag-agt">${x.name}</span>`;extra=`<td><span class="tag tag-mgr">${x.manager}</span></td><td><span class="tag tag-cli">${clientsOf('',x.name).length}</span></td>`;}
     else {nameTag=`<span class="tag tag-mgr">${x.name}</span>`;extra=`<td><span class="tag tag-agt">${agentsOf(x.name).length}</span></td><td><span class="tag tag-cli">${clientsOf(x.name).length}</span></td>`;}
-    return `<tr><td>${nameTag}</td>${extra}<td class="cell-money">${st.sms.toLocaleString()}</td><td class="cell-money" style="color:#4ade80">$ ${cleanDec(st.pay)}</td></tr>`;
+    return `<tr><td>${nameTag}</td>${extra}<td class="cell-money">${st.sms.toLocaleString()}</td><td class="cell-money" style="color:#0e7a57">$ ${cleanDec(st.pay)}</td></tr>`;
   }).join('');
   document.getElementById(kind+'SInfo').textContent=`Showing ${list.length} of ${total} ${kind}s`;
 }
@@ -1804,7 +2035,6 @@ function buildDrillStats(kind){
   const title=kind==='range'?'Range Stats':'Number Stats';
   document.getElementById('page-'+kind+'Stats').innerHTML=`
   <div class="page-head"><div><h2>${title}</h2><div class="breadcrumb"><b>CDR Stats</b> › ${title}</div></div></div>
-  <div class="stats-grid" id="${kind}Totals"></div>
   <div class="toolbar">
     <div class="filter-row">
       <label>From</label><input type="date" id="${kind}From"/><label>To</label><input type="date" id="${kind}To"/>
@@ -1824,20 +2054,8 @@ function buildDrillStats(kind){
   <div class="table-wrap"><div class="tscroll"><table>
     <thead><tr><th>${kind==='range'?'Range':'Number'}</th><th>Manager</th><th>Agent</th><th>Client</th><th>Total SMS</th><th>Payment ($)</th></tr></thead>
     <tbody id="${kind}SBody"></tbody></table></div><div class="table-foot"><div class="info" id="${kind}SInfo"></div></div></div>`;
-  setDefaultDates(kind+'From',kind+'To'); buildDrillTotals(kind);
+  setDefaultDates(kind+'From',kind+'To');
   updateDrill(kind); renderDrillStats(kind);
-}
-function buildDrillTotals(kind){
-  const key=kind==='range'?'range':'number';
-  const uniq=new Set(cdrData.map(r=>r[key])).size;
-  const base=dateFiltered(cdrData,kind+'From',kind+'To');
-  const totalSms=base.reduce((a,b)=>a+b.sms,0);
-  const totalPay=sumPay(base);
-  const el=document.getElementById(kind+'Totals');
-  if(el) el.innerHTML=`
-    <div class="stat-card">${totalIcon('si-amber','<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>')}<div class="stat-info"><h3>${uniq}</h3><p>Total ${kind==='range'?'Ranges':'Numbers'}</p></div></div>
-    <div class="stat-card">${totalIcon('si-blue','<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>')}<div class="stat-info"><h3>${totalSms.toLocaleString()}</h3><p>Total SMS (all)</p></div></div>
-    <div class="stat-card">${totalIcon('si-green','<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>')}<div class="stat-info"><h3>$ ${cleanDec(totalPay)}</h3><p>Total Payment (all)</p></div></div>`;
 }
 function drillMgrChange(kind){const m=document.getElementById(kind+'FMgr').value;fillSelect(kind+'FAgt',agentsOf(m));document.getElementById(kind+'FAgt').children[0].textContent='Filter Agent';updateDrill(kind);renderDrillStats(kind);}
 function drillReset(kind){document.getElementById(kind+'FMgr').value='';document.getElementById(kind+'FAgt').innerHTML='<option value="">Filter Agent</option>';document.getElementById(kind+'SSearch').value='';const f=document.getElementById(kind+'From'),t=document.getElementById(kind+'To');if(f)f.value=todayStr();if(t)t.value=todayStr();updateDrill(kind);renderDrillStats(kind);}
@@ -1864,7 +2082,7 @@ function drillPick(kind,name){
 function renderDrillStats(kind){
   const len=document.getElementById(kind+'SLen').value,q=(document.getElementById(kind+'SSearch').value||'').toLowerCase();
   const m=document.getElementById(kind+'FMgr').value,a=document.getElementById(kind+'FAgt').value;
-  setDefaultDates(kind+'From',kind+'To'); buildDrillTotals(kind);
+  setDefaultDates(kind+'From',kind+'To');
   let recs=cdrData.filter(r=>dateInRange(r.date,kind+'From',kind+'To')&&(!m||r.manager===m)&&(!a||r.agent===a));
   const key=kind==='range'?'range':'number';
   // group by key + client to show hierarchy
@@ -1872,7 +2090,7 @@ function renderDrillStats(kind){
   recs.forEach(r=>{const gk=r[key]+'|'+r.client;if(!map[gk])map[gk]={val:r[key],manager:r.manager,agent:r.agent,client:r.client,sms:0,pay:'0'};map[gk].sms+=r.sms;map[gk].pay=decAdd(map[gk].pay,r.pay);});
   let rows=Object.values(map).filter(x=>[x.val,x.manager,x.agent,x.client].join(' ').toLowerCase().includes(q));
   const pag=API.paginateRows('adminDrill'+kind,rows,len,kind+'SInfo',()=>renderDrillStats(kind));const total=pag.total;rows=pag.rows;
-  document.getElementById(kind+'SBody').innerHTML=rows.map(x=>`<tr><td><b>${kind==='number'?'<span class="mono">'+x.val+'</span>':x.val}</b></td><td><span class="tag tag-mgr">${x.manager}</span></td><td><span class="tag tag-agt">${x.agent}</span></td><td><span class="tag tag-cli">${x.client}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#4ade80">$ ${cleanDec(x.pay)}</td></tr>`).join('')||`<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
+  document.getElementById(kind+'SBody').innerHTML=rows.map(x=>`<tr><td><b>${kind==='number'?'<span class="mono">'+x.val+'</span>':x.val}</b></td><td><span class="tag tag-mgr">${x.manager}</span></td><td><span class="tag tag-agt">${x.agent}</span></td><td><span class="tag tag-cli">${x.client}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#0e7a57">$ ${cleanDec(x.pay)}</td></tr>`).join('')||`<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
   document.getElementById(kind+'SInfo').textContent=`Showing ${rows.length} of ${total} rows`;
 }
 
@@ -1949,34 +2167,33 @@ async function renderTestRecentTable(){
 
 /* =============== SYSTEM MASTER: SMS CLI LIMIT (API-backed) =============== */
 let cliLimits=[];
-function climTypeChange(){document.getElementById('climMgrGroup').style.display=document.getElementById('climType').value==='specific'?'block':'none';}
-async function loadCliLimits(){ try{ cliLimits=await API.get('/cli-limits'); }catch(e){ cliLimits=[]; } renderCliLimit(); }
+/* B1 fix: this page used to call /api/cli-limits, which does not exist in the backend.
+   It now uses the live limit engine: GET /api/limit-management (cli rules),
+   POST /api/limit-management/cli, DELETE /api/limit-management/:id. */
+async function loadCliLimits(){ try{ const rows=await API.get('/limit-management'); cliLimits=(rows||[]).filter(r=>r.limit_type==='cli'); }catch(e){ cliLimits=[]; } renderCliLimit(); }
 function mgrName(id){ const m=(usersData.manager||[]).find(x=>x.id===id); return m?m.username:('#'+id); }
 function renderCliLimit(){
-  document.getElementById('climBody').innerHTML=(cliLimits||[]).map(c=>{
-    const rem=Math.max(0,c.limit_val-c.used);
+  const body=document.getElementById('climBody'); if(!body) return;
+  body.innerHTML=(cliLimits||[]).map(c=>{
+    const limit=Number(c.daily_limit||0), used=Number(c.used_today||0);
+    const rem=Math.max(0,c.remaining_today===undefined?limit-used:Number(c.remaining_today));
     return `<tr>
       <td class="mono"><b>${c.cli}</b></td>
-      <td>${c.type==='overall'?'<span class="tag tag-blue">Overall</span>':'<span class="tag tag-amber">Specific</span>'}</td>
-      <td>${c.type==='specific'?`<span class="tag tag-mgr">${mgrName(c.manager_id)}</span>`:'<span class="muted">— All —</span>'}</td>
-      <td class="cell-money">${(c.limit_val||0).toLocaleString()}</td>
-      <td>${(c.used||0).toLocaleString()}</td>
-      <td class="cell-money" style="color:${rem>0?'#4ade80':'#f87c8a'}">${rem.toLocaleString()}</td>
+      <td class="cell-money">${limit.toLocaleString()}</td>
+      <td>${used.toLocaleString()}</td>
+      <td class="cell-money" style="color:${rem>0?'#0e7a57':'#b93834'}">${rem.toLocaleString()}</td>
       <td><button class="icon-btn btn-red" onclick="delCliLimit(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></td></tr>`;
-  }).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No limits set yet</td></tr>`;
-  document.getElementById('climInfo').textContent=`${(cliLimits||[]).length} CLI limits`;
+  }).join('')||`<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">No CLI limits set yet</td></tr>`;
+  const info=document.getElementById('climInfo'); if(info) info.textContent=`${(cliLimits||[]).length} CLI limits`;
 }
 async function addCliLimit(){
-  const cli=document.getElementById('climCli').value,type=document.getElementById('climType').value,mgr=document.getElementById('climMgr').value,limit=parseInt(document.getElementById('climLimit').value);
+  const cli=document.getElementById('climCli').value,limit=parseInt(document.getElementById('climLimit').value);
   if(!cli){alert('Select a CLI.');return;}
   if(!limit||limit<=0){alert('Enter a valid limit.');return;}
-  if(type==='specific'&&!mgr){alert('Select a manager.');return;}
-  // mgr select value is username label; find id
-  let mgrId=null; if(type==='specific'){ const m=(usersData.manager||[]).find(x=>x.username===mgr); mgrId=m?m.id:null; }
-  try{ await API.post('/cli-limits',{cli,type,manager_id:mgrId,limit_val:limit}); document.getElementById('climLimit').value='';
+  try{ await API.post('/limit-management/cli',{cli,daily_limit:limit}); document.getElementById('climLimit').value='';
     alert('✅ CLI "'+cli+'" ki limit set ho gayi.'); loadCliLimits(); }catch(e){ alert('❌ '+e.message); }
 }
-async function delCliLimit(id){if(confirm('Remove this limit?')){try{await API.del('/cli-limits/'+id);loadCliLimits();}catch(e){alert('❌ '+e.message);}}}
+async function delCliLimit(id){if(confirm('Remove this limit?')){try{await API.del('/limit-management/'+id);loadCliLimits();}catch(e){alert('❌ '+e.message);}}}
 
 /* =============== LIMIT MANAGEMENT =============== */
 let limitOverview={ranges:[],clis:[]};
@@ -1992,9 +2209,9 @@ function renderLimitManagement(){
       <td><input id="lmRDaily${r.range_id}" type="number" value="${r.daily_limit||0}" style="width:95px"></td>
       <td><input id="lmRPer${r.range_id}" type="number" value="${r.per_number_limit||0}" style="width:95px"></td>
       <td class="cell-money">${Number(r.today_otps||0).toLocaleString()}</td>
-      <td style="color:#047857;font-weight:800">${Number(r.paid||0).toLocaleString()}</td>
+      <td style="color:#0e7a57;font-weight:800">${Number(r.paid||0).toLocaleString()}</td>
       <td><span class="tag tag-gray">${Number(r.zeroed||0).toLocaleString()}</span></td>
-      <td><button type="button" class="gx-btn gx-green"  onclick="saveRangeLimits(${r.range_id})" data-tip="Save" title="Save" aria-label="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button></td>
+      <td><button type="button" class="ams-btn ams-green"  onclick="saveRangeLimits(${r.range_id})" data-tip="Save" title="Save" aria-label="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button></td>
     </tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No ranges found</td></tr>`;
   }
   const q=(document.getElementById('lmCliSearch')?.value||'').toLowerCase();
@@ -2005,9 +2222,9 @@ function renderLimitManagement(){
       <td class="mono"><b>${c.cli}</b></td>
       <td><input id="lmCliLimit${i}" type="number" value="${c.daily_limit||0}" style="width:95px"></td>
       <td class="cell-money">${Number(c.today_otps||0).toLocaleString()}</td>
-      <td style="color:#047857;font-weight:800">${Number(c.paid||0).toLocaleString()}</td>
+      <td style="color:#0e7a57;font-weight:800">${Number(c.paid||0).toLocaleString()}</td>
       <td><span class="tag tag-gray">${Number(c.zeroed||0).toLocaleString()}</span></td>
-      <td><button type="button" class="gx-btn gx-green"  onclick="saveCliLimit('${String(c.cli).replace(/'/g,"\'")}',${i})" data-tip="Save" title="Save" aria-label="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button></td>
+      <td><button type="button" class="ams-btn ams-green"  onclick="saveCliLimit('${String(c.cli).replace(/'/g,"\'")}',${i})" data-tip="Save" title="Save" aria-label="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button></td>
     </tr>`).join('')||`<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No CLI records found</td></tr>`;
   }
   const info=document.getElementById('lmInfo'); if(info) info.textContent=`${(limitOverview.clis||[]).length} CLI senders · Reporting timezone: UK / Europe-London`;
@@ -2089,10 +2306,9 @@ async function loadSmsRecords(){
   refreshHierarchy();
   const sumBody=document.getElementById('mgrSumBody');
   if(sumBody){const byMgr={};smsRecords.forEach(r=>{const m=r.manager_name||'—';byMgr[m]=(byMgr[m]||0)+1;});sumBody.innerHTML=Object.keys(byMgr).map(m=>`<tr><td><span class="tag tag-mgr">${m}</span></td><td><span class="tag tag-agt">—</span></td><td><span class="tag tag-cli">—</span></td><td class="cell-money">${byMgr[m].toLocaleString()}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:16px">No records found</td></tr>`;}
-  if(document.getElementById('srBody')) renderSmsReport();
   if(document.getElementById('sdBody')) renderSmsDetail();
-  ['client','agent','manager'].forEach(k=>{if(document.getElementById(k+'SBody')){buildTotalsCards(k);renderEntityStats(k);}});
-  ['range','number'].forEach(k=>{if(document.getElementById(k+'SBody')){buildDrillTotals(k);updateDrill(k);renderDrillStats(k);}});
+  ['client','agent','manager'].forEach(k=>{if(document.getElementById(k+'SBody')){renderEntityStats(k);}});
+  ['range','number'].forEach(k=>{if(document.getElementById(k+'SBody')){updateDrill(k);renderDrillStats(k);}});
   fillSelect('climCli',cliPool,false);
   renderTest();
 }
@@ -2111,7 +2327,7 @@ async function loadSystemLogs(){
   try{const rows=await API.get('/logs/activity');const b=document.getElementById('actLogBody');if(b)b.innerHTML=rows.map(r=>`<tr><td>${(r.created_at||'').slice(0,19)}</td><td>${miniEsc(r.username)||'—'}</td><td>${r.role||'—'}</td><td><b>${r.action}</b></td><td>${r.module}</td><td class="msg-body">${miniEsc(r.details)}</td><td>${r.ip||'—'}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No logs</td></tr>`;}catch(e){}
   try{const rows=await API.get('/logs/number-history');const b=document.getElementById('numHistBody');if(b)b.innerHTML=rows.map(r=>`<tr><td>${(r.created_at||'').slice(0,19)}</td><td class="mono">${r.number}</td><td><b>${r.action}</b></td><td>${miniEsc(r.from_owner)}</td><td>${miniEsc(r.to_owner)}</td><td class="msg-body">${miniEsc(r.details)}</td></tr>`).join('')||`<tr><td colspan="6" class="muted" style="text-align:center;padding:20px">No history</td></tr>`;}catch(e){}
   try{const rows=await API.get('/logs/webhooks');const b=document.getElementById('webLogBody');if(b)b.innerHTML=rows.map(r=>`<tr><td>${(r.created_at||'').slice(0,19)}</td><td>${r.status==='success'?'<span class="tag tag-green">Success</span>':'<span class="tag tag-red">Failed</span>'}</td><td class="mono">${r.number}</td><td class="mono">${r.matched_number||'—'}</td><td>${miniEsc(r.cli)}</td><td class="msg-body">${miniEsc(r.message)}</td><td class="msg-body">${miniEsc(r.error)}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No webhooks</td></tr>`;}catch(e){}
-  try{const rows=await API.get('/failed-sms');const b=document.getElementById('failedSmsBody');if(b)b.innerHTML=rows.map(r=>`<tr><td>${(r.created_at||'').slice(0,19)}</td><td class="mono">${r.number}</td><td>${miniEsc(r.cli)}</td><td class="msg-body">${miniEsc(r.message)}</td><td class="msg-body">${miniEsc(r.error)}</td><td>${r.status}</td><td>${r.status==='Pending'?`<button type="button" class="gx-btn gx-blue"  onclick="retryFailedSms(${r.id})" data-tip="Retry" title="Retry" aria-label="Retry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button> <button type="button" class="gx-btn danger"  onclick="ignoreFailedSms(${r.id})" data-tip="Ignore" title="Ignore" aria-label="Ignore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`:'—'}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No failed SMS</td></tr>`;}catch(e){}
+  try{const rows=await API.get('/failed-sms');const b=document.getElementById('failedSmsBody');if(b)b.innerHTML=rows.map(r=>`<tr><td>${(r.created_at||'').slice(0,19)}</td><td class="mono">${r.number}</td><td>${miniEsc(r.cli)}</td><td class="msg-body">${miniEsc(r.message)}</td><td class="msg-body">${miniEsc(r.error)}</td><td>${r.status}</td><td>${r.status==='Pending'?`<button type="button" class="ams-btn ams-blue"  onclick="retryFailedSms(${r.id})" data-tip="Retry" title="Retry" aria-label="Retry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button> <button type="button" class="ams-btn danger"  onclick="ignoreFailedSms(${r.id})" data-tip="Ignore" title="Ignore" aria-label="Ignore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`:'—'}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No failed SMS</td></tr>`;}catch(e){}
 }
 async function retryFailedSms(id){try{await API.post('/failed-sms/'+id+'/retry',{});loadSystemLogs();}catch(e){alert('❌ '+e.message)}}
 async function ignoreFailedSms(id){try{await API.del('/failed-sms/'+id);loadSystemLogs();}catch(e){alert('❌ '+e.message)}}
@@ -2145,7 +2361,7 @@ function carrierStatusTag(status){
   if(st.includes('INVALID')) return '<span class="tag tag-red">INVALID PAYLOAD</span>';
   return `<span class="tag tag-gray">${miniEsc(st||'NO REQUESTS')}</span>`;
 }
-function carrierLock(){ return localStorage.getItem('carrier_integration_lock') || ''; }
+function carrierLock(){ return localStorage.getItem('ams_carrier_integration_lock') || ''; }
 function carrierUnlocked(){ return !!carrierLock(); }
 function updateCarrierLockView(){
   const locked=!carrierUnlocked();
@@ -2156,7 +2372,7 @@ function updateCarrierLockView(){
 async function unlockCarrierIntegration(){
   const p=(document.getElementById('carrierLockPassword')?.value||'').trim();
   if(!p){alert('Enter carrier integration password.');return;}
-  localStorage.setItem('carrier_integration_lock',p);
+  localStorage.setItem('ams_carrier_integration_lock',p);
   updateCarrierLockView();
   await loadCarrierSettings();
 }
@@ -2179,11 +2395,12 @@ async function loadCarrierSettings(){
     ciLastError.textContent=c.last_error||'Carrier request status';
     ciRetentionCard.textContent=(c.retention_days||30)+' Days';
     ciInfo.innerHTML=`Endpoint path: <b>${c.endpoint_path||'/api/incoming-sms'}</b> · Current generated URL: <b>${c.generated_callback_url||''}</b>`;
+    await renderEffectiveCarrierIps(c.carrier_ip||'');
     await loadCarrierWebhookLogs();
-  }catch(e){ if(String(e.message||'').includes('locked')||String(e.message||'').includes('Locked')){localStorage.removeItem('carrier_integration_lock');updateCarrierLockView();alert('❌ Wrong carrier integration password.');} else console.warn(e); }
+  }catch(e){ if(String(e.message||'').includes('locked')||String(e.message||'').includes('Locked')){localStorage.removeItem('ams_carrier_integration_lock');updateCarrierLockView();alert('❌ Wrong carrier integration password.');} else console.warn(e); }
 }
-/* ===== SKYLINE P7: HTTP Integration IPs + Provider Management (manual) ===== */
-function pay3(v){ if(window.GX&&GX.pay3) return GX.pay3(v); let s=String(v??'').replace(/[$,\s]/g,'');const mm=s.match(/-?\d+(?:\.\d+)?/);if(!mm)return'0';const p=mm[0].split('.');if(p.length<2)return p[0];const d=p[1].slice(0,3).replace(/0+$/,'');return d?p[0]+'.'+d:p[0]; }
+/* ===== Skyline P7: HTTP Integration IPs + Provider Management (manual) ===== */
+function pay3(v){ if(window.AMSCore&&AMSCore.pay3) return AMSCore.pay3(v); let s=String(v??'').replace(/[$,\s]/g,'');const mm=s.match(/-?\d+(?:\.\d+)?/);if(!mm)return'0';const p=mm[0].split('.');if(p.length<2)return p[0];const d=p[1].slice(0,3).replace(/0+$/,'');return d?p[0]+'.'+d:p[0]; }
 async function fillProvDatalists(){
   try{
     const resp=await API.get('/providers-info');
@@ -2203,11 +2420,41 @@ async function loadActivityIps(){
       <td data-label="IP Address" class="mono">${r.ip}</td>
       <td data-label="Status">${r.enabled?'<span class="tag tag-green">Enabled</span>':'<span class="tag tag-gray">Disabled</span>'}</td>
       <td data-label="Actions" style="white-space:nowrap">
-        <button type="button" class="gx-btn ${r.enabled?'gx-amber':'gx-green'}" onclick="toggleActivityIp(${r.id},${r.enabled?0:1})" data-tip="${r.enabled?'Disable':'Enable'}" title="${r.enabled?'Disable':'Enable'}" aria-label="${r.enabled?'Disable':'Enable'}">${window.GX&&GX.svg?GX.svg('power'):'\u23fb'}</button>
-        <button type="button" class="gx-btn danger" onclick="delActivityIp(${r.id})" data-tip="Delete IP" title="Delete IP" aria-label="Delete IP">${window.GX&&GX.svg?GX.svg('trash'):'\ud83d\uddd1'}</button>
+        <button type="button" class="ams-btn ${r.enabled?'ams-amber':'ams-green'}" onclick="toggleActivityIp(${r.id},${r.enabled?0:1})" data-tip="${r.enabled?'Disable':'Enable'}" title="${r.enabled?'Disable':'Enable'}" aria-label="${r.enabled?'Disable':'Enable'}">${window.AMSCore&&AMSCore.svg?AMSCore.svg('power'):'\u23fb'}</button>
+        <button type="button" class="ams-btn danger" onclick="delActivityIp(${r.id})" data-tip="Delete IP" title="Delete IP" aria-label="Delete IP">${window.AMSCore&&AMSCore.svg?AMSCore.svg('trash'):'\ud83d\uddd1'}</button>
       </td></tr>`).join('')||'<tr><td colspan="4" class="muted" style="text-align:center;padding:18px">No IP entries yet</td></tr>';
     const info=document.getElementById('aiInfo'); if(info) info.textContent=`${(rows||[]).length} IP entr(ies)`;
   }catch(e){ console.warn(e); }
+}
+/* The separate provider/IP screen has been removed — provider records are
+   managed in Provider Management. Entries created there still form part of the
+   live ingestion allowlist, so they are shown read-only here and can be folded
+   into the single Allowed Carrier IP List without losing anything. */
+let ciLegacyIps=[];
+async function renderEffectiveCarrierIps(carrierIp){
+  const box=document.getElementById('ciEffectiveIps');
+  if(!box) return;
+  let legacy=[];
+  try{ legacy=await API.get('/activity-ips'); }catch(e){ legacy=[]; }
+  ciLegacyIps=(legacy||[]).filter(r=>r&&r.enabled&&r.ip);
+  const own=String(carrierIp||'').split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);
+  const extra=ciLegacyIps.map(r=>r.ip).filter(ip=>!own.includes(ip));
+  if(!own.length && !extra.length){ box.innerHTML=''; return; }
+  const esc=v=>String(v||'').replace(/[<>&]/g,'');
+  box.innerHTML='<b>Allowed IPs in effect:</b> '+(own.length?esc(own.join(', ')):'none configured')
+    +(extra.length?`<br><span class="muted">Legacy IP entries still active: ${esc(extra.join(', '))} — <a href="#" onclick="mergeLegacyCarrierIps();return false;">move into the list above</a></span>`:'');
+}
+function mergeLegacyCarrierIps(){
+  const input=document.getElementById('ciIp');
+  if(!input) return;
+  const own=String(input.value||'').split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);
+  const merged=own.slice();
+  ciLegacyIps.forEach(r=>{ if(r.ip && !merged.includes(r.ip)) merged.push(r.ip); });
+  input.value=merged.join(', ');
+  /* Reuse the existing save path — nothing is deleted, the entries are only
+     copied into the single allowlist field. */
+  saveCarrierSettings();
+  renderEffectiveCarrierIps(input.value);
 }
 async function addActivityIp(){
   const name=(document.getElementById('aiName')?.value||'').trim();
@@ -2254,11 +2501,11 @@ async function loadProviders(){
         ? '<span class="tag tag-gray">Inactive</span>'
         : '<span class="tag tag-green">Active</span>';
       const lp=p.last_payment?`$ ${pay3(p.last_payment.amount)}<div class="muted" style="font-size:11px">${String(p.last_payment.paid_at||'').slice(0,10)}</div>`:'\u2014';
-      const ic=k=>window.GX&&GX.svg?GX.svg(k):'\u2022';
+      const ic=k=>window.AMSCore&&AMSCore.svg?AMSCore.svg(k):'\u2022';
       return `<tr>
         <td data-label="Provider"><b>${p.name}</b></td>
         <td data-label="Connection">${connTxt||'<span class="tag tag-gray">\u2014</span>'}</td>
-        <td data-label="Payment Term">${p.payment_term?(window.GX&&GX.payterm?GX.payterm(p.payment_term):p.payment_term):'\u2014'}</td>
+        <td data-label="Payment Term">${p.payment_term?(window.AMSCore&&AMSCore.payterm?AMSCore.payterm(p.payment_term):p.payment_term):'\u2014'}</td>
         <td data-label="Currency">${p.currency||'USD'}</td>
         <td data-label="Numbers">${(p.stats.numbers||0).toLocaleString()}</td>
         <td data-label="Messages">${(p.totals.msgs||0).toLocaleString()}</td>
@@ -2266,10 +2513,10 @@ async function loadProviders(){
         <td data-label="Last Payment">${lp}</td>
         <td data-label="Status">${status}</td>
         <td data-label="Actions" style="white-space:nowrap">
-          <button type="button" class="gx-btn" onclick="provView(${p.id})" data-tip="View details" title="View details" aria-label="View details">${ic('eye')}</button>
-          <button type="button" class="gx-btn gx-blue" onclick='openProvModal(provsCache.find(x=>x.id===${p.id}))' data-tip="Edit" title="Edit" aria-label="Edit">${ic('edit')}</button>
-          <button type="button" class="gx-btn gx-green" onclick="provPayOpen(${p.id})" data-tip="Record payment" title="Record payment" aria-label="Record payment">${ic('dollar')}</button>
-          <button type="button" class="gx-btn danger" onclick="delProvider(${p.id},'${p.name.replace(/'/g,"")}')" data-tip="Delete" title="Delete" aria-label="Delete">${ic('trash')}</button>
+          <button type="button" class="ams-btn" onclick="provView(${p.id})" data-tip="View details" title="View details" aria-label="View details">${ic('eye')}</button>
+          <button type="button" class="ams-btn ams-blue" onclick='openProvModal(provsCache.find(x=>x.id===${p.id}))' data-tip="Edit" title="Edit" aria-label="Edit">${ic('edit')}</button>
+          <button type="button" class="ams-btn ams-green" onclick="provPayOpen(${p.id})" data-tip="Record payment" title="Record payment" aria-label="Record payment">${ic('dollar')}</button>
+          <button type="button" class="ams-btn danger" onclick="delProvider(${p.id},'${p.name.replace(/'/g,"")}')" data-tip="Delete" title="Delete" aria-label="Delete">${ic('trash')}</button>
         </td></tr>`;
     }).join('')||'<tr><td colspan="10" class="muted" style="text-align:center;padding:18px">No providers yet \u2014 + Add Provider se manually shuru karein</td></tr>';
     const info=document.getElementById('provInfo'); if(info) info.textContent=`${(provsCache||[]).length} provider(s)`;
@@ -2307,7 +2554,7 @@ function provView(id){
     chip('Unpaid Payout','$ '+pay3(p.totals.payout_unpaid||0),'cell-money')+
     chip('Last Payment',p.last_payment?('$ '+pay3(p.last_payment.amount)+'<div class="muted" style="font-size:11px">'+String(p.last_payment.paid_at||'').slice(0,10)+'</div>'):'\u2014')+
     chip('Status',String(p.status||'Active')==='Inactive'?'<span class="tag tag-gray">Inactive</span>':'<span class="tag tag-green">Active</span>')+
-    chip('Payment Term',p.payment_term?(window.GX&&GX.payterm?GX.payterm(p.payment_term):p.payment_term):'\u2014')+
+    chip('Payment Term',p.payment_term?(window.AMSCore&&AMSCore.payterm?AMSCore.payterm(p.payment_term):p.payment_term):'\u2014')+
     chip('Currency',p.currency||'USD')+
     chip('Numbers',(p.stats.numbers||0).toLocaleString())+
     chip('Messages',(p.totals.msgs||0).toLocaleString());
@@ -2373,6 +2620,21 @@ async function fillImportProviders(){
     const rows=await fillProvDatalists();
     const opts='<option value="">\u2014 No Provider \u2014</option>'+((rows||[]).map(p=>`<option>${p.name}</option>`).join(''));
     ['importProvider','bulkImportProvider'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.dataset.filled){ el.innerHTML=opts; el.dataset.filled='1'; } });
+  }catch(e){}
+}
+async function fillRangeProviderDropdown(){
+  try{
+    const rows=await fillProvDatalists();
+    const sel=document.getElementById('rProvider');
+    if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">\u2014 Select Provider \u2014</option>'+((rows||[]).map(p=>`<option value="${p.name}">${p.name}</option>`).join(''));
+    if(cur) sel.value=cur;
+    const bulkSel=document.getElementById('bulkRangeProvider');
+    if(bulkSel && !bulkSel.dataset.filled){
+      bulkSel.innerHTML='<option value="">\u2014 Select Provider \u2014</option>'+((rows||[]).map(p=>`<option value="${p.name}">${p.name}</option>`).join(''));
+      bulkSel.dataset.filled='1';
+    }
   }catch(e){}
 }
 async function assignRangeProvider(rangeName,provider){
@@ -2445,7 +2707,7 @@ async function loadBackups(){
     const bf=document.getElementById('bkFolder'); if(bf)bf.textContent=(data.backup_dir||'—').split('/').slice(-2).join('/');
     const bd=document.getElementById('bkDbFile'); if(bd)bd.textContent=(data.db_file||'—').split('/').slice(-2).join('/');
     const body=document.getElementById('backupBody'); if(!body)return;
-    body.innerHTML=backupRows.map(b=>`<tr><td class="mono">${b.file}</td><td>${(b.created_at||'').slice(0,19)}</td><td>${(b.modified_at||'').slice(0,19)}</td><td>${formatBytes(b.size)}</td><td style="white-space:nowrap"><button type="button" class="gx-btn gx-blue"  onclick="downloadBackup('${b.file}')" data-tip="Download" title="Download" aria-label="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button> <button type="button" class="gx-btn gx-amber"  onclick="restoreBackupFile('${b.file}')" data-tip="Restore backup" title="Restore backup" aria-label="Restore backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button> <button type="button" class="gx-btn danger"  onclick="deleteBackupFile('${b.file}')" data-tip="Delete" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button></td></tr>`).join('')||`<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No backups found</td></tr>`;
+    body.innerHTML=backupRows.map(b=>`<tr><td class="mono">${b.file}</td><td>${(b.created_at||'').slice(0,19)}</td><td>${(b.modified_at||'').slice(0,19)}</td><td>${formatBytes(b.size)}</td><td style="white-space:nowrap"><button type="button" class="ams-btn ams-blue"  onclick="downloadBackup('${b.file}')" data-tip="Download" title="Download" aria-label="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button> <button type="button" class="ams-btn ams-amber"  onclick="restoreBackupFile('${b.file}')" data-tip="Restore backup" title="Restore backup" aria-label="Restore backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button> <button type="button" class="ams-btn danger"  onclick="deleteBackupFile('${b.file}')" data-tip="Delete" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button></td></tr>`).join('')||`<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No backups found</td></tr>`;
     document.getElementById('backupInfo').textContent=`${backupRows.length} backup file(s)`;
   }catch(e){alert('❌ '+e.message)}
 }
@@ -2454,7 +2716,7 @@ async function createBackupNow(){
 }
 async function downloadBackup(file){
   try{
-    const token=sessionStorage.getItem('ms_token');
+    const token=sessionStorage.getItem('ams_token');
     const res=await fetch('/api/backups/'+encodeURIComponent(file)+'/download',{headers:{Authorization:'Bearer '+token}});
     if(!res.ok) throw new Error((await res.json().catch(()=>({error:'Download failed'}))).error||'Download failed');
     const blob=await res.blob();
@@ -2463,11 +2725,11 @@ async function downloadBackup(file){
 }
 async function downloadLatestBackup(){
   try{
-    const token=sessionStorage.getItem('ms_token');
+    const token=sessionStorage.getItem('ams_token');
     const res=await fetch('/api/backups/latest/download',{headers:{Authorization:'Bearer '+token}});
     if(!res.ok) throw new Error((await res.json().catch(()=>({error:'Download failed'}))).error||'Download failed');
     const blob=await res.blob();
-    const name=(res.headers.get('content-disposition')||'').match(/filename="?([^";]+)"?/)?.[1]||'powerx-sms-latest-backup.sqlite';
+    const name=(res.headers.get('content-disposition')||'').match(/filename="?([^";]+)"?/)?.[1]||'skyline-sms-latest-backup.sqlite';
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);
   }catch(e){alert('❌ '+e.message)}
 }
@@ -2490,7 +2752,7 @@ async function loadCliSuggestions(){
   const box=document.getElementById('cliSuggestBox'); if(!box)return;
   if(!q){box.style.display='none';box.innerHTML='';return;}
   try{const rows=await API.get('/cli-search/suggestions?q='+encodeURIComponent(q));
-    box.innerHTML=rows.map(r=>`<div style="padding:10px 12px;cursor:pointer;border-bottom:1px solid #F1F5F9" onclick="selectCliSuggestion('${String(r.cli).replace(/'/g,"\\'")}')"><b>${r.cli}</b><span class="muted"> — ${r.count} OTPs</span></div>`).join('')||'<div class="muted" style="padding:10px 12px">No matching CLI</div>';
+    box.innerHTML=rows.map(r=>`<div style="padding:10px 12px;cursor:pointer;border-bottom:1px solid #f0f2f6" onclick="selectCliSuggestion('${String(r.cli).replace(/'/g,"\\'")}')"><b>${r.cli}</b><span class="muted"> — ${r.count} OTPs</span></div>`).join('')||'<div class="muted" style="padding:10px 12px">No matching CLI</div>';
     box.style.display='block';
   }catch(e){box.style.display='none';}
 }
@@ -2520,7 +2782,7 @@ function renderCliRanges(){
 function showImportJob(job){
   const el=document.getElementById('importJobStatus');
   if(!el||!job)return;
-  el.innerHTML=`Active job: <b>${job.job_id}</b> — ${job.status} — ${job.progress||0}% (${job.processed||0}/${job.total||0}) · Inserted: ${job.inserted||0}, Skipped: ${job.skipped||0}${job.error?'<br><span style="color:#b91c1c">Error: '+job.error+'</span>':''}`;
+  el.innerHTML=`Active job: <b>${job.job_id}</b> — ${job.status} — ${job.progress||0}% (${job.processed||0}/${job.total||0}) · Inserted: ${job.inserted||0}, Skipped: ${job.skipped||0}${job.error?'<br><span style="color:#b93834">Error: '+job.error+'</span>':''}`;
 }
 async function pollImportJob(jobId){
   try{
@@ -2533,7 +2795,7 @@ async function pollImportJob(jobId){
 }
 async function loadImportBatches(){
   try{const rows=await API.get('/number-import-batches');const b=document.getElementById('importBatchBody');if(!b)return;
-    b.innerHTML=(rows||[]).map(r=>`<tr><td class="mono">${r.batch_id}</td><td>${r.range_name||'—'}</td><td>${r.total||0}</td><td>${r.inserted||0}</td><td>${r.skipped||0}</td><td><span class="tag tag-gray">${r.status}</span></td><td>${(r.created_at||'').slice(0,19)}</td><td>${r.status!=='deleted'?`<button type="button" class="gx-btn danger"  onclick="deleteImportBatch('${r.batch_id}')" data-tip="Delete batch" title="Delete batch" aria-label="Delete batch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button>`:'—'}</td></tr>`).join('')||`<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">No import batches found</td></tr>`;
+    b.innerHTML=(rows||[]).map(r=>`<tr><td class="mono">${r.batch_id}</td><td>${r.range_name||'—'}</td><td>${r.total||0}</td><td>${r.inserted||0}</td><td>${r.skipped||0}</td><td><span class="tag tag-gray">${r.status}</span></td><td>${(r.created_at||'').slice(0,19)}</td><td>${r.status!=='deleted'?`<button type="button" class="ams-btn danger"  onclick="deleteImportBatch('${r.batch_id}')" data-tip="Delete batch" title="Delete batch" aria-label="Delete batch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button>`:'—'}</td></tr>`).join('')||`<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">No import batches found</td></tr>`;
   }catch(e){console.warn(e)}
 }
 async function deleteImportBatch(batchId){
@@ -2636,8 +2898,13 @@ async function refreshNumberDependentViews(){
 async function loadNumbers(){ await loadNumberSummary(); await renderNumbers(); if(typeof populateTestGeneratorNumbers==='function') populateTestGeneratorNumbers(); }
 async function renderNumbers(){
   const state=pagerState('adminNumbersServer');
-  const len=document.getElementById('numLen').value;
-  const q=(document.getElementById('numSearch').value||'').trim();
+  /* B1c fix: no numbers table exists in the Management panel; guard the stale renderer
+     so range-delete / import / hard-delete follow-up refreshes keep working. */
+  const lenEl=document.getElementById('numLen'),searchEl=document.getElementById('numSearch'),
+        bodyEl=document.getElementById('numbersBody'),infoEl=document.getElementById('numbersInfo');
+  if(!lenEl||!searchEl||!bodyEl||!infoEl) return;
+  const len=lenEl.value;
+  const q=(searchEl.value||'').trim();
   const signature=JSON.stringify({len,q,range:numRangeFilter,owner:numClientFilter,allocation:clientFilterMode,sort:numSort.key||'',dir:numSort.dir});
   if(state.signature && state.signature!==signature) state.page=1;
   state.signature=signature;
@@ -2662,12 +2929,12 @@ async function renderNumbers(){
     payType:r.payterm||'Weekly', payVal:'$ '+(r.payout||'0'), sd:r.sd_limit||0, sw:r.sw_limit||0
   }));
   document.getElementById('numbersBody').innerHTML=rows.map(r=>`<tr>
-    ${window.PX_PANEL_MODE==='admin_light'?'':`<td><input type="checkbox" class="rowchk" data-id="${r._id}" onchange="updateSelInfo()"/></td>`}
+    ${window.AMS_PANEL_MODE==='admin_light'?'':`<td><input type="checkbox" class="rowchk" data-id="${r._id}" onchange="updateSelInfo()"/></td>`}
     <td>${r.range}</td><td class="muted">${r.prefix||'—'}</td><td><b>${r.number}</b></td>
     <td>${r.myPay}<br><span class="cell-sub cell-money">${r.myVal}</span></td>
-    <td>${r.client?`<span class="tag ${r.ownerType==='agent'?'tag-agt':'tag-mgr'}">${r.ownerType==='agent'?'Agent':'Manager'}: ${r.client}${window.PX_PANEL_MODE==='admin_light'?'':` <span class="x" onclick="unassignOne(${r._id})">✕</span>`}</span>`:`<span class="tag tag-gray">Unallocated</span>`}</td>
+    <td>${r.client?`<span class="tag ${r.ownerType==='agent'?'tag-agt':'tag-mgr'}">${r.ownerType==='agent'?'Agent':'Manager'}: ${r.client}${window.AMS_PANEL_MODE==='admin_light'?'':` <span class="x" onclick="unassignOne(${r._id})">✕</span>`}</span>`:`<span class="tag tag-gray">Unallocated</span>`}</td>
     <td>${r.payType}<br><span class="cell-sub">${r.payVal}</span></td>
-    <td class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="${window.PX_PANEL_MODE==='admin_light'?7:8}" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`;
+    <td class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="${window.AMS_PANEL_MODE==='admin_light'?7:8}" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`;
   const shown=total===0?0:Math.min(total,((state.page-1)*pageLimit)+rows.length);
   document.getElementById('numbersInfo').textContent=`Showing ${shown} of ${total} numbers`;
   const pag=document.getElementById('numbersInfo').closest('.table-foot').querySelector('.pagination');
@@ -2697,7 +2964,6 @@ async function loadAdminPageData(page){
     if(page==='numbers'){ await ensureAdminRates(); await ensureAdminManagers(); return loadNumbers(); }
     if(page==='allocation'){ await ensureAdminRates(); await ensureAdminManagers(); return loadNumberSummary(); }
         if(page==='rates') return loadRates();
-    if(page==='smsReport'){ if(!document.getElementById('srBody')) buildSmsReport(); return renderSmsReport(); }
     if(page==='smsDetail'){ if(!document.getElementById('sdBody')) buildSmsDetail(); await fillSmsDetailLiteFilters(); return renderSmsDetail(); }
     if(['clientStats','agentStats','managerStats'].includes(page)){ const k=page.replace('Stats',''); if(!document.getElementById(k+'SBody')) buildEntityStats(k); return ensureAdminSms(); }
     if(['rangeStats','numberStats'].includes(page)){ const k=page.replace('Stats',''); if(!document.getElementById(k+'SBody')) buildDrillStats(k); return ensureAdminSms(); }
@@ -2706,7 +2972,7 @@ async function loadAdminPageData(page){
     if(page==='agents') return buildUserPage('agent');
     if(page==='clients') return buildUserPage('client');
     if(page==='import'){ await ensureAdminRates(); await loadImportBatches(); fillImportProviders(); return refreshNumberDbTools(); }
-    if(page==='cliLimit'){ await ensureAdminSms(); fillSelect('climCli',cliPool,false); await ensureAdminManagers(); fillSelect('climMgr',(usersData.manager||[]).map(m=>m.username),false); return loadCliLimits(); }
+    if(page==='cliLimit'){ await ensureAdminSms(); fillSelect('climCli',cliPool,false); await ensureAdminManagers(); return loadCliLimits(); }
     if(page==='limitManagement'){ await ensureAdminRates(); return loadLimitManagement(); }
     if(page==='carrierIntegration'){ await loadCarrierSettings(); loadActivityIps(); return; }
     if(page==='providers'){ loadProviders(); return; }
@@ -2714,34 +2980,126 @@ async function loadAdminPageData(page){
     if(page==='smppConnections') return loadSmpp();
     if(page==='systemLogs') return loadSystemLogs();
     if(page==='backupManagement') return loadBackups();
+    if(page==='integrationGuide') return loadIntegrationGuide();
   }catch(e){console.warn('loadAdminPageData failed',page,e);}
 }
 
 
 
+/* ================= TECHNICAL INTEGRATION GUIDE =================
+ * Admin-only viewer/export for docs/PROVIDER-INTEGRATION-GUIDE.md. The markdown
+ * is fetched from the server (GET /api/integration-guide) so the panel and the
+ * file shipped with the application can never drift apart. The renderer below
+ * understands only the subset of markdown the guide uses: fenced code, headings,
+ * tables, lists, quotes, rules and inline emphasis/code/links.
+ * ============================================================== */
+let igMarkdown='';
+function igEscape(v){
+  return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function igInline(v){
+  let out=igEscape(v);
+  out=out.replace(/`([^`]+)`/g,'<code>$1</code>');
+  out=out.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  out=out.replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:]|$)/g,'$1<em>$2</em>');
+  out=out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return out;
+}
+function igMarkdownToHtml(md){
+  const lines=String(md||'').replace(/\r\n/g,'\n').split('\n');
+  const out=[]; let i=0; let inCode=false; let codeLang=''; let codeBuf=[];
+  const listStack=[];
+  const closeLists=()=>{ while(listStack.length) out.push('</'+listStack.pop()+'>'); };
+  const para=[];
+  const flushPara=()=>{ if(para.length){ out.push('<p>'+para.join(' ')+'</p>'); para.length=0; } };
+  while(i<lines.length){
+    const line=lines[i];
+    const fence=line.match(/^```(\w*)\s*$/);
+    if(fence){
+      if(inCode){ out.push('<pre><code'+(codeLang?' class="lang-'+codeLang+'"':'')+'>'+igEscape(codeBuf.join('\n'))+'</code></pre>'); codeBuf=[]; inCode=false; }
+      else { flushPara(); closeLists(); inCode=true; codeLang=fence[1]||''; }
+      i++; continue;
+    }
+    if(inCode){ codeBuf.push(line); i++; continue; }
+    if(!line.trim()){ flushPara(); closeLists(); i++; continue; }
+    if(/^\s*(---|\*\*\*|___)\s*$/.test(line)){ flushPara(); closeLists(); out.push('<hr/>'); i++; continue; }
+    const h=line.match(/^(#{1,6})\s+(.*)$/);
+    if(h){ flushPara(); closeLists(); const lvl=h[1].length; out.push('<h'+lvl+'>'+igInline(h[2].trim())+'</h'+lvl+'>'); i++; continue; }
+    if(/^\s*>/.test(line)){
+      flushPara(); closeLists();
+      const buf=[];
+      while(i<lines.length && /^\s*>/.test(lines[i])){ buf.push(lines[i].replace(/^\s*>\s?/,'')); i++; }
+      out.push('<blockquote>'+igInline(buf.join(' '))+'</blockquote>'); continue;
+    }
+    /* table: header row + --- separator */
+    if(/\|/.test(line) && i+1<lines.length && /^\s*\|?[\s:-]*\|[\s:|-]*$/.test(lines[i+1]) && /-/.test(lines[i+1])){
+      flushPara(); closeLists();
+      const cells=row=>row.replace(/^\s*\|/,'').replace(/\|\s*$/,'').split('|').map(c=>c.trim());
+      const head=cells(line); i+=2; const body=[];
+      while(i<lines.length && /\|/.test(lines[i]) && lines[i].trim()){ body.push(cells(lines[i])); i++; }
+      out.push('<div class="ig-table-wrap"><table><thead><tr>'+head.map(c=>'<th>'+igInline(c)+'</th>').join('')+'</tr></thead><tbody>'
+        +body.map(r=>'<tr>'+r.map(c=>'<td>'+igInline(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>');
+      continue;
+    }
+    const ul=line.match(/^\s*[-*+]\s+(.*)$/);
+    if(ul){ flushPara(); if(listStack[listStack.length-1]!=='ul'){ closeLists(); out.push('<ul>'); listStack.push('ul'); } out.push('<li>'+igInline(ul[1])+'</li>'); i++; continue; }
+    const ol=line.match(/^\s*\d+[.)]\s+(.*)$/);
+    if(ol){ flushPara(); if(listStack[listStack.length-1]!=='ol'){ closeLists(); out.push('<ol>'); listStack.push('ol'); } out.push('<li>'+igInline(ol[1])+'</li>'); i++; continue; }
+    flushPara(); closeLists(); para.push(igInline(line.trim())); i++;
+  }
+  if(inCode) out.push('<pre><code>'+igEscape(codeBuf.join('\n'))+'</code></pre>');
+  flushPara(); closeLists();
+  return out.join('\n');
+}
+async function loadIntegrationGuide(){
+  const body=document.getElementById('igBody');
+  const meta=document.getElementById('igMeta');
+  if(!body) return;
+  try{
+    const r=await API.get('/integration-guide');
+    igMarkdown=r.markdown||'';
+    body.innerHTML=igMarkdownToHtml(igMarkdown)||'<div class="muted" style="padding:18px;text-align:center">The guide is empty.</div>';
+    if(meta) meta.textContent='Source: docs/'+String(r.file||'PROVIDER-INTEGRATION-GUIDE.md')+(r.updated_at?(' · last updated '+String(r.updated_at).slice(0,10)):'');
+  }catch(e){
+    body.innerHTML='<div class="muted" style="padding:18px;text-align:center">Could not load the guide: '+igEscape(e.message||e)+'</div>';
+  }
+}
+async function copyIntegrationGuide(){
+  if(!igMarkdown){ await loadIntegrationGuide(); }
+  try{ await navigator.clipboard.writeText(igMarkdown||''); alert('✅ Integration guide copied to the clipboard.'); }
+  catch(e){ alert('❌ Clipboard unavailable. Use Download Markdown instead.'); }
+}
+function downloadIntegrationGuide(){
+  const blob=new Blob([igMarkdown||''],{type:'text/markdown;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Skyline-SMS-Provider-Integration-Guide.md';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+function printIntegrationGuide(){
+  const body=document.getElementById('igBody');
+  if(!body) return;
+  const w=window.open('','_blank');
+  if(!w){ alert('❌ Allow pop-ups to print the guide, or use Download Markdown.'); return; }
+  var _bn=(window.SKYLINE_BRAND&&window.SKYLINE_BRAND.panelName)||'Skyline SMS';
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+_bn+' — Provider Integration Guide</title><style>'
+    +'body{font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#191a1f;margin:28px;}'
+    +'h1,h2,h3,h4{line-height:1.25;margin:20px 0 8px;}h1{font-size:22px;}h2{font-size:18px;border-bottom:1px solid #e4e6ea;padding-bottom:5px;}h3{font-size:15px;}h4{font-size:13.5px;}'
+    +'table{border-collapse:collapse;width:100%;margin:12px 0;font-size:12px;}th,td{border:1px solid #cfd2d8;padding:6px 8px;text-align:left;vertical-align:top;}th{background:#f0f2f6;}'
+    +'code{background:#f0f2f6;border:1px solid #e4e6ea;border-radius:4px;padding:1px 4px;font-size:11.5px;}'
+    +'pre{background:#191a1f;color:#e4e6ea;padding:12px;border-radius:8px;overflow:auto;}pre code{background:none;border:0;color:inherit;}'
+    +'blockquote{border-left:4px solid #cfd2d8;margin:12px 0;padding:2px 12px;color:#424449;}'
+    +'hr{border:0;border-top:1px solid #e4e6ea;margin:22px 0;}a{color:#3256df;}'
+    +'</style></head><body>'+body.innerHTML+'</body></html>');
+  w.document.close();
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} },350);
+}
+
 /* =============== SERVER-SIDE SMS/CDR REPORTS (performance) =============== */
 function smsShownCount(page, limit, rowsLen, total){ return total===0?0:Math.min(total, ((page-1)*Number(limit||25))+rowsLen); }
 function setServerFoot(infoEl, state, rerender){ const pag=infoEl?.closest('.table-foot')?.querySelector('.pagination'); if(pag && typeof drawServerPagination==='function') drawServerPagination(pag,state,rerender); }
 function smsReportSignature(obj){ try{return JSON.stringify(obj);}catch(e){return String(Date.now())} }
-async function renderSmsReport(){
-  if(!document.getElementById('srBody')) return;
-  setDefaultDates('srFrom','srTo');
-  const state=pagerState('adminSmsReportServer');
-  const len=document.getElementById('srLen')?.value||'25';
-  const search=(document.getElementById('srSearch')?.value||'').trim();
-  const from=document.getElementById('srFrom')?.value||'';
-  const to=document.getElementById('srTo')?.value||'';
-  const sig=smsReportSignature({len,search,from,to}); if(state.signature!==sig){state.page=1;state.signature=sig;}
-  const params=new URLSearchParams({page:String(state.page||1),limit:len,sort:'date',dir:'desc'}); if(from)params.set('from',from); if(to)params.set('to',to); if(search)params.set('search',search);
-  let data={rows:[],total:0,page:1,limit:25,totalPages:1,totalPayment:'0'};
-  try{ data=await API.get('/sms/paged?'+params.toString()); }catch(e){ console.warn('sms report load failed',e); }
-  state.page=data.page||1; state.totalPages=data.totalPages||1;
-  const rows=data.rows||[];
-  document.getElementById('srBody').innerHTML=rows.map(r=>`<tr><td class="muted">${(r.received_at||'').slice(0,19)}</td><td><span class="tag tag-mgr">${r.manager_name||'—'}</span></td><td>${r.range_name||'—'}</td><td class="mono">${r.number||''}</td><td class="mono">${r.cli||''}</td><td class="cell-money">${cleanDec(r.payout_rate||r.payout_amount||0)}</td><td class="msg-body">${r.message||''}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
-  srInfo.textContent=`Showing ${smsShownCount(data.page, data.limit, rows.length, data.total)} of ${data.total||0} records`;
-  if(srPayoutInfo) srPayoutInfo.textContent=`Filtered total payout: ${money(data.totalPayment||'0')}`;
-  setServerFoot(srInfo,state,renderSmsReport);
-}
 async function renderSmsDetail(){
   if(!document.getElementById('sdBody')) return;
   const dateVal=(document.getElementById('sdDate')?.value)||todayStr();
@@ -2786,11 +3144,11 @@ function smEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;
 function smStatusTag(c){
   const st=String(c.status||'stopped');
   const map={
-    bound:['#0ABF7E','Connected'], listening:['#2FB6FF','Listening'],
-    connecting:['#FFB020','Connecting'], reconnecting:['#FFB020','Reconnecting'],
-    error:['#FF5C7A','Error'], stopped:['#8A9099','Stopped'], disconnected:['#FF5C7A','Disconnected']
+    bound:['#0e7a57','Connected'], listening:['#1769b0','Listening'],
+    connecting:['#8a5608','Connecting'], reconnecting:['#8a5608','Reconnecting'],
+    error:['#a82e2a','Error'], stopped:['#6e6d71','Stopped'], disconnected:['#a82e2a','Disconnected']
   };
-  const [col,label]=map[st]||['#8A9099',st];
+  const [col,label]=map[st]||['#6e6d71',st];
   return `<span style="display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;background:${col}">${label}</span>`;
 }
 
@@ -2827,7 +3185,7 @@ async function loadSmpp(){
     body.innerHTML=smppData.map(c=>{
       const st=sMap[c.id]||{};
       const endpoint=c.mode==='server'?('listen :'+(c.listen_port||'—')):((c.host||'—')+':'+(c.port||2775));
-      const err=(st.status==='error'&&st.last_error)?`<div class="hint" style="color:var(--px-danger,#FF5C7A);margin-top:3px">${smEsc(st.last_error)}</div>`:'';
+      const err=(st.status==='error'&&st.last_error)?`<div class="hint" style="color:var(--ams-danger,#a82e2a);margin-top:3px">${smEsc(st.last_error)}</div>`:'';
       const q=st.queued?`<div class="hint">${st.queued} queued</div>`:'';
       const canSend=!(c.mode==='client'&&c.bind_type==='receiver');
       return `<tr>
@@ -2840,11 +3198,11 @@ async function loadSmpp(){
         <td>${st.total_sent||0}${q}</td>
         <td class="muted">${st.last_activity_at?String(st.last_activity_at).slice(0,19):(st.last_connected_at?String(st.last_connected_at).slice(0,19):'Never')}</td>
         <td>
-          <button type="button" class="gx-btn gx-blue"  onclick="openSmppModal(${c.id})" data-tip="Edit" title="Edit" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+          <button type="button" class="ams-btn ams-blue"  onclick="openSmppModal(${c.id})" data-tip="Edit" title="Edit" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
           <button class="btn ${c.active?'btn-amber':'btn-green'} btn-sm" onclick="toggleSmpp(${c.id},${c.active?0:1})">${c.active?'Stop':'Start'}</button>
           <button class="btn btn-green btn-sm" onclick="restartSmpp(${c.id})">Restart</button>
           ${canSend?`<button class="btn btn-purple btn-sm" onclick="openSmppSend(${c.id})">Send</button>`:''}
-          <button type="button" class="gx-btn danger"  onclick="deleteSmpp(${c.id},'${smEsc(c.name).replace(/'/g,"\\'")}')" data-tip="Delete" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button>
+          <button type="button" class="ams-btn danger"  onclick="deleteSmpp(${c.id},'${smEsc(c.name).replace(/'/g,"\\'")}')" data-tip="Delete" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button>
         </td></tr>`;
     }).join('');
     document.getElementById('smInfo').textContent=`${smppData.length} connection(s) · ${up} connected`;
@@ -2860,12 +3218,12 @@ async function loadSmppLogs(){
   try{
     const rows=await API.get('/smpp/logs');
     if(!rows.length){ b.innerHTML='<tr><td colspan="6" class="muted" style="text-align:center;padding:14px">No activity yet.</td></tr>'; return; }
-    const col={error:'#FF5C7A',warn:'#FFB020',info:'#0ABF7E'};
+    const col={error:'#a82e2a',warn:'#8a5608',info:'#0e7a57'};
     b.innerHTML=rows.slice(0,40).map(r=>`<tr>
       <td class="muted">${smEsc(String(r.created_at||'').slice(0,19))}</td>
       <td>${smEsc(r.connection_name||'—')}</td>
       <td>${smEsc(r.event||'')}</td>
-      <td><span style="color:${col[r.level]||'#8A9099'};font-weight:700">${smEsc(r.level||'')}</span></td>
+      <td><span style="color:${col[r.level]||'#6e6d71'};font-weight:700">${smEsc(r.level||'')}</span></td>
       <td>${smEsc(r.detail||'')}</td>
       <td class="mono muted">${smEsc(r.peer||'')}</td>
     </tr>`).join('');
@@ -2873,13 +3231,14 @@ async function loadSmppLogs(){
 }
 
 function smModeChange(){
+  const _bn=(window.SKYLINE_BRAND&&window.SKYLINE_BRAND.panelName)||'Skyline SMS';
   const mode=document.getElementById('smMode').value;
   const isServer=mode==='server';
   document.getElementById('smClientBox').style.display=isServer?'none':'';
   document.getElementById('smServerBox').style.display=isServer?'':'none';
   document.getElementById('smModeHint').textContent=isServer
-    ? 'Skyline SMS opens a port and waits. Give the carrier this server IP, the listen port, and the System ID / Password you set below.'
-    : 'Skyline SMS connects out to the provider. Enter the host, port, System ID and Password they gave you.';
+    ? _bn + ' opens a port and waits. Give the carrier this server IP, the listen port, and the System ID / Password you set below.'
+    : _bn + ' connects out to the provider. Enter the host, port, System ID and Password they gave you.';
 }
 
 function openSmppModal(id){
@@ -2961,9 +3320,9 @@ async function testSmpp(){
   try{
     const r=await API.post('/smpp/connections/'+smEditId+'/test',{});
     el.innerHTML=r.ok
-      ? `<span style="color:#0ABF7E;font-weight:700">✓ ${smEsc(r.message||r.note||'Reachable')}</span>`
-      : `<span style="color:#FF5C7A;font-weight:700">✗ ${smEsc(r.error||r.note||'Failed')}</span>`;
-  }catch(e){ el.innerHTML=`<span style="color:#FF5C7A;font-weight:700">✗ ${smEsc(e.message||e)}</span>`; }
+      ? `<span style="color:#17b380;font-weight:700">✓ ${smEsc(r.message||r.note||'Reachable')}</span>`
+      : `<span style="color:#a82e2a;font-weight:700">✗ ${smEsc(r.error||r.note||'Failed')}</span>`;
+  }catch(e){ el.innerHTML=`<span style="color:#a82e2a;font-weight:700">✗ ${smEsc(e.message||e)}</span>`; }
 }
 
 async function toggleSmpp(id,on){
@@ -2996,13 +3355,13 @@ async function doSmppSend(){
   const dest=(document.getElementById('smSendDest').value||'').trim();
   const msg=(document.getElementById('smSendMsg').value||'').trim();
   const src=(document.getElementById('smSendSrc').value||'').trim();
-  if(!dest||!msg){ el.innerHTML='<span style="color:#FF5C7A">Destination and message are required.</span>'; return; }
+  if(!dest||!msg){ el.innerHTML='<span style="color:#d9534f">Destination and message are required.</span>'; return; }
   el.textContent='Sending…';
   try{
     const r=await API.post('/smpp/connections/'+smSendId+'/send',{destination:dest,message:msg,source_addr:src});
-    el.innerHTML=`<span style="color:#0ABF7E;font-weight:700">✓ Queued (id ${r.id}). It is sent as soon as the link is bound.</span>`;
+    el.innerHTML=`<span style="color:#17b380;font-weight:700">✓ Queued (id ${r.id}). It is sent as soon as the link is bound.</span>`;
     setTimeout(loadSmpp,1500);
-  }catch(e){ el.innerHTML=`<span style="color:#FF5C7A;font-weight:700">✗ ${smEsc(e.message||e)}</span>`; }
+  }catch(e){ el.innerHTML=`<span style="color:#a82e2a;font-weight:700">✗ ${smEsc(e.message||e)}</span>`; }
 }
 
 let apiProvidersData=[];
@@ -3050,7 +3409,7 @@ async function loadApiProviders(){
     body.innerHTML=apiProvidersData.map((p,i)=>{
       const cfg=apCfgOf(p); const st=sMap[p.id]||{};
       const authTxt={query:'API Key in URL',bearer:'Bearer Token',header:'Custom Header',none:'None'}[String(cfg.auth||'none')]||cfg.auth||'None';
-      const err=p.last_status==='error'&&p.last_error?`<div class="hint" style="color:var(--px-danger,#FF5C7A);margin-top:3px">${apEsc(p.last_error)}</div>`:'';
+      const err=p.last_status==='error'&&p.last_error?`<div class="hint" style="color:var(--ams-danger,#a82e2a);margin-top:3px">${apEsc(p.last_error)}</div>`:'';
       return `<tr>
         <td><b>${apEsc(p.name)}</b><div class="hint">${st.seen_count!==undefined?st.seen_count+' records tracked':''}</div></td>
         <td class="mono"><span style="display:inline-block;max-width:260px;word-break:break-all;margin-right:20px;vertical-align:middle">${apEsc(cfg.url||'—')}</span></td>
@@ -3060,10 +3419,10 @@ async function loadApiProviders(){
         <td>${apStatusTag(p)}${err}</td>
         <td class="muted">${p.last_sync_at?String(p.last_sync_at).slice(0,19):'Never'}</td>
         <td>
-          <button type="button" class="gx-btn gx-blue"  onclick="openApiProviderModal(${i})" data-tip="Edit" title="Edit" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+          <button type="button" class="ams-btn ams-blue"  onclick="openApiProviderModal(${i})" data-tip="Edit" title="Edit" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
           <button class="btn ${p.active?'btn-amber':'btn-green'} btn-sm" onclick="toggleApiProvider(${p.id},${p.active?0:1})">${p.active?'Disable':'Enable'}</button>
           <button class="btn btn-green btn-sm" onclick="runApiProviderNow(${p.id})">Sync Now</button>
-          <button type="button" class="gx-btn danger"  onclick="deleteApiProvider(${p.id},'${apEsc(p.name).replace(/'/g,"\\'")}')" data-tip="Delete" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button>
+          <button type="button" class="ams-btn danger"  onclick="deleteApiProvider(${p.id},'${apEsc(p.name).replace(/'/g,"\\'")}')" data-tip="Delete" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></button>
         </td></tr>`;
     }).join('')||'<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No API providers configured. Click <b>+ Add Provider</b> to add one.</td></tr>';
     document.getElementById('apInfo').textContent=`${apiProvidersData.length} provider(s) · ${active} active`;
@@ -3180,13 +3539,13 @@ async function testApiProvider(){
   try{
     const r=await API.post('/sync/test',body);
     if(r&&r.ok){
-      el.innerHTML=`<span style="color:var(--px-ok,#25D9A4)"><b>✓ Connection OK</b> — ${r.fetched} record(s) returned.</span>`
+      el.innerHTML=`<span style="color:var(--ams-ok,#0e7a57)"><b>✓ Connection OK</b> — ${r.fetched} record(s) returned.</span>`
         +(r.sample?`<div class="hint" style="margin-top:6px">Sample → number: <b>${apEsc(r.sample.number||'—')}</b> · CLI: <b>${apEsc(r.sample.cli||'—')}</b> · date: <b>${apEsc(r.sample.date||'—')}</b></div>`:'')
         +(r.fetched===0?'<div class="hint" style="margin-top:6px">The API responded but returned no records for the current time window.</div>':'');
     } else {
-      el.innerHTML=`<span style="color:var(--px-danger,#FF5C7A)"><b>✗ Failed</b> — ${apEsc(r&&r.error?r.error:'unknown error')}</span>`;
+      el.innerHTML=`<span style="color:var(--ams-danger,#a82e2a)"><b>✗ Failed</b> — ${apEsc(r&&r.error?r.error:'unknown error')}</span>`;
     }
-  }catch(e){ el.innerHTML=`<span style="color:var(--px-danger,#FF5C7A)"><b>✗ Failed</b> — ${apEsc(e.message||'')}</span>`; }
+  }catch(e){ el.innerHTML=`<span style="color:var(--ams-danger,#a82e2a)"><b>✗ Failed</b> — ${apEsc(e.message||'')}</span>`; }
 }
 
 async function toggleApiProvider(id,active){
@@ -3214,7 +3573,7 @@ if(typeof applyPanelSplitUi==='function') applyPanelSplitUi();
 // Default Management page is Rate Management. Heavy daily reports/dashboard are not loaded here.
 loadRates();
 setTimeout(()=>{Promise.allSettled([ensureAdminManagers(), loadImportBatches(), refreshNumberDbTools()]);},500);
-/* SKYLINE P7: khali .content div flex:1 se bara khali gap banata tha (pages section-level hain) */
+/* Skyline P7: khali .content div flex:1 se bara khali gap banata tha (pages section-level hain) */
 document.querySelectorAll('.content').forEach(c=>{ if(!c.querySelector('*')) c.remove(); });
 </script>
 </body>

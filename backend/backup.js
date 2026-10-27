@@ -1,5 +1,5 @@
 /**
- * Backup service for Power X SMS.
+ * Backup service for Skyline SMS.
  * - Uses sql.js export buffer from db.js for consistent snapshots.
  * - Writes backups atomically to a dedicated folder.
  * - Retains backups for a configurable number of days.
@@ -12,6 +12,15 @@ const os = require('os');
 function ts() {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
+/* Backup file naming. New backups use "skyline-sms-backup-<ts>.sqlite".
+   Backups created under the panel's earlier backup prefixes (ams-, qtech-, nova-,
+   almada-) are still listed,
+   restorable and pruned by retention — only the prefix differs. Those legacy
+   strings remain here solely so existing production backups stay visible. */
+const BACKUP_PREFIX = 'skyline-sms-backup-';
+const LEGACY_BACKUP_PREFIXES = ['ams-sms-backup-', 'qtech-sms-backup-', 'nova-sms-backup-', 'almada-sms-backup-'];
+const BACKUP_NAME_RE = /^(?:skyline|ams|qtech|almada|nova)-sms-backup-\d{4}-\d{2}-\d{2}T[\w-]+\.sqlite$/; /* new = skyline, earlier prefixes still honoured */
+function isBackupFileName(base){ return BACKUP_NAME_RE.test(String(base||'')); }
 function getDbFile(db) {
   return db.getDbFile ? db.getDbFile() : path.join(__dirname, 'data.sqlite');
 }
@@ -19,7 +28,7 @@ function getBackupDir(db) {
   return process.env.BACKUP_DIR
     || (process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'backups') : null)
     // VPS-safe default: outside the application folder, so backups survive accidental app deletion.
-    || path.join(os.homedir(), 'nova-sms-backups');
+    || path.join(os.homedir(), 'skyline-sms-backups');
 }
 function ensureBackupDir(db) {
   const dir = getBackupDir(db);
@@ -28,7 +37,7 @@ function ensureBackupDir(db) {
 }
 function safeBackupName(name) {
   const base = path.basename(String(name || ''));
-  if (!/^nova-sms-backup-\d{4}-\d{2}-\d{2}T[\w-]+\.sqlite$/.test(base)) {
+  if (!isBackupFileName(base)) {
     throw new Error('Invalid backup file name');
   }
   return base;
@@ -39,7 +48,7 @@ function backupPath(db, fileName) {
 function listBackups(db) {
   const dir = ensureBackupDir(db);
   return fs.readdirSync(dir)
-    .filter(f => f.endsWith('.sqlite') && f.startsWith('nova-sms-backup-'))
+    .filter(f => f.endsWith('.sqlite') && (f.startsWith(BACKUP_PREFIX) || LEGACY_BACKUP_PREFIXES.some(p => f.startsWith(p))))
     .map(file => {
       const fullPath = path.join(dir, file);
       const st = fs.statSync(fullPath);
@@ -55,7 +64,7 @@ function listBackups(db) {
 function createBackup(db, reason = 'manual') {
   const dir = ensureBackupDir(db);
   if (db.save) db.save();
-  const file = `nova-sms-backup-${ts()}.sqlite`;
+  const file = `${BACKUP_PREFIX}${ts()}.sqlite`;
   const fullPath = path.join(dir, file);
   const tmpPath = fullPath + '.tmp';
   // PHASE-2 MEMORY FIX: exportBuffer() was the sql.js-era whole-DB-in-a-Buffer

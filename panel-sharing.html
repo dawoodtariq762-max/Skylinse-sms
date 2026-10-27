@@ -1,59 +1,62 @@
-<!doctype html><html lang="en" class="gx-light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/assets/skyline-favicon.png?v=skyline-3"><title>SKYLINE SMS — Panel Sharing</title><style>html{visibility:hidden;}
+<!doctype html><html lang="en" class="ams-light"><head><script src="/assets/skyline-storage.js?v=skyline-20261026-fullrebrand-final"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/assets/skyline-favicon.png?v=skyline-20261009"><title>Skyline SMS — Panel Sharing</title><style>html{visibility:hidden;}
 body{margin:0;font-family:Inter,Segoe UI,Arial;}
 .layout{display:flex;min-height:100vh;}
 .side{width:260px;position:fixed;inset:0 auto 0 0;padding:16px;box-sizing:border-box;}
-.brand{display:flex;gap:12px;align-items:center;padding-bottom:16px;border-bottom:1px solid #ddd;}
+.brand{display:flex;gap:12px;align-items:center;padding-bottom:16px;border-bottom:1px solid #cfd2d8;}
 .brand img{width:46px;height:46px;border-radius:13px;}
 .nav{padding-top:14px;}
 .item{padding:12px 13px;border-radius:12px;cursor:pointer;font-weight:800;margin-bottom:5px;}
 .main{margin-left:260px;flex:1;}
-.top{height:58px;border-bottom:1px solid #ddd;display:flex;align-items:center;gap:10px;padding:0 20px;}
+.top{height:58px;border-bottom:1px solid #cfd2d8;display:flex;align-items:center;gap:10px;padding:0 20px;}
 .sp{flex:1;}
 .btn{border:0;border-radius:10px;min-height:36px;padding:8px 14px;font-weight:900;cursor:pointer;}
-.btn.ghost{border:1px solid #ddd;}
+.btn.ghost{border:1px solid #cfd2d8;}
 .content{padding:22px;}
 .page{display:none;}
 .page.active{display:block;}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
-.card,.toolbar,.table{border:1px solid #ddd;border-radius:16px;padding:18px;margin-bottom:16px;}
+.card,.toolbar,.table{border:1px solid #cfd2d8;border-radius:16px;padding:18px;margin-bottom:16px;}
 .metric h3{font-size:26px;margin:6px 0;}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-input,select,textarea{border:1px solid #ddd;border-radius:10px;padding:10px 11px;font:inherit;}
+input,select,textarea{border:1px solid #cfd2d8;border-radius:10px;padding:10px 11px;font:inherit;}
 table{width:100%;border-collapse:collapse;}
-th,td{padding:11px 12px;border-bottom:1px solid #ddd;text-align:left;font-size:13px;vertical-align:top;}
+th,td{padding:11px 12px;border-bottom:1px solid #cfd2d8;text-align:left;font-size:13px;vertical-align:top;}
 .tag{display:inline-block;padding:4px 9px;border-radius:8px;font-weight:900;}
 .page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
 .page-head h2{margin:0;}
 .modal{display:none;position:fixed;inset:0;z-index:20;align-items:center;justify-content:center;padding:18px;}
 .modal.show{display:flex;}
-.box{width:min(640px,96vw);border-radius:18px;border:1px solid #ddd;padding:20px;}
-.pagination button{margin:0 3px;border:1px solid #ddd;border-radius:8px;padding:6px 10px;}</style><script>(function(){try{const t=sessionStorage.getItem('ms_token')||localStorage.getItem('ms_token'),r=sessionStorage.getItem('ms_role')||localStorage.getItem('ms_role');if(!t||r!=='admin'){location.replace('/panel-sharing-login');return}fetch('/api/me',{headers:{Authorization:'Bearer '+t}}).then(x=>{if(!x.ok)throw Error();return x.json()}).then(u=>{if(u.role!=='admin')throw Error();document.documentElement.style.visibility='visible'}).catch(()=>{sessionStorage.clear();location.replace('/panel-sharing-login')})}catch(e){sessionStorage.clear();location.replace('/panel-sharing-login')}})();</script>
-<style id="powerx-module-theme">.side{border-right:1px solid #ddd!important;}
-.brand{border-bottom:1px solid #ddd!important;}
-.brand img{border:1px solid #ddd!important;}
+.box{width:min(640px,96vw);border-radius:18px;border:1px solid #cfd2d8;padding:20px;}
+.pagination button{margin:0 3px;border:1px solid #cfd2d8;border-radius:8px;padding:6px 10px;}</style><script>(function(){try{const t=sessionStorage.getItem('ams_token')||localStorage.getItem('ams_token'),r=sessionStorage.getItem('ams_role')||localStorage.getItem('ams_role');if(!t||r!=='admin'){location.replace('/panel-sharing-login');return}fetch('/api/me',{headers:{Authorization:'Bearer '+t}}).then(x=>{if(!x.ok)throw Error();return x.json()}).then(u=>{if(u.role!=='admin')throw Error();document.documentElement.style.visibility='visible'}).catch(()=>{sessionStorage.clear();location.replace('/panel-sharing-login')})}catch(e){sessionStorage.clear();location.replace('/panel-sharing-login')}})();</script>
+<style id="skyline-sms-module-theme">.side{border-right:1px solid #cfd2d8!important;}
+.brand{border-bottom:1px solid #cfd2d8!important;}
+.brand img{border:1px solid #cfd2d8!important;}
 .brand b{font-weight:750!important;}
 .brand .muted{text-transform:uppercase!important;letter-spacing:.13em!important;font-size:11px!important;font-weight:600!important;}
 .item{font-weight:550!important;border-radius:11px!important;}
-.top{border-bottom:1px solid #ddd!important;}
-.card,.toolbar,.table,.box{border:1px solid #ddd!important;border-radius:20px!important;}
+.top{border-bottom:1px solid #cfd2d8!important;}
+.card,.toolbar,.table,.box{border:1px solid #cfd2d8!important;border-radius:20px!important;}
 .metric{position:relative!important;overflow:hidden!important;}
 .metric::before{content:""!important;position:absolute!important;left:0;right:0;top:0;height:2px;}
 .metric h3{font-weight:750!important;font-variant-numeric:tabular-nums!important;}
 .page-head h2{font-weight:700!important;letter-spacing:-.028em!important;}
-input,select,textarea{border:1px solid #ddd!important;border-radius:11px!important;}
+input,select,textarea{border:1px solid #cfd2d8!important;border-radius:11px!important;}
 input:focus,select:focus,textarea:focus{outline:none!important;}
 table{border-collapse:separate!important;border-spacing:0!important;}
-th{text-transform:uppercase!important;font-size:11px!important;letter-spacing:.10em!important;font-weight:650!important;border-bottom:1px solid #ddd!important;}
-td{border-bottom:1px solid #ddd!important;}
+th{text-transform:uppercase!important;font-size:11px!important;letter-spacing:.10em!important;font-weight:650!important;border-bottom:1px solid #cfd2d8!important;}
+td{border-bottom:1px solid #cfd2d8!important;}
 .btn{border-radius:11px!important;font-weight:650!important;transition:transform .14s ease,filter .16s ease!important;}
 .btn:hover{transform:translateY(-1px)!important;}
-.btn.ghost{border:1px solid #ddd!important;}
-.tag{border:1px solid #ddd!important;font-weight:650!important;}
+.btn.ghost{border:1px solid #cfd2d8!important;}
+.tag{border:1px solid #cfd2d8!important;font-weight:650!important;}
 .money{font-weight:700!important;}
-.help-shot{border:1px solid #ddd!important;}</style>
-<link rel="stylesheet" href="/assets/galaxy.css?v=light-20260928"/><script src="/assets/galaxy.js?v=light-20260928" defer></script>
-<link rel="stylesheet" href="/assets/lamix-light.css?v=20260928-implementation"/>
-</head><body class="gx-light gx-lamix"><div class="layout"><aside class="side"><div class="brand"><img src="/assets/skyline-logo.svg?v=skyline-3"><div><b>SKYLINE SMS</b><div class="muted">Panel Sharing</div></div></div><div class="nav"><div class="item active" data-page="dashboard">Dashboard</div><div class="item" data-page="numbers">SMS Numbers</div><div class="item" data-page="bulk">Bulk Allocation</div><div class="item" data-page="users">Sharing Users</div><div class="item" data-page="smpp">SMPP Connections</div><div class="item" data-page="logs">Forward Logs</div></div></aside><main class="main"><div class="top"><b>Panel Sharing Panel</b><div class="sp"></div><button class="btn ghost" onclick="location.href='/admin'">Admin Panel</button><button class="btn red" onclick="API.logout()">Logout</button></div><div class="content"><section class="page active" id="page-dashboard"><div class="page-head"><h2>Dashboard</h2><button class="btn" onclick="loadDashboard()">Refresh</button></div><div class="grid"><div class="card metric"><div class="muted">Total Sharing Users</div><h3 id="totalUsers">0</h3></div><div class="card metric"><div class="muted">Total Shared Numbers</div><h3 id="totalNumbers">0</h3></div><div class="card metric"><div class="muted">Total OTP Received</div><h3 id="totalOtp">0</h3></div></div></section><section class="page" id="page-numbers">
+.help-shot{border:1px solid #cfd2d8!important;}</style>
+<link rel="stylesheet" href="/assets/skyline.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/assets/skyline-light.css?v=skyline-20261026-fullrebrand-final"/>
+<link rel="stylesheet" href="/assets/skyline-ds.css?v=skyline-20261026-fullrebrand-final"/>
+<script src="/assets/skyline-ds.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/assets/skyline-motion.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline-motion.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/branding/runtime.css"/><script src="/branding/runtime.js" defer></script><link rel="stylesheet" href="/assets/skyline-panel.css?v=skyline-20261026-fullrebrand-final"/><link rel="stylesheet" href="/assets/skyline-unify.css?v=skyline-20261026-unify1"/><script src="/assets/skyline-cli-search.js?v=skyline-20261026-fullrebrand-final" defer></script></head><body class="ams-light ams-panel ams-ui"><div class="layout"><aside class="side"><div class="brand"><img src="/assets/skyline-logo-square.png?v=skyline-20261009"><div><b data-brand="login">Skyline SMS</b><div class="muted">Panel Sharing</div></div></div><div class="nav"><div class="item active" data-page="dashboard">Dashboard</div><div class="item" data-page="numbers">SMS Numbers</div><div class="item" data-page="bulk">Bulk Allocation</div><div class="item" data-page="users">Sharing Users</div><div class="item" data-page="smpp">SMPP Connections</div><div class="item" data-page="logs">Forward Logs</div></div></aside><main class="main"><div class="top"><b>Panel Sharing Panel</b><div class="sp"></div><button class="btn ghost" onclick="location.href='/admin'">Admin Panel</button><button class="btn red" onclick="API.logout()">Logout</button></div><div class="content"><section class="page active" id="page-dashboard"><div class="page-head"><h2>Dashboard</h2><button class="btn" onclick="loadDashboard()">Refresh</button></div><div class="grid"><div class="card metric"><div class="muted">Total Sharing Users</div><h3 id="totalUsers">0</h3></div><div class="card metric"><div class="muted">Total Shared Numbers</div><h3 id="totalNumbers">0</h3></div><div class="card metric"><div class="muted">Total OTP Received</div><h3 id="totalOtp">0</h3></div></div></section><section class="page" id="page-numbers">
   <div class="page-head">
     <div>
       <h2>SMS Numbers Management</h2>
@@ -70,13 +73,13 @@ td{border-bottom:1px solid #ddd!important;}
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
       <!-- 1. Select User with search INSIDE dropdown (Section 31, 32) -->
       <div style="display:inline-flex;flex-direction:column;gap:4px">
-        <label style="font-size:11.5px;font-weight:700;color:#94a3b8">Target Sharing User <span style="color:#ef4444">*</span></label>
+        <label style="font-size:11.5px;font-weight:700;color:#6e6d71">Target Sharing User <span style="color:#d9534f">*</span></label>
         <div id="allocUserDropdownContainer"></div>
       </div>
 
       <!-- 2. Pricing / Billing Period (Section 31) -->
       <div style="display:inline-flex;flex-direction:column;gap:4px">
-        <label style="font-size:11.5px;font-weight:700;color:#94a3b8">Billing Period <span style="color:#ef4444">*</span></label>
+        <label style="font-size:11.5px;font-weight:700;color:#6e6d71">Billing Period <span style="color:#d9534f">*</span></label>
         <select id="allocPayterm" style="min-width:160px;min-height:38px;padding:8px 10px;box-sizing:border-box">
           <option value="weekly_7_1">Weekly (7/1)</option>
           <option value="daily">Daily (1/1)</option>
@@ -87,19 +90,19 @@ td{border-bottom:1px solid #ddd!important;}
 
       <!-- 3. Filter by Range with search INSIDE dropdown (Section 33) -->
       <div style="display:inline-flex;flex-direction:column;gap:4px">
-        <label style="font-size:11.5px;font-weight:700;color:#94a3b8">Filter Range</label>
+        <label style="font-size:11.5px;font-weight:700;color:#6e6d71">Filter Range</label>
         <div id="numRangeFilterContainer"></div>
       </div>
 
       <!-- 4. Search Number -->
       <div style="display:inline-flex;flex-direction:column;gap:4px">
-        <label style="font-size:11.5px;font-weight:700;color:#94a3b8">Search Number</label>
+        <label style="font-size:11.5px;font-weight:700;color:#6e6d71">Search Number</label>
         <input id="numSearch" placeholder="Search number..." style="min-height:38px;box-sizing:border-box" oninput="numState.page=1;loadNumbers()">
       </div>
 
       <!-- 5. Numbers per page -->
       <div style="display:inline-flex;flex-direction:column;gap:4px">
-        <label style="font-size:11.5px;font-weight:700;color:#94a3b8">Per Page</label>
+        <label style="font-size:11.5px;font-weight:700;color:#6e6d71">Per Page</label>
         <select id="numLimit" style="min-height:38px;padding:8px 10px;box-sizing:border-box" onchange="numState.limit=+this.value;numState.page=1;loadNumbers()">
           <option value="25" selected>25</option>
           <option value="50">50</option>
@@ -148,13 +151,13 @@ td{border-bottom:1px solid #ddd!important;}
     <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px">
       <!-- 1. Select Sharing User with search INSIDE dropdown (Section 32, 40) -->
       <div style="flex:1;min-width:260px">
-        <label style="display:block;font-weight:700;margin-bottom:6px">Select Sharing User <span style="color:#ef4444">*</span></label>
+        <label style="display:block;font-weight:700;margin-bottom:6px">Select Sharing User <span style="color:#d9534f">*</span></label>
         <div id="bulkUserDropdownContainer"></div>
       </div>
 
       <!-- 2. Billing Period (Section 43) -->
       <div style="flex:1;min-width:240px">
-        <label style="display:block;font-weight:700;margin-bottom:6px">Pricing / Billing Period <span style="color:#ef4444">*</span></label>
+        <label style="display:block;font-weight:700;margin-bottom:6px">Pricing / Billing Period <span style="color:#d9534f">*</span></label>
         <select id="bulkPayterm" style="width:100%;min-height:38px;padding:8px 10px;box-sizing:border-box" onchange="onBulkPeriodChange()">
           <option value="weekly_7_1">Weekly (7/1)</option>
           <option value="daily">Daily (1/1)</option>
@@ -217,21 +220,21 @@ td{border-bottom:1px solid #ddd!important;}
     </div>
 
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px">
-      <div style="background:rgba(255,255,255,0.04);padding:14px;border-radius:10px">
+      <div style="background:#f6f7f9;border:1px solid #e4e6ea;padding:14px;border-radius:10px">
         <div class="muted" style="font-size:12px">Target User</div>
         <div style="font-size:16px;font-weight:700;margin-top:4px" id="sumTargetUser">—</div>
       </div>
-      <div style="background:rgba(255,255,255,0.04);padding:14px;border-radius:10px">
+      <div style="background:#f6f7f9;border:1px solid #e4e6ea;padding:14px;border-radius:10px">
         <div class="muted" style="font-size:12px">Billing Period</div>
         <div style="font-size:16px;font-weight:700;margin-top:4px" id="sumBillingPeriod">—</div>
       </div>
-      <div style="background:rgba(255,255,255,0.04);padding:14px;border-radius:10px">
+      <div style="background:#f6f7f9;border:1px solid #e4e6ea;padding:14px;border-radius:10px">
         <div class="muted" style="font-size:12px">Selected Ranges</div>
         <div style="font-size:18px;font-weight:800;margin-top:4px" id="sumRangeCount">0</div>
       </div>
-      <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);padding:14px;border-radius:10px">
-        <div class="muted" style="font-size:12px;color:#4ade80">Total Allocated Numbers</div>
-        <div style="font-size:20px;font-weight:800;color:#22c55e;margin-top:4px" id="sumAllocCount">0</div>
+      <div style="background:#e3f6ef;border:1px solid rgba(34,197,94,0.3);padding:14px;border-radius:10px">
+        <div class="muted" style="font-size:12px;color:#0e7a57">Total Allocated Numbers</div>
+        <div style="font-size:20px;font-weight:800;color:#0e7a57;margin-top:4px" id="sumAllocCount">0</div>
       </div>
     </div>
 
@@ -295,7 +298,7 @@ td{border-bottom:1px solid #ddd!important;}
     
     <div class="row" style="margin-bottom:10px">
       <div style="flex:1">
-        <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px">Panel Name <span style="color:#ef4444">*</span></label>
+        <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px">Panel Name <span style="color:#d9534f">*</span></label>
         <input id="panelName" placeholder="e.g. Apex Panel" style="width:100%;box-sizing:border-box">
       </div>
       <div style="flex:1">
@@ -306,7 +309,7 @@ td{border-bottom:1px solid #ddd!important;}
 
     <div class="row" style="margin-bottom:12px">
       <div style="flex:1">
-        <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px">Login Username <span style="color:#ef4444">*</span></label>
+        <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px">Login Username <span style="color:#d9534f">*</span></label>
         <input id="suUsername" placeholder="Username" style="width:100%;box-sizing:border-box">
       </div>
       <div style="flex:1">
@@ -332,12 +335,12 @@ td{border-bottom:1px solid #ddd!important;}
     </div>
 
     <!-- TYPE 2: HTTP CONNECTION -->
-    <div id="boxHttpConn" style="display:none;margin-bottom:12px;border:1px solid rgba(255,255,255,0.1);padding:12px;border-radius:10px;background:rgba(0,0,0,0.15)">
-      <div style="font-weight:700;margin-bottom:8px;color:#38bdf8">HTTP Connection Configuration (Our Panel → Their Endpoint)</div>
+    <div id="boxHttpConn" style="display:none;margin-bottom:12px;border:1px solid #e4e6ea;padding:12px;border-radius:10px;background:#f6f7f9">
+      <div style="font-weight:700;margin-bottom:8px;color:#1769b0">HTTP Connection Configuration (Our Panel → Their Endpoint)</div>
       
       <div class="row" style="margin-bottom:8px">
         <div style="flex:3">
-          <label style="display:block;font-size:11px;font-weight:700;margin-bottom:2px">Target HTTP URL <span style="color:#ef4444">*</span></label>
+          <label style="display:block;font-size:11px;font-weight:700;margin-bottom:2px">Target HTTP URL <span style="color:#d9534f">*</span></label>
           <input id="httpUrl" placeholder="https://client-api.com/v1/sms" style="width:100%;box-sizing:border-box" oninput="updateHttpPreview()">
         </div>
         <div style="flex:1">
@@ -384,48 +387,49 @@ td{border-bottom:1px solid #ddd!important;}
         </div>
       </div>
 
-      <div style="font-weight:700;font-size:11px;margin:10px 0 4px;color:#a855f7">Parameter Mapping (Our Data → Their Parameter Names)</div>
+      <div style="font-weight:700;font-size:11px;margin:10px 0 4px;color:#5b4bd8">Parameter Mapping (Our Data → Their Parameter Names)</div>
       <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
         <div>
-          <label style="font-size:10px;color:#94a3b8">Source ID / CLI</label>
+          <label style="font-size:10px;color:#6e6d71">Source ID / CLI</label>
           <input id="mapCli" placeholder="e.g. sender or cli" value="source_id" style="width:100%;box-sizing:border-box;font-size:12px" oninput="updateHttpPreview()">
         </div>
         <div>
-          <label style="font-size:10px;color:#94a3b8">Destination Number</label>
+          <label style="font-size:10px;color:#6e6d71">Destination Number</label>
           <input id="mapNumber" placeholder="e.g. recipient or to" value="number" style="width:100%;box-sizing:border-box;font-size:12px" oninput="updateHttpPreview()">
         </div>
         <div>
-          <label style="font-size:10px;color:#94a3b8">Message Body</label>
+          <label style="font-size:10px;color:#6e6d71">Message Body</label>
           <input id="mapMessage" placeholder="e.g. text or message" value="message" style="width:100%;box-sizing:border-box;font-size:12px" oninput="updateHttpPreview()">
         </div>
         <div>
-          <label style="font-size:10px;color:#94a3b8">Message Date</label>
+          <label style="font-size:10px;color:#6e6d71">Message Date</label>
           <input id="mapDate" placeholder="e.g. date" value="date" style="width:100%;box-sizing:border-box;font-size:12px" oninput="updateHttpPreview()">
         </div>
         <div>
-          <label style="font-size:10px;color:#94a3b8">Message Time</label>
+          <label style="font-size:10px;color:#6e6d71">Message Time</label>
           <input id="mapTime" placeholder="e.g. time" value="time" style="width:100%;box-sizing:border-box;font-size:12px" oninput="updateHttpPreview()">
         </div>
         <div>
-          <label style="font-size:10px;color:#94a3b8">Extracted OTP</label>
+          <label style="font-size:10px;color:#6e6d71">Extracted OTP</label>
           <input id="mapOtp" placeholder="e.g. otp" value="otp" style="width:100%;box-sizing:border-box;font-size:12px" oninput="updateHttpPreview()">
         </div>
       </div>
 
       <div style="margin-top:10px">
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:4px">HTTP Request Live Preview</div>
-        <pre id="httpReqPreview" style="background:#0f172a;color:#38bdf8;padding:8px 10px;border-radius:6px;font-size:11px;overflow:auto;margin:0;max-height:120px"></pre>
+        <div style="font-size:11px;font-weight:700;color:#6e6d71;margin-bottom:4px">HTTP Request Live Preview</div>
+        <pre id="httpReqPreview" style="background:#191a1f;color:#1f90f3;padding:8px 10px;border-radius:6px;font-size:11px;overflow:auto;margin:0;max-height:120px"></pre>
       </div>
 
       <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
-        <button type="button" class="btn" style="padding:6px 12px;font-size:12px" onclick="testHttpConnection()">🔍 Test HTTP Connection</button>
+        <button type="button" id="btnTestHttp" class="btn" style="padding:6px 12px;font-size:12px" onclick="testHttpEndpoint()">🔍 Test HTTP Connection</button>
         <span id="httpTestStatus" style="font-size:12px"></span>
       </div>
+      <div id="httpTestResult" style="display:none;margin-top:10px;padding:8px 10px;border-radius:6px;font-size:12px"></div>
     </div>
 
     <!-- TYPE 3: SMPP CONNECTION -->
-    <div id="boxSmppConn" style="display:none;margin-bottom:12px;border:1px solid rgba(255,255,255,0.1);padding:12px;border-radius:10px;background:rgba(0,0,0,0.15)">
-      <div style="font-weight:700;margin-bottom:8px;color:#a855f7">Linked SMPP Connection</div>
+    <div id="boxSmppConn" style="display:none;margin-bottom:12px;border:1px solid #e4e6ea;padding:12px;border-radius:10px;background:#f6f7f9">
+      <div style="font-weight:700;margin-bottom:8px;color:#5b4bd8">Linked SMPP Connection</div>
       <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px">Select SMPP Connection Link</label>
       <select id="suSmppSelect" style="width:100%;box-sizing:border-box">
         <option value="">-- No SMPP Connection Linked --</option>
@@ -454,7 +458,7 @@ td{border-bottom:1px solid #ddd!important;}
     <input type="hidden" id="smppId">
 
     <div style="margin-bottom:10px">
-      <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px">Connection Name <span style="color:#ef4444">*</span></label>
+      <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px">Connection Name <span style="color:#d9534f">*</span></label>
       <input id="smppName" placeholder="e.g. Partner_SMPP_Link" style="width:100%;box-sizing:border-box">
     </div>
 
@@ -467,21 +471,21 @@ td{border-bottom:1px solid #ddd!important;}
     </div>
 
     <!-- CLIENT MODE GUIDANCE -->
-    <div id="smppClientGuide" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px">
+    <div id="smppClientGuide" style="background:#e0ecfc;border:1px solid rgba(59,130,246,0.3);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px">
       <b>Direction A: Our panel connects out to the other panel's SMPP Server.</b><br>
       <span class="muted">These are the connection details you need to get from the other panel (Host, Port, System ID, Password).</span>
     </div>
 
     <!-- SERVER MODE GUIDANCE -->
-    <div id="smppServerGuide" style="display:none;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px">
-      <b>Direction B: The other panel connects in to our Skyline SMS SMPP Server.</b><br>
+    <div id="smppServerGuide" style="display:none;background:#eeedfc;border:1px solid rgba(168,85,247,0.3);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px">
+      <b>Direction B: The other panel connects in to our <span data-brand-replace="name">Skyline SMS</span> SMPP Server.</b><br>
       <span class="muted">These are the details you configure and give to the other panel so they can connect to you.</span>
     </div>
 
     <div id="smppClientFields">
       <div class="row" style="margin-bottom:10px">
         <div style="flex:2">
-          <label style="display:block;font-size:11px;font-weight:700;margin-bottom:2px">Host / IP <span style="color:#ef4444">*</span></label>
+          <label style="display:block;font-size:11px;font-weight:700;margin-bottom:2px">Host / IP <span style="color:#d9534f">*</span></label>
           <input id="smppHost" placeholder="e.g. 192.168.1.50 or smpp.partner.com" style="width:100%;box-sizing:border-box">
         </div>
         <div style="flex:1">
@@ -494,7 +498,7 @@ td{border-bottom:1px solid #ddd!important;}
     <div id="smppServerFields" style="display:none">
       <div class="row" style="margin-bottom:10px">
         <div style="flex:1">
-          <label style="display:block;font-size:11px;font-weight:700;margin-bottom:2px">Listen Port <span style="color:#ef4444">*</span></label>
+          <label style="display:block;font-size:11px;font-weight:700;margin-bottom:2px">Listen Port <span style="color:#d9534f">*</span></label>
           <input id="smppListenPort" type="number" placeholder="2775" value="2775" style="width:100%;box-sizing:border-box">
         </div>
         <div style="flex:2">
@@ -506,7 +510,7 @@ td{border-bottom:1px solid #ddd!important;}
 
     <div class="row" style="margin-bottom:10px">
       <div style="flex:1">
-        <label style="display:block;font-size:11px;font-weight:700;margin-bottom:2px">System ID / Username <span style="color:#ef4444">*</span></label>
+        <label style="display:block;font-size:11px;font-weight:700;margin-bottom:2px">System ID / Username <span style="color:#d9534f">*</span></label>
         <input id="smppSystemId" placeholder="System ID" style="width:100%;box-sizing:border-box">
       </div>
       <div style="flex:1">
@@ -539,7 +543,7 @@ td{border-bottom:1px solid #ddd!important;}
       <button class="btn green" onclick="saveSmppConnection()">Save SMPP Connection</button>
     </div>
   </div>
-</div><script src="/api.js?v=20260926-final-system-update"></script>
+</div><script src="/api.js?v=skyline-20261026-fullrebrand-final"></script>
 <script>
 API.guard('admin');
 
@@ -623,7 +627,7 @@ async function loadNumbers() {
       </tr>
     `).join('') || '<tr><td colspan="3" class="muted" style="text-align:center;padding:24px">No unallocated numbers found</td></tr>';
 
-    document.getElementById('numInfo').innerHTML = `Showing ${currentNumRows.length} of ${data.total} (Page ${numState.page} of ${numState.totalPages}) <button type="button" onclick="copyNumbersOnly()" title="Copy Numbers Only" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:14px;color:#38bdf8" aria-label="Copy Numbers">📋</button>`;
+    document.getElementById('numInfo').innerHTML = `Showing ${currentNumRows.length} of ${data.total} (Page ${numState.page} of ${numState.totalPages}) <button type="button" onclick="copyNumbersOnly()" title="Copy Numbers Only" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:14px;color:#1769b0" aria-label="Copy Numbers">📋</button>`;
     drawPag();
   } catch(e) {
     console.error('Error loading numbers:', e);
@@ -918,8 +922,8 @@ function renderBulkSelectedRangesTable() {
     return `
       <tr>
         <td><b>${escapeHtml(r.name)}</b> <span class="muted" style="font-size:11px">(${r.prefix || ''})</span></td>
-        <td><span class="tag" style="background:#1e3a8a;color:#93c5fd">${r.available_numbers || 0} numbers</span></td>
-        <td><span class="tag" style="background:#065f46;color:#6ee7b7;font-weight:700">$${price}</span></td>
+        <td><span class="tag" style="background:#e0ecfc;color:#3256df">${r.available_numbers || 0} numbers</span></td>
+        <td><span class="tag" style="background:#e3f6ef;color:#0e7a57;font-weight:700">$${price}</span></td>
         <td>
           <input type="number" min="0" max="${r.available_numbers || 0}" value="${r.allocQty || 0}"
             style="width:100px;padding:4px 8px;font-size:12px;box-sizing:border-box"
@@ -1013,17 +1017,17 @@ async function executeMultiRangeBulkAllocation() {
 
     const breakdownTbody = document.getElementById('bulkResultBreakdownBody');
     breakdownTbody.innerHTML = (res.ranges || []).map(r => {
-      let statusTag = '<span class="tag" style="background:#22c55e;color:#fff">✓ Allocated</span>';
-      if (r.allocated === 0) statusTag = '<span class="tag" style="background:#ef4444;color:#fff">✕ Failed</span>';
-      else if (r.failed > 0) statusTag = '<span class="tag" style="background:#eab308;color:#000">⚠ Partial</span>';
+      let statusTag = '<span class="tag" style="background:#0e7a57;color:#fff">✓ Allocated</span>';
+      if (r.allocated === 0) statusTag = '<span class="tag" style="background:#d9534f;color:#fff">✕ Failed</span>';
+      else if (r.failed > 0) statusTag = '<span class="tag" style="background:#d98b2b;color:#4a2f06">⚠ Partial</span>';
 
       return `
         <tr>
           <td><b>${escapeHtml(r.range_name)}</b></td>
           <td>${r.requested}</td>
-          <td><b style="color:#22c55e">${r.allocated}</b></td>
-          <td>${r.failed > 0 ? `<span style="color:#ef4444">${r.failed}</span>` : '0'}</td>
-          <td><span class="tag" style="background:#065f46;color:#6ee7b7">$${r.price}</span></td>
+          <td><b style="color:#0e7a57">${r.allocated}</b></td>
+          <td>${r.failed > 0 ? `<span style="color:#a82e2a">${r.failed}</span>` : '0'}</td>
+          <td><span class="tag" style="background:#e3f6ef;color:#0e7a57">$${r.price}</span></td>
           <td>${statusTag}</td>
         </tr>
       `;
@@ -1270,16 +1274,16 @@ async function loadUsers() {
     if (tbody) {
       tbody.innerHTML = sharingUsers.map(u => {
         const ctype = u.connection_type || 'activity';
-        let badge = '<span class="tag" style="background:#3b82f6;color:#fff">Activity Webhook</span>';
+        let badge = '<span class="tag" style="background:#3256df;color:#fff">Activity Webhook</span>';
         let endpoint = u.attribute_url || '—';
         if (ctype === 'http') {
-          badge = '<span class="tag" style="background:#10b981;color:#fff">HTTP API Forward</span>';
+          badge = '<span class="tag" style="background:#0e7a57;color:#fff">HTTP API Forward</span>';
           try {
             const hcfg = typeof u.http_config === 'string' ? JSON.parse(u.http_config) : (u.http_config || {});
             endpoint = (hcfg.method || 'POST') + ' ' + (hcfg.url || '—');
           } catch(_) {}
         } else if (ctype === 'smpp') {
-          badge = '<span class="tag" style="background:#8b5cf6;color:#fff">SMPP Connection</span>';
+          badge = '<span class="tag" style="background:#5b4bd8;color:#fff">SMPP Connection</span>';
           endpoint = 'SMPP Link #' + (u.smpp_connection_id || '—');
         }
 
@@ -1288,7 +1292,7 @@ async function loadUsers() {
           <td>${escapeHtml(u.user_name || '—')}</td>
           <td>${escapeHtml(u.username)}</td>
           <td>${badge}</td>
-          <td>${u.active ? '<span class="tag">Active</span>' : '<span class="tag" style="background:#ef4444;color:#fff">Disabled</span>'}</td>
+          <td>${u.active ? '<span class="tag">Active</span>' : '<span class="tag" style="background:#d9534f;color:#fff">Disabled</span>'}</td>
           <td style="word-break:break-all;font-size:12px">${escapeHtml(endpoint)}</td>
           <td>
             <button class="btn" style="padding:4px 8px;font-size:12px" onclick="openUser(${u.id})">Edit</button>
@@ -1339,9 +1343,13 @@ function openUser(id) {
 
 function onConnTypeChange() {
   const t = document.getElementById('suConnType').value;
-  document.getElementById('activityFields').style.display = t === 'activity' ? 'block' : 'none';
-  document.getElementById('httpFields').style.display = t === 'http' ? 'block' : 'none';
-  document.getElementById('smppFields').style.display = t === 'smpp' ? 'block' : 'none';
+  /* NOTE: the modal markup uses the wrapper boxes boxActivityConn / boxHttpConn /
+     boxSmppConn. The old ids (activityFields/httpFields/smppFields) do not exist in
+     this page, which made this function throw and prevented the modal from opening. */
+  const box = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? 'block' : 'none'; };
+  box('boxActivityConn', t === 'activity');
+  box('boxHttpConn', t === 'http');
+  box('boxSmppConn', t === 'smpp');
 }
 
 function onAuthTypeChange() {
@@ -1365,7 +1373,8 @@ function onAuthTypeChange() {
 async function loadSmppSelect(currentId) {
   try {
     const list = await API.get('/smpp/connections');
-    const sel = document.getElementById('suSmppConn');
+    const sel = document.getElementById('suSmppSelect');
+    if (!sel) return;
     sel.innerHTML = '<option value="">-- Select Active SMPP Connection --</option>' +
       list.map(c => `<option value="${c.id}" ${currentId == c.id ? 'selected' : ''}>${c.name} (${c.mode} • ${c.status})</option>`).join('');
   } catch(e){}
@@ -1401,7 +1410,7 @@ function updateHttpPreview() {
     previewText += `${h}: <TOKEN>\\n`;
   }
   previewText += `Content-Type: application/json\\n\\n` + JSON.stringify(sample, null, 2);
-  document.getElementById('httpPreviewBody').textContent = previewText;
+  document.getElementById('httpReqPreview').textContent = previewText;
 }
 
 async function testHttpEndpoint() {
@@ -1433,7 +1442,7 @@ async function testHttpEndpoint() {
     const box = document.getElementById('httpTestResult');
     box.style.display = 'block';
     box.style.background = res.ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
-    box.style.border = '1px solid ' + (res.ok ? '#22c55e' : '#ef4444');
+    box.style.border = '1px solid ' + (res.ok ? '#17b380' : '#d9534f');
     box.innerHTML = `
       <b>Status:</b> ${res.status_code} (${res.status_text}) • <b>Duration:</b> ${res.duration_ms}ms<br>
       <b>Response Preview:</b><pre style="margin:4px 0;white-space:pre-wrap;font-size:11px">${escapeHtml(res.preview)}</pre>
@@ -1480,7 +1489,7 @@ async function saveUser() {
     });
   }
 
-  const smppId = connType === 'smpp' ? (+document.getElementById('suSmppConn').value || null) : null;
+  const smppId = connType === 'smpp' ? (+(document.getElementById('suSmppSelect') || {}).value || null) : null;
 
   const body = {
     panel_name: panelName,
@@ -1521,14 +1530,14 @@ async function loadSmpp() {
     tbody.innerHTML = smppConnections.map(c => {
       const isClient = c.mode === 'client';
       const modeLabel = isClient
-        ? '<span class="tag" style="background:#3b82f6;color:#fff">Client (Our Panel → Other)</span>'
-        : '<span class="tag" style="background:#a855f7;color:#fff">Server (Other → Our Panel)</span>';
+        ? '<span class="tag" style="background:#3256df;color:#fff">Client (Our Panel → Other)</span>'
+        : '<span class="tag" style="background:#5b4bd8;color:#fff">Server (Other → Our Panel)</span>';
 
       const hostPort = isClient ? `${c.host}:${c.port}` : `Listen Port: ${c.listen_port}`;
-      let stColor = '#94a3b8';
-      if (c.status === 'bound' || c.status === 'listening') stColor = '#22c55e';
-      else if (c.status === 'connecting') stColor = '#eab308';
-      else if (c.status === 'error') stColor = '#ef4444';
+      let stColor = '#6e6d71';
+      if (c.status === 'bound' || c.status === 'listening') stColor = '#0e7a57';
+      else if (c.status === 'connecting') stColor = '#8a5608';
+      else if (c.status === 'error') stColor = '#d9534f';
 
       return `<tr>
         <td><b>${escapeHtml(c.name)}</b></td>
@@ -1669,18 +1678,18 @@ async function loadLogs() {
     const tbody = document.getElementById('logBody');
     tbody.innerHTML = (rows || []).map(r => {
       const ctype = r.connection_type || (r.url && r.url.startsWith('SMPP') ? 'smpp' : 'activity');
-      let badge = '<span class="tag" style="background:#3b82f6;color:#fff;font-size:10px">Activity</span>';
-      if (ctype === 'http') badge = '<span class="tag" style="background:#10b981;color:#fff;font-size:10px">HTTP</span>';
-      else if (ctype === 'smpp') badge = '<span class="tag" style="background:#8b5cf6;color:#fff;font-size:10px">SMPP</span>';
+      let badge = '<span class="tag" style="background:#3256df;color:#fff;font-size:10px">Activity</span>';
+      if (ctype === 'http') badge = '<span class="tag" style="background:#0e7a57;color:#fff;font-size:10px">HTTP</span>';
+      else if (ctype === 'smpp') badge = '<span class="tag" style="background:#5b4bd8;color:#fff;font-size:10px">SMPP</span>';
 
       return `<tr>
         <td>${(r.created_at || '').slice(0, 19)}</td>
         <td><b>${escapeHtml(r.panel_name || '—')}</b></td>
         <td>${badge}</td>
         <td>${r.sms_record_id || ''}</td>
-        <td>${r.status === 'success' ? '<span class="tag" style="background:#22c55e;color:#fff">Success</span>' : '<span class="tag" style="background:#ef4444;color:#fff">Failed</span>'}</td>
+        <td>${r.status === 'success' ? '<span class="tag" style="background:#0e7a57;color:#fff">Success</span>' : '<span class="tag" style="background:#d9534f;color:#fff">Failed</span>'}</td>
         <td style="word-break:break-all;font-size:12px">${escapeHtml(r.url || '')}</td>
-        <td style="color:#ef4444;font-size:12px">${escapeHtml(r.error || '')}</td>
+        <td style="color:#a82e2a;font-size:12px">${escapeHtml(r.error || '')}</td>
       </tr>`;
     }).join('') || '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No forward logs found</td></tr>';
   } catch(e){}
@@ -1697,7 +1706,7 @@ loadRangesAndInitDropdowns().then(loadNumbers);
       <h3 style="margin:0">Confirm SMS Number Allocation</h3>
       <button class="btn ghost" style="padding:4px 8px;min-height:auto" onclick="closeAllocConfirmModal()">✕</button>
     </div>
-    <div style="margin-bottom:14px;background:rgba(255,255,255,0.04);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08)">
+    <div style="margin-bottom:14px;background:#f6f7f9;padding:12px;border-radius:10px;border:1px solid #e4e6ea">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px">
         <span class="muted">Target User:</span>
         <b id="confTargetUser">—</b>
@@ -1716,13 +1725,13 @@ loadRangesAndInitDropdowns().then(loadNumbers);
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span class="muted">Rate Card Default Price:</span>
-        <span class="tag" id="confRateCardPrice" style="background:#3b82f6;color:#fff">$0.0000</span>
+        <span class="tag" id="confRateCardPrice" style="background:#3256df;color:#fff">$0.0000</span>
       </div>
     </div>
 
     <div style="margin-bottom:16px">
       <label style="display:block;font-weight:700;margin-bottom:6px">
-        Downstream Selling Price ($) <span style="color:#ef4444">*</span>
+        Downstream Selling Price ($) <span style="color:#d9534f">*</span>
       </label>
       <input type="number" id="confOverridePrice" step="0.0001" min="0" style="width:100%;box-sizing:border-box;font-size:15px;font-weight:700" placeholder="0.0000">
       <div class="muted" style="font-size:11.5px;margin-top:6px;line-height:1.4">
