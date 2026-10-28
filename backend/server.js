@@ -4285,6 +4285,7 @@ app.get('/api/earnings-summary', authRequired, (req, res) => cachedJson(req, res
   const dToday = ukTodayDateStr(0);
   const dowMon = (new Date(dToday + 'T00:00:00Z').getUTCDay() + 6) % 7;   // 0 = Monday, same as dashboard week
   const monthStart = dToday.slice(0, 7) + '-01';
+  const yearStart = dToday.slice(0, 4) + '-01-01';
   const sumFor = (from, to) => {
     const fromSql = ukLocalDateToUtcSql(from, 0), toSql = ukLocalDateToUtcSql(to, 1);
     const v = db.get(`SELECT COALESCE(SUM(CAST(COALESCE(NULLIF(l.amount,''),'0') AS REAL)),0) AS s
@@ -4302,6 +4303,9 @@ app.get('/api/earnings-summary', authRequired, (req, res) => cachedJson(req, res
     earning_daily: sumFor(dToday, dToday),
     earning_week: sumFor(ukTodayDateStr(-dowMon), dToday),
     earning_month: sumFor(monthStart, dToday),
+    /* Admin dashboard: "Earning This Year" card. Uses the same sumFor()
+       scope and UK date boundaries as the windows above. */
+    earning_year: sumFor(yearStart, dToday),
     earning_7d: sumFor(d7Start, dToday),
     earning_all: (() => {
       const v = db.get(`SELECT COALESCE(SUM(CAST(COALESCE(NULLIF(l.amount,''),'0') AS REAL)),0) AS s FROM payment_ledger l WHERE 1=1${scopeWhere}`, params)?.s || 0;

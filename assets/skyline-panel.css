@@ -151,3 +151,11 @@ html body.ams-panel.ams-ui.ams-dark .ams-panel-plot-bg{fill:#1a2030}
 html body.ams-panel.ams-ui.ams-dark .ams-panel-grid{stroke:#262d40}
 html body.ams-panel.ams-ui.ams-dark .ams-panel-baseline{stroke:#334059}
 html body.ams-panel.ams-ui.ams-dark .ams-panel-axis{fill:#8a8e9b}
+/* Shared dashboard summary pill (Admin: Manager/Agent/Total Number,
+   Manager: Agent/Client/Numbers, Agent: Client/Number, Client: Total Number).
+   The base rule hardcodes background:#fff with a fixed grey, which produced a
+   white pill on the dark dashboard. This follows the same dark-theme convention
+   already used by the cards above (#151b29 surface / #262d40 border / #edf1fa
+   text), so one shared rule fixes every panel. */
+html body.ams-panel.ams-ui.ams-dark .ams-panel-meta{background:#151b29!important;border-color:#262d40!important;color:#edf1fa!important}
+html body.ams-panel.ams-ui.ams-dark .ams-panel-meta .ams-panel-dot{background:#5b7cff!important}

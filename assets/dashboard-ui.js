@@ -376,6 +376,28 @@
     ], metaParts);
   }
 
+  /* ---- Admin-only 8 KPI cards -------------------------------------------
+     Admin sees the 4 standard cards PLUS SMS This Month, SMS This Year,
+     Earning This Week and Earning This Year. Manager/Agent/Client keep the
+     original 4-card amsKpis() - they must NOT receive the extra cards.
+     Values come from the same /api/dashboard (d) and /api/earnings-summary (es)
+     payloads using the app's existing UK date boundaries, so no period is
+     double-counted and no new endpoint is needed. The 4 gradient classes are
+     cycled so 8 cards render as two rows of four with no new CSS. */
+  function amsKpisAdmin(kpiId, metaId, d, es, metaParts) {
+    if (!d) return;
+    amsKpiCustom(kpiId, metaId, [
+      { cls: 'ams-panel-blue',   label: 'SMS TODAY',           value: (d.sms_today == null ? '\u2014' : count(d.sms_today)), sub: 'Received today',           info: 'UK reporting day' },
+      { cls: 'ams-panel-pink',   label: 'SMS THIS WEEK',       value: (d.sms_week  == null ? '\u2014' : count(d.sms_week)),  sub: 'Received since Monday',    info: 'Monday-start UK reporting week' },
+      { cls: 'ams-panel-green',  label: 'SMS THIS MONTH',      value: (d.sms_month == null ? '\u2014' : count(d.sms_month)), sub: 'Since the 1st',            info: 'UK calendar month to date' },
+      { cls: 'ams-panel-orange', label: 'SMS THIS YEAR',       value: (d.sms_year  == null ? '\u2014' : count(d.sms_year)),  sub: 'Since 1 January',          info: 'UK calendar year to date' },
+      { cls: 'ams-panel-blue',   label: 'EARNINGS TODAY',      value: amsMoney(es && es.earning_daily), sub: 'Earned today',         info: 'UK reporting day' },
+      { cls: 'ams-panel-pink',   label: 'EARNINGS THIS WEEK',  value: amsMoney(es && es.earning_week),  sub: 'Earned since Monday',   info: 'Monday-start UK reporting week' },
+      { cls: 'ams-panel-green',  label: 'EARNINGS THIS MONTH', value: amsMoney(es && es.earning_month), sub: 'Earned since the 1st',  info: 'UK calendar month to date' },
+      { cls: 'ams-panel-orange', label: 'EARNINGS THIS YEAR',  value: amsMoney(es && es.earning_year),  sub: 'Earned since 1 January', info: 'UK calendar year to date' }
+    ], metaParts);
+  }
+
   function amsVolume(hostId, smsDaily, earnDaily, smsTotal, earnTotal, moneyLabel) {
     const moneyName = moneyLabel || 'Earnings';
     const host = document.getElementById(hostId); if (!host) return;
@@ -431,5 +453,5 @@
     }).join('');
   }
 
-  window.AMSDashboard = Object.freeze({ kpiRow, statGroup, areaChart, money, amsKpis, amsKpiCustom, amsVolume, amsRail });
+  window.AMSDashboard = Object.freeze({ kpiRow, statGroup, areaChart, money, amsKpis, amsKpisAdmin, amsKpiCustom, amsVolume, amsRail });
 })();
