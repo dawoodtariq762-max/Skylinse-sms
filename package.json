@@ -1,11 +1,13 @@
 {
-  "name": "skyline-sms-panel",
+  "name": "ams-sms-panel",
   "version": "1.0.0",
-  "description": "Skyline SMS multi-level SMS/OTP panel for Admin, Manager, Agent and Client roles.",
+  "description": "Galaxy SMS multi-level SMS/OTP panel for Admin, Manager, Agent and Client roles.",
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
-    "dev": "node backend/server.js"
+    "dev": "node backend/server.js",
+    "test": "node tests/integration.js",
+    "test:browser": "RUN_BROWSER=1 node tests/integration.js"
   },
   "engines": {
     "node": ">=20"

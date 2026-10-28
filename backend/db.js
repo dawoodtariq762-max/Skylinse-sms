@@ -280,13 +280,6 @@ function exportBuffer() {
 function getDbFile() {
   return DB_FILE;
 }
-/* Returns the underlying better-sqlite3 Database handle. Needed by the backup
-   service so it can use the ASYNCHRONOUS online-backup API (db.backup) instead
-   of a synchronous `VACUUM INTO`, which blocked the whole Node event loop for
-   the entire duration of the copy and made the application unresponsive. */
-function getRaw() {
-  return db;
-}
 
 function replaceWithFile(filePath) {
   const buf = fs.readFileSync(filePath);
@@ -360,6 +353,6 @@ function* iterate(sql, params = []) {
 module.exports = {
   init, run, runNoSave, exec, execNoSave, get, all, save, iterate,
   beginBatch, endBatch, endBatchNoSave, vacuum,
-  exportBuffer, getDbFile, getRaw, replaceWithFile,
+  exportBuffer, getDbFile, replaceWithFile,
   slowQueryStats, runAnalyze, inTransaction,
 };

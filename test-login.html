@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html lang="en" class="ams-light">
-<head><script src="/assets/skyline-storage.js?v=skyline-20261026-fullrebrand-final"></script>
+<head><script src="/assets/ams-storage.js?v=ams-20261026-fullrebrand-final"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-20261009"  data-brand-favicon />
-<title>Skyline SMS — Test Panel Login</title>
+<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png?v=ams-20261009"  data-brand-favicon />
+<title>Galaxy SMS — Test Panel Login</title>
 <style>*{box-sizing:border-box;margin:0;padding:0;}
 body{min-height:100vh;font-family:Inter,Segoe UI,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:18px;}
-.card{width:min(420px,100%);border:1px solid #cfd2d8;border-radius:24px;padding:30px;}
-.logo{width:84px;height:84px;margin:0 auto 18px;border-radius:20px;overflow:hidden;border:1px solid #cfd2d8;}
+.card{width:min(420px,100%);border:1px solid #ddd;border-radius:24px;padding:30px;}
+.logo{width:84px;height:84px;margin:0 auto 18px;border-radius:20px;overflow:hidden;border:1px solid #ddd;}
 .logo img{width:100%;height:100%;object-fit:cover;}
 .eyebrow{text-align:center;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:.16em;}
 .title{text-align:center;font-size:30px;font-weight:900;margin:8px 0 4px;}
 .sub{text-align:center;font-size:14px;margin-bottom:24px;}
 .field{margin-bottom:15px;}
 .field label{display:block;font-size:13px;font-weight:800;margin-bottom:7px;}
-input{width:100%;height:50px;border:1px solid #cfd2d8;border-radius:14px;padding:0 14px;font-size:15px;outline:none;}
+input{width:100%;height:50px;border:1px solid #ddd;border-radius:14px;padding:0 14px;font-size:15px;outline:none;}
 button{width:100%;height:52px;border:0;border-radius:15px;font-weight:950;font-size:15px;cursor:pointer;margin-top:6px;}
 .msg{display:none;margin-top:14px;border-radius:12px;padding:10px;font-size:13px;}
 .msg.show{display:block;}
-.msg.error{border:1px solid #cfd2d8;}
-.msg.success{border:1px solid #cfd2d8;}
+.msg.error{border:1px solid #ddd;}
+.msg.success{border:1px solid #ddd;}
 .hint{text-align:center;margin-top:16px;font-size:12px;}
 @media(max-width:520px){body{align-items:flex-start;padding:12px;}
 .card{border-radius:20px;padding:24px 20px;}
@@ -29,21 +29,21 @@ button{width:100%;height:52px;border:0;border-radius:15px;font-weight:950;font-s
 
 
 
-<link rel="stylesheet" href="/assets/skyline.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline.js?v=skyline-20261026-fullrebrand-final" defer></script><link rel="stylesheet" href="/assets/skyline-login-anim.css?v=skyline-20261026-fullrebrand-final"/><script>try{var _amsAnim=localStorage.getItem('ams_login_anim');document.documentElement.classList.add((_amsAnim==='on'||(_amsAnim!=='off'&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)))?'ams-anim-on':'ams-anim-off');}catch(e){}</script><script src="/branding/runtime.js"></script><script src="/assets/skyline-login-anim.js?v=skyline-20261026-fullrebrand-final" defer></script>
-<link rel="stylesheet" href="/branding/runtime.css"/><link rel="stylesheet" href="/assets/skyline-login.css?v=skyline-20261026-fullrebrand-final"/></head>
+<link rel="stylesheet" href="/assets/ams.css?v=ams-20261026-fullrebrand-final"/><script src="/assets/ams.js?v=ams-20261026-fullrebrand-final" defer></script><link rel="stylesheet" href="/assets/ams-login-anim.css?v=ams-20261026-fullrebrand-final"/><script>try{var _amsAnim=localStorage.getItem('ams_login_anim');document.documentElement.classList.add((_amsAnim==='on'||(_amsAnim!=='off'&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)))?'ams-anim-on':'ams-anim-off');}catch(e){}</script><script src="/branding/runtime.js"></script><script src="/assets/ams-login-anim.js?v=ams-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/branding/runtime.css"/><link rel="stylesheet" href="/assets/ams-login.css?v=ams-20261026-fullrebrand-final"/><link rel="stylesheet" href="/assets/galaxy-theme.css?v=20261028-fixes"/></head>
 <body class="ams-light ams-portal-login">
 <div class="card">
-  <div class="logo"><img data-brand-logo src="/assets/skyline-logo-trim.png?v=skyline-20261023" alt="Skyline SMS"></div>
+  <div class="logo"><img data-brand-logo src="/assets/galaxy-logo.png?v=20261027" alt="Galaxy SMS"></div>
   <div class="eyebrow">Dedicated Login</div>
   <div class="title">Test Panel</div>
   <div class="sub">Use test numbers and test OTP monitoring only.</div>
   <form id="form">
     <div class="field"><label>Username</label><input id="username" autocomplete="username" placeholder="test" required></div>
-    <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" placeholder="test123" required></div>
+    <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Password" required></div>
     <button type="submit">Sign In</button>
     <div class="msg" id="msg"></div>
   </form>
-  <div class="hint">Default: test / test123</div>
+  <div class="hint">Use the Test Panel credentials configured by your administrator.</div>
 </div>
 <script>
 function msg(t,c){const m=document.getElementById('msg');m.textContent=t;m.className='msg show '+c;}

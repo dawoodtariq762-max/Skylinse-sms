@@ -1,8 +1,7 @@
 /**
  * PHASE-3: optional FTS5 trigram index over sms_records.message.
  *
- * Enabled ONLY when SKYLINE_FTS=1 (default off = zero behavior change).
- * The historical AMS_FTS / ALMADA_FTS names are still honoured.
+ * Enabled ONLY when AMS_FTS=1 (default off = zero behavior change).
  * Why trigram: substring search (LIKE '%term%') is a full table scan at
  * millions of SMS; the trigram index serves it in milliseconds.
  *
@@ -21,7 +20,7 @@
 const TABLE = 'sms_fts';
 
 function enabled() {
-  return String(process.env.SKYLINE_FTS || process.env.AMS_FTS || process.env.ALMADA_FTS || '') === '1';
+  return String(process.env.AMS_FTS || process.env.ALMADA_FTS || '') === '1';
 }
 
 let ready = false;

@@ -1,5 +1,5 @@
 /**
- * Skyline SMS — Backend API
+ * AMS SMS — Backend API
  * Node.js + Express + SQLite (sql.js). MySQL-ready SQL.
  */
 const express = require('express');
@@ -13,11 +13,11 @@ try { require('dotenv').config({ path: path.join(__dirname, '..', '.env') }); re
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
+const { configuredClientRate, clientRateSql, clientRateForSmsSql, selectedWrite } = require('./allocation-safety');
 const { createTables } = require('./schema');
 const { seed } = require('./seed');
 const { sign, authRequired, chatAuthRequired, requireRole, descendantIds, SECRET } = require('./auth');
 const backup = require('./backup');
-const blockMonitor = require('./blockMonitor');
 const providerSync = require('./providerSync');
 const smsFts = require('./fts');
 const smppService = require('./smppService');
@@ -26,9 +26,6 @@ const app = express();
 app.set('trust proxy', true);
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
-/* Diagnostic only: records what is in flight so an event-loop freeze can be
-   attributed to a URL. Inert unless BLOCKMON=1. */
-app.use(blockMonitor.requestTracker);
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.text({ type: ['text/plain', 'text/*', 'application/xml', 'application/octet-stream'], limit: '2mb' }));
 const upload = multer();
@@ -239,7 +236,7 @@ app.use('/api/numbers', (req, res, next) => {
  * PHASE-2: background CSV exports (worker threads — never block the API)
  * ========================================================================= */
 const { Worker } = require('worker_threads');
-const EXPORT_DIR = process.env.EXPORT_DIR || path.join(os.homedir(), 'skyline-sms-exports');
+const EXPORT_DIR = process.env.EXPORT_DIR || path.join(os.homedir(), 'ams-sms-exports');
 const EXPORT_TTL_HOURS = parseInt(process.env.EXPORT_TTL_HOURS || '24', 10) || 24;
 const EXPORT_MAX_CONCURRENT = parseInt(process.env.EXPORT_MAX_CONCURRENT || '2', 10) || 2;
 const activeExportWorkers = new Set();
@@ -524,8 +521,8 @@ require('./extapi')(app, { authRequired, requireRole, logAction, rateLimit });
 /* Chat system: Admin <-> Manager <-> Agent, SSE delivery, attachments */
 require('./chatapp')(app, { authRequired, requireRole, logAction, rateLimit });
 /* Download filenames use the central brand name (Req 7). Falls back to
-   "skyline-sms" if branding is unavailable, so an export can never fail on it. */
-const brandSlug = () => { try { return brandingPanel.brandSlug(); } catch (e) { return 'skyline-sms'; } };
+   "ams-sms" if branding is unavailable, so an export can never fail on it. */
+const brandSlug = () => { try { return brandingPanel.brandSlug(); } catch (e) { return 'ams-sms'; } };
 
 
 
@@ -873,7 +870,7 @@ app.get('/api/smpp/outbox', authRequired, requireRole('admin'), (req, res) => {
   res.json(rows);
 });
 
-app.get('/health', (req, res) => res.json({ ok: true, service: 'Skyline SMS', time: new Date().toISOString() }));
+app.get('/health', (req, res) => res.json({ ok: true, service: 'Galaxy SMS', time: new Date().toISOString() }));
 app.get('/api/health', (req, res) => {
   let dbSize = 0, walSize = 0;
   try {
@@ -882,7 +879,7 @@ app.get('/api/health', (req, res) => {
   } catch (_) {}
   const mem = process.memoryUsage();
   res.json({
-    ok: true, service: 'Skyline SMS', time: new Date().toISOString(),
+    ok: true, service: 'Galaxy SMS', time: new Date().toISOString(),
     uptime_s: Math.round(process.uptime()),
     rss_mb: +(mem.rss / 1048576).toFixed(1),
     heap_mb: +(mem.heapUsed / 1048576).toFixed(1),
@@ -1170,7 +1167,7 @@ function smsRowsForScope(user, extraWhere='', extraParams=[], opts={}){
   if(extraWhere){ where.push(extraWhere); params.push(...extraParams); }
   const cap = Math.max(1, parseInt(opts.limit || SMS_SCOPE_ROW_CAP, 10));
   const rows=db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45,
-      n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
+      CASE WHEN n.agent_id IS s.agent_id AND n.client_id IS s.client_id THEN n.rate ELSE NULL END AS number_rate, ${clientRateForSmsSql()} AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
       cu.username AS client_name, COALESCE(su.panel_name, au.username) AS agent_name, au.username AS agent_username, su.panel_name AS sharing_panel_name, su.id AS sharing_user_id, mu.username AS manager_name
     FROM sms_records s
     LEFT JOIN numbers n ON n.id=s.number_id
@@ -1516,8 +1513,6 @@ function paymentCycleInfo(type, earnedAt){
   const per=schedulePeriodFor(type, date);
   return {cycle_key:per.start, eligible_at:utcSqlFromMs(per.payMs)};
 }
-/* Decimal-safe string addition (no float drift) for report totals. */
-function decAddStr(a,b){const norm=(v)=>{const t=String(v==null?'':v).trim();if(!/^-?\d+(?:\.\d+)?$/.test(t))return{n:0n,s:0};const neg=t.startsWith('-');const wf=t.replace('-','').split('.');const w=wf[0];const f=wf[1]||'';return{n:BigInt(w+f)*(neg?-1n:1n),s:f.length};};const x=norm(a),y=norm(b),sc=Math.max(x.s,y.s);const sum=x.n*10n**BigInt(sc-x.s)+y.n*10n**BigInt(sc-y.s);const neg=sum<0n;let out=(neg?-sum:sum).toString().padStart(sc+1,'0');if(sc)out=(out.slice(0,-sc)+'.'+out.slice(-sc)).replace(/\.?0+$/,'');return (neg&&out!=='0'?'-':'')+(out===''?'0':out);}
 function walletValid(v){ return /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(String(v||'').trim()); } /* legacy TRC20 check — pre-P19j records only */
 /* P19j: Binance UID = 8-12 digit numeric ID (Binance Pay profile). Deliberately not overly restrictive. */
 function binanceUidValid(v){ return /^\d{8,12}$/.test(String(v||'').trim()); }
@@ -1536,13 +1531,12 @@ function agentManagerId(agentId) {
 function recordPaymentLedgerForSms(smsId, persist=true){
   /* P16: priority 1) sms.payment_type (ingestion snapshot) 2) numbers.payterm (allocation)
      3) users.payment_type (agent default) 4) ranges.payment_type 5) weekly — backfill rows ke liye bhi sahi cycle */
-  const srow=db.get(`SELECT s.id,s.agent_id,s.manager_id,s.range_id,s.payout_amount,s.received_at,s.client_id,COALESCE(NULLIF(s.payment_type,''), NULLIF(n.payterm,''), u.payment_type, r.payment_type, 'weekly') AS payment_type FROM sms_records s LEFT JOIN numbers n ON n.id=s.number_id LEFT JOIN users u ON u.id=s.agent_id LEFT JOIN ranges r ON r.id=s.range_id WHERE s.id=?`,[smsId]);
+  const srow=db.get(`SELECT s.id,s.agent_id,s.manager_id,s.range_id,s.payout_amount,s.received_at,COALESCE(NULLIF(s.payment_type,''), NULLIF(n.payterm,''), u.payment_type, r.payment_type, 'weekly') AS payment_type FROM sms_records s LEFT JOIN numbers n ON n.id=s.number_id LEFT JOIN users u ON u.id=s.agent_id LEFT JOIN ranges r ON r.id=s.range_id WHERE s.id=?`,[smsId]);
   if(!srow || !srow.agent_id || cents(srow.payout_amount)<=0) return;
   if(db.get('SELECT id FROM payment_ledger WHERE sms_record_id=?',[smsId])) return;
   const type=normalizePaymentType(srow.payment_type||'weekly'); const cyc=paymentCycleInfo(type,srow.received_at);
-  /* client_id stored at write time so NEW payouts are attributable immediately */
-  db.runNoSave(`INSERT INTO payment_ledger (sms_record_id,agent_id,manager_id,client_id,range_id,payment_type,amount,earned_at,cycle_key,eligible_at,status)
-    VALUES (?,?,?,?,?,?,?,?,?,?,'open')`, [srow.id,srow.agent_id,srow.manager_id||agentManagerId(srow.agent_id),srow.client_id||null,srow.range_id,type,normalizeDecimalString(srow.payout_amount)||'0',srow.received_at,cyc.cycle_key,cyc.eligible_at]);
+  db.runNoSave(`INSERT INTO payment_ledger (sms_record_id,agent_id,manager_id,range_id,payment_type,amount,earned_at,cycle_key,eligible_at,status)
+    VALUES (?,?,?,?,?,?,?,?,?,'open')`, [srow.id,srow.agent_id,srow.manager_id||agentManagerId(srow.agent_id),srow.range_id,type,normalizeDecimalString(srow.payout_amount)||'0',srow.received_at,cyc.cycle_key,cyc.eligible_at]);
   db.runNoSave('UPDATE sms_records SET payment_type=? WHERE id=?',[type,smsId]);
   if(persist) db.save();
 }
@@ -2252,7 +2246,7 @@ app.get('/api/ranges/import-sample', authRequired, requireRole('admin'), (req, r
   const format = String(req.query.format || 'csv').toLowerCase();
   const header = RANGE_IMPORT_SAMPLE_COLUMNS.map(c => c.header);
   const rows = [header, ...RANGE_IMPORT_SAMPLE_ROWS];
-  const fileBase = 'skyline-sms-range-import-sample';
+  const fileBase = 'ams-sms-range-import-sample';
   if (format === 'xlsx' || format === 'xls') {
     try {
       const XLSX = require('xlsx');
@@ -2700,16 +2694,6 @@ function buildNumberQuery(user, q) {
     else if (user.role === 'agent') { where.push('cu.username=?'); params.push(q.owner); }
     need.users = true;
   }
-  /* ---- §9.2 Admin SMS Numbers: explicit user filters ----------------------
-     Lets Admin filter by a specific Manager, Agent or Client. These are
-     role-explicit (numbers.manager_id / agent_id / client_id) rather than the
-     combined `owner` match, so selecting a Client only returns that Client's
-     numbers. All three are LEFT JOINed on users, so a number that has BOTH a
-     Manager and an Agent relationship is still returned exactly once — the
-     joins cannot duplicate rows. */
-  if (q.manager && user && user.role === 'admin') { where.push('mu.username=?'); params.push(q.manager); need.users = true; }
-  if (q.agent   && user && user.role === 'admin') { where.push('au.username=?'); params.push(q.agent);   need.users = true; }
-  if (q.client  && user && user.role === 'admin') { where.push('cu.username=?'); params.push(q.client);  need.users = true; }
   if (q.allocation === 'unallocated') {
     // unqualified: lets the planner use idx_numbers_unallocated (measured @5M: 2.1 s → 250 ms)
     if (user.role === 'admin') where.push('manager_id IS NULL AND agent_id IS NULL AND client_id IS NULL');
@@ -2717,28 +2701,6 @@ function buildNumberQuery(user, q) {
   } else if (q.allocation === 'allocated') {
     if (user.role === 'admin') where.push('(manager_id IS NOT NULL OR agent_id IS NOT NULL OR client_id IS NOT NULL)');
     else { const col = numberOwnerColumnForRole(user.role); where.push(`${col} IS NOT NULL`); }
-  }
-  /* ---- §9.3 / §9.4: role-specific allocation toggles ----------------------
-     These are DELIBERATELY different from the generic unallocated/allocated
-     pair above, and must not be conflated:
-       unalloc_mgr   : no Manager AND no Agent     (Manager allocation state)
-       alloc_mgr     : has a Manager OR an Agent
-       unalloc_agent : no Agent, REGARDLESS of whether a Manager is set
-       alloc_agent   : has an Agent, regardless of Manager
-     "Unallocated to an Agent" therefore still returns numbers that are
-     allocated to a Manager — it is not the same as "unallocated to everyone".
-     Every branch uses the indexed manager_id / agent_id columns. */
-  else if (q.allocation === 'unalloc_mgr' || q.allocation === 'alloc_mgr') {
-    const isUn = q.allocation === 'unalloc_mgr';
-    if (user.role === 'admin') {
-      where.push(isUn ? 'manager_id IS NULL AND agent_id IS NULL'
-                      : '(manager_id IS NOT NULL OR agent_id IS NOT NULL)');
-    } else { const col = numberOwnerColumnForRole(user.role); where.push(`${col} IS ${isUn ? 'NULL' : 'NOT NULL'}`); }
-  } else if (q.allocation === 'unalloc_agent' || q.allocation === 'alloc_agent') {
-    const isUn = q.allocation === 'unalloc_agent';
-    if (user.role === 'admin' || user.role === 'manager') {
-      where.push(`agent_id IS ${isUn ? 'NULL' : 'NOT NULL'}`);
-    } else { const col = numberOwnerColumnForRole(user.role); where.push(`${col} IS ${isUn ? 'NULL' : 'NOT NULL'}`); }
   }
   return { where: where.join(' AND '), params, need };
 }
@@ -2790,10 +2752,7 @@ function numberSelectSql(where, options = {}) {
       CASE WHEN n.manager_id IS NULL THEN NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.rate,''))),'NA'),'') ELSE NULL END,
       ${cardRateExpr})`;
   } else if (role === 'client') {
-    effExpr = `COALESCE(
-      NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.client_rate,''))),'NA'),''),
-      NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.payout,''))),'NA'),''),
-      '0')`;
+    effExpr = clientRateSql('n');
   } else {
     // Admin or unspecified: displays the rate Admin assigned to the top assigned tier
     effExpr = `COALESCE(
@@ -2826,7 +2785,7 @@ function numberSelectSql(where, options = {}) {
   // Display query: LIMIT-bounded, so keeping display JOINs here is cheap.
   // sharing_users becomes a scalar subquery (no row duplication).
   return `SELECT n.*, r.name AS range_name,
-            ${effExpr} AS effective_rate${providerExpr},
+            ${effExpr} AS effective_rate${providerExpr}${', CASE WHEN n.client_id IS NOT NULL THEN ' + clientRateSql('n') + ' ELSE n.payout END AS payout'},
             CASE WHEN n.client_id IS NOT NULL THEN 'client' WHEN n.agent_id IS NOT NULL THEN 'agent' WHEN n.manager_id IS NOT NULL THEN 'manager' ELSE 'unallocated' END AS owner_type,
             cu.username AS client_name,
             COALESCE((SELECT s1.panel_name FROM sharing_users s1 WHERE s1.agent_user_id=n.agent_id ORDER BY s1.id LIMIT 1), au.username) AS agent_name,
@@ -3094,6 +3053,9 @@ app.get('/api/numbers', authRequired, (req, res) => cachedJson(req, res, 60000, 
 /* HIERARCHY TIER ALLOCATION RATE OVERRIDE — shared validator (handleAllocate + smart-divide).
    Supports Admin, Manager, and Agent allocation tiers. Positive decimal, <=6 dp, <=100000. */
 function validatedAllocationRate(user, raw, targetRole = '') {
+  if (targetRole === 'client') {
+    try { return {ok:true,value:configuredClientRate(raw)}; } catch(e) { return {ok:false,error:e.message}; }
+  }
   if (!user || !['admin', 'manager', 'agent'].includes(user.role)) return { ok: true, value: '' };
   if (raw === undefined || String(raw).trim() === '') return { ok: true, value: '' };
   const str = String(raw).trim();
@@ -3594,6 +3556,23 @@ app.post("/api/agent/self-allocate", authRequired, requireRole("agent"), (req, r
   });
 });
 
+
+// Explicit upstream return; deliberately distinct from existing downstream Unallocate.
+app.get('/api/numbers/allocation-version', authRequired, (req,res) => res.json({version:getMetaVer('numbers_ver')}));
+for (const [route,operation] of [['return','return'],['client-rate','client-rate']]) {
+  app.post('/api/numbers/'+route, authRequired, (req,res) => {
+    try {
+      const result=selectedWrite(db,req.user,(req.body||{}).ids,operation,(req.body||{}).rate);
+      bumpNumbersVer();clearApiReadCache();
+      logAction(req,operation==='return'?'return_numbers':'client_rate_update','numbers',{count:result.count,role:req.user.role,rate:result.rate});
+      // Commit the request-owned batch before announcing success to other panels.
+      if(db.inTransaction())db.exec('COMMIT');
+      try { if(app.broadcastSseAll)app.broadcastSseAll('allocation_update',{action:operation,count:result.count,timestamp:Date.now()}); } catch(_) {}
+      res.json(result);
+    } catch(e) { res.status(e.status||500).json({error:e.status?e.message:'Number operation failed; nothing changed'}); }
+  });
+}
+
 app.post('/api/numbers/unallocate', authRequired, (req, res) => {
   const { ids } = req.body || {};
   if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'ids[] required' });
@@ -4009,7 +3988,7 @@ async function performSmartDivideJob(job){
               if (!part.length) continue;
               const ph = part.map(() => '?').join(',');
               if (wantRole === 'client') {
-                const clientRateVal = job.rate || '0';
+                const clientRateVal = configuredClientRate(job.rate);
                 if (user.role === 'admin') {
                   db.runNoSave(`UPDATE numbers SET client_id=?, agent_id=NULL, manager_id=NULL, manager_rate='', agent_rate='', client_rate=?, payout=?, rate=?, alloc_source='manual' WHERE id IN (${ph})`, [sp.t, clientRateVal, clientRateVal, clientRateVal, ...part]);
                 } else if (user.role === 'manager') {
@@ -4252,7 +4231,7 @@ app.get('/api/sms/paged', authRequired, (req, res, next) => {
     sendPagedStreaming(res,
       { total, page, limit, totalPages, totalPayment },
       `SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45,
-          n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
+          CASE WHEN n.agent_id IS s.agent_id AND n.client_id IS s.client_id THEN n.rate ELSE NULL END AS number_rate, ${clientRateForSmsSql()} AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
           r.currency AS range_currency, r.provider AS range_provider${provCols},
           cu.username AS client_name, COALESCE(su.panel_name, au.username) AS agent_name, au.username AS agent_username, su.panel_name AS sharing_panel_name, su.id AS sharing_user_id, mu.username AS manager_name
         ${built.baseSql}
@@ -4281,7 +4260,7 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
   const provCols = providerRateSelectSql(req.user.role);   /* ADMIN-ONLY provider rate columns */
   if (Number.isFinite(cursor) && cursor > 0) {
     const cRows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45,
-        n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
+        CASE WHEN n.agent_id IS s.agent_id AND n.client_id IS s.client_id THEN n.rate ELSE NULL END AS number_rate, ${clientRateForSmsSql()} AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
         r.currency AS range_currency, r.provider AS range_provider${provCols},
         cu.username AS client_name, COALESCE(su.panel_name, au.username) AS agent_name, au.username AS agent_username, su.panel_name AS sharing_panel_name, su.id AS sharing_user_id, mu.username AS manager_name
       ${built.baseSql} AND s.id < ?
@@ -4290,7 +4269,7 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
     return { rows: attachSmsPayoutFields(attachSmsProviderRate(cRows, req.user.role)), total, page: 1, limit, totalPages: Math.max(1, Math.ceil(total / limit)), totalPayment, next_cursor: nextCursor, cursor_mode: true };
   }
   const rows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45,
-      n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
+      CASE WHEN n.agent_id IS s.agent_id AND n.client_id IS s.client_id THEN n.rate ELSE NULL END AS number_rate, ${clientRateForSmsSql()} AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
       r.currency AS range_currency, r.provider AS range_provider${provCols},
       cu.username AS client_name, COALESCE(su.panel_name, au.username) AS agent_name, au.username AS agent_username, su.panel_name AS sharing_panel_name, su.id AS sharing_user_id, mu.username AS manager_name
     ${built.baseSql}
@@ -4320,7 +4299,6 @@ app.get('/api/earnings-summary', authRequired, (req, res) => cachedJson(req, res
   const dToday = ukTodayDateStr(0);
   const dowMon = (new Date(dToday + 'T00:00:00Z').getUTCDay() + 6) % 7;   // 0 = Monday, same as dashboard week
   const monthStart = dToday.slice(0, 7) + '-01';
-  const yearStart = dToday.slice(0, 4) + '-01-01';
   const sumFor = (from, to) => {
     const fromSql = ukLocalDateToUtcSql(from, 0), toSql = ukLocalDateToUtcSql(to, 1);
     const v = db.get(`SELECT COALESCE(SUM(CAST(COALESCE(NULLIF(l.amount,''),'0') AS REAL)),0) AS s
@@ -4338,9 +4316,6 @@ app.get('/api/earnings-summary', authRequired, (req, res) => cachedJson(req, res
     earning_daily: sumFor(dToday, dToday),
     earning_week: sumFor(ukTodayDateStr(-dowMon), dToday),
     earning_month: sumFor(monthStart, dToday),
-    /* Admin dashboard: "Earning This Year" card. Uses the same sumFor()
-       scope and UK date boundaries as the windows above. */
-    earning_year: sumFor(yearStart, dToday),
     earning_7d: sumFor(d7Start, dToday),
     earning_all: (() => {
       const v = db.get(`SELECT COALESCE(SUM(CAST(COALESCE(NULLIF(l.amount,''),'0') AS REAL)),0) AS s FROM payment_ledger l WHERE 1=1${scopeWhere}`, params)?.s || 0;
@@ -4350,7 +4325,7 @@ app.get('/api/earnings-summary', authRequired, (req, res) => cachedJson(req, res
     daily7
   };
 }, 'numbers_ver'));
-/* Skyline redesign (2026-10-24): additive read-only daily series for the Skyline
+/* AMS redesign (2026-10-24): additive read-only daily series for the AMS
    "Volume · last 15 days" chart. Same sources, formulas, UK boundaries and
    role scopes as /api/dashboard (sms_daily_stats) and /api/earnings-summary
    (payment_ledger) — only the window is wider. Existing responses unchanged. */
@@ -4512,7 +4487,7 @@ app.get('/api/sms/report', authRequired, (req, res) => cachedJson(req, res, 1200
       + ` ELSE strftime('${fmt}', s.received_at, '${segs[segs.length - 1].off >= 0 ? '+' : ''}${segs[segs.length - 1].off} hours') END`;
   const kExpr = dims.map(d => REPORT_GROUP_DIMS[d].time ? timeExpr(REPORT_GROUP_DIMS[d].fmt) : REPORT_GROUP_DIMS[d].expr);
   const payoutSum = "COALESCE(SUM(CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL)),0)";
-  const clientPayoutSum = "COALESCE(SUM(CASE WHEN COALESCE(s.client_id,0)>0 THEN CAST(COALESCE(NULLIF(n.payout,''),'0') AS REAL) ELSE 0 END),0)";
+  const clientPayoutSum = `COALESCE(SUM(CAST((${clientRateForSmsSql()}) AS REAL)),0)`;
   const inner = `SELECT ${kExpr.map((e, i) => `${e} AS k${i}`).join(', ')}, COUNT(*) AS sms, ${payoutSum} AS my_payout, ${clientPayoutSum} AS client_payout ${built.baseSql} GROUP BY ${kExpr.join(', ')}`;
   const total = +(db.get(`SELECT COUNT(*) c FROM (${inner})`, built.params)?.c || 0);
   const grand = db.get(`SELECT COUNT(*) sms, ${payoutSum} my_payout, ${clientPayoutSum} client_payout ${built.baseSql}`, built.params) || {};
@@ -4696,8 +4671,8 @@ app.get('/api/cli-search', authRequired, requireRole('admin','manager'), (req,re
   res.json({ cli, custom_date:custom, summary, ranges:rangeRows });
 });
 
-/* ============ Skyline/Skyline-STYLE CLI SEARCH: ranges running a CLI in the last 24h ============
-   Additive endpoint (2026-10-24 redesign). The Skyline reference feature: the user types a
+/* ============ AMS/AMS-STYLE CLI SEARCH: ranges running a CLI in the last 24h ============
+   Additive endpoint (2026-10-24 redesign). The AMS reference feature: the user types a
    sender (CLI) in full (case-insensitive, exact match) plus optional message text, and
    sees the distinct ranges that sender ran on in the last 24 hours with the last-seen
    time. This is deliberately SEPARATE from the admin/manager CLI Search & Analytics
@@ -4748,7 +4723,7 @@ function numberScopeWhere(user, alias = '') {
   if (user.role === 'client') return { where: `${p}client_id=?`, params: [user.id] };
   return { where: '1=1', params: [] };
 }
-/* Skyline: hierarchy counts for User Management lists (3 GROUP BYs + numbers
+/* AMS: hierarchy counts for User Management lists (3 GROUP BYs + numbers
    counts via existing leading-column indexes; cached 30s — no N+1). */
 app.get('/api/users/hierarchy-stats', authRequired, requireRole('admin', 'manager'), (req, res) => cachedJson(req, res, 30000, () => {
   const u = req.user;
@@ -4834,7 +4809,7 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
     const byDate = {}; rows.forEach(r => byDate[r.stat_date] = r.c || 0);
     for (let i = 6; i >= 0; i--) { const dayStr = ukTodayDateStr(-i); daily7.push({ date: dayStr, count: byDate[dayStr] || 0 }); }
   }
-  const recentRows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45, n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type
+  const recentRows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45, CASE WHEN n.agent_id IS s.agent_id AND n.client_id IS s.client_id THEN n.rate ELSE NULL END AS number_rate, ${clientRateForSmsSql()} AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type
     FROM sms_records s
     LEFT JOIN numbers n ON n.id=s.number_id
     LEFT JOIN ranges r ON r.id=s.range_id
@@ -4873,7 +4848,7 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
         WHERE ${nScope.where}`, nScope.params)?.c || 0;
     }
   } catch(e) {}
-  /* ===== Skyline: additive dashboard fields (existing keys unchanged) ===== */
+  /* ===== AMS: additive dashboard fields (existing keys unchanged) ===== */
   const smsYear = statSum(` AND stat_date >= ? AND stat_date <= ?`, [dToday.slice(0,4) + '-01-01', dToday]);
   const dowMon = (new Date(dToday + 'T00:00:00Z').getUTCDay() + 6) % 7; // 0=Monday
   const payoutWeek = statPay(` AND stat_date BETWEEN ? AND ?`, [ukTodayDateStr(-dowMon), dToday]);
@@ -4924,7 +4899,7 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
       });
     sms_by_country = Object.values(agg).sort((a,b) => b.count - a.count);
   } catch(e) {}
-  /* ===== /Skyline ===== */
+  /* ===== /AMS ===== */
   /* P19k #4: Real Provider Cost (ADMIN-ONLY) — Provider Rate × ELIGIBLE SMS count.
      Eligibility = ingest-time engine ka AUTHORITATIVE result (payout_amount > 0 — yani
      rate-limit/zero-rate ke BAAD jo paid bacha; "first N paid OTPs then zero" wahi
@@ -5342,52 +5317,6 @@ app.post('/api/payment-v2/admin/requests/:id/pay', authRequired, requireRole('ad
   let screenshotUrl=''; if(req.file&&req.file.buffer){ const dir=path.join(FRONTEND_ROOT,'uploads','payment-screenshots'); fs.mkdirSync(dir,{recursive:true}); const ext=(path.extname(req.file.originalname||'')||'.png').toLowerCase(); const file=`payment-${id}-${Date.now()}${ext}`; fs.writeFileSync(path.join(dir,file),req.file.buffer); screenshotUrl='/uploads/payment-screenshots/'+file; }
   try{db.execNoSave('BEGIN'); db.runNoSave("UPDATE payment_requests_v2 SET status='Paid',processed_by=?,paid_at=datetime('now'),txid=?,screenshot_url=?,admin_notes=? WHERE id=?",[req.user.id,req.body?.txid||'',screenshotUrl,req.body?.notes||'',id]); db.runNoSave("UPDATE payment_ledger SET status='paid' WHERE request_id=?",[id]); db.execNoSave('COMMIT'); db.save(); paymentNotify(r.agent_id,id,'paid',`${paymentTypeLabel(r.payment_type)} payment sent: $${r.amount}`); paymentAudit(req,'payment_sent',{request_id:id,agent_id:r.agent_id,manager_id:r.manager_id,payment_type:r.payment_type,amount:r.amount,wallet_address:r.wallet_address,status:'Paid',details:{txid:req.body?.txid||'',screenshot_url:screenshotUrl,notes:req.body?.notes||'',binance_uid:r.binance_uid||''}}); res.json({ok:true,screenshot_url:screenshotUrl});}catch(e){try{db.execNoSave('ROLLBACK')}catch(_){} res.status(500).json({error:e.message});}
 });
-/* ---------------------------------------------------------------------------
-   Agent payout visibility in the Client Panel.
-   Returns the Agent payout ledger rows belonging to the AUTHENTICATED Client
-   (payment_ledger.client_id = req.user.id). Scope comes from the session, never
-   from a request parameter, so one Client cannot read another Client's payouts.
-   Zero-value rows are excluded so an empty 0.00 is never shown as an eligible
-   payout. Statuses are returned EXACTLY as stored (open|requested|paid|rejected)
-   and are never converted or derived. Historical rows are included because
-   client_id is backfilled from the originating sms_record on boot.
-   --------------------------------------------------------------------------- */
-app.get('/api/payment-v2/client/payouts', authRequired, requireRole('client'), (req,res)=>{
-  res.set('Cache-Control','no-store');
-  try{
-    const clientId=req.user.id, q=req.query||{};
-    const where=["l.client_id=?"], params=[clientId];
-    where.push("CAST(COALESCE(NULLIF(TRIM(COALESCE(l.amount,'')),''),'0') AS REAL) <> 0");
-    if(q.payment_type){
-      if(!['daily','weekly','monthly_30x45'].includes(String(q.payment_type))) throw new Error('Invalid payment_type');
-      where.push('l.payment_type=?'); params.push(String(q.payment_type));
-    }
-    if(q.status){ where.push('l.status=?'); params.push(String(q.status)); }
-    if(q.agent_id){
-      if(!/^\d+$/.test(String(q.agent_id))) throw new Error('Invalid agent_id');
-      where.push('l.agent_id=?'); params.push(Number(q.agent_id));
-    }
-    if(q.from){ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(q.from))) throw new Error('Invalid from date'); where.push('date(l.earned_at)>=date(?)'); params.push(String(q.from)); }
-    if(q.to){ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(q.to))) throw new Error('Invalid to date'); where.push('date(l.earned_at)<=date(?)'); params.push(String(q.to)); }
-    const limit=Math.max(1,Math.min(200,parseInt(q.limit,10)||50));
-    const filter=where.join(' AND ');
-    const total=Number(db.get('SELECT COUNT(*) AS n FROM payment_ledger l WHERE '+filter, params)?.n||0);
-    const totalPages=Math.max(1,Math.ceil(total/limit));
-    const page=Math.min(totalPages,Math.max(1,parseInt(q.page,10)||1));
-    const rows=db.all('SELECT l.id,l.sms_record_id,l.agent_id,l.payment_type,l.amount,l.status,l.earned_at,l.cycle_key,l.eligible_at, COALESCE(u.username,\'\') AS agent_name FROM payment_ledger l LEFT JOIN users u ON u.id=l.agent_id WHERE '+filter+' ORDER BY l.earned_at DESC, l.id DESC LIMIT ? OFFSET ?',
-      [...params, limit, (page-1)*limit]);
-    const byStatus={}; let totalAmount='0';
-    for(const r of db.all('SELECT l.status, l.amount FROM payment_ledger l WHERE '+filter, params)){
-      const st=String(r.status||'open');
-      if(!byStatus[st]) byStatus[st]={count:0, amount:'0'};
-      byStatus[st].count++;
-      byStatus[st].amount=decAddStr(byStatus[st].amount, r.amount);
-      totalAmount=decAddStr(totalAmount, r.amount);
-    }
-    res.json({client_id:clientId, total, page, limit, totalPages, rows, by_status:byStatus, total_amount:totalAmount});
-  }catch(e){res.status(e.status||400).json({error:e.message||'Unable to read payouts'});}
-});
-
 app.get('/api/payment-v2/admin/audit-logs', authRequired, requireRole('admin'), (req,res)=>res.json(db.all('SELECT * FROM payment_audit_logs ORDER BY id DESC LIMIT 1000')));
 
 
@@ -5409,84 +5338,21 @@ app.get('/api/limit-management', authRequired, requireRole('admin'), (req,res)=>
   res.json(rows.map(r=>{ const used=dailyLimitUsage(r); const limit=Number(r.daily_limit||0); return {...r, used_today:used, remaining_today:Math.max(0,limit-used), reporting_timezone:'Europe/London'}; }));
 });
 app.get('/api/limit-management/overview', authRequired, requireRole('admin'), (req,res)=>{
-  /* ---- PERF FIX: N+1 -> set-based ---------------------------------------
-     This endpoint looped over up to 5,000 CLIs and, for EACH one, ran
-     countTodayUk() + paidToday() + zeroedToday(). Every one of those is a
-     COUNT(*) over sms_records with a non-indexable date() expression and a
-     LOWER(s.cli)=LOWER(?) predicate, i.e. a full table scan — up to 15,000
-     full scans of a production-sized table inside ONE request. better-sqlite3
-     is synchronous, so the entire Node event loop was blocked for the whole
-     time: the page hung, the reverse proxy returned HTTP 504, and every other
-     panel stopped responding.
-
-     Replaced with ONE indexed GROUP BY per dimension (ranges, CLIs) plus two
-     small lookups. The date window uses ukDayOffsetSql(), the indexable
-     half-open range helper that already exists in this file and yields an
-     identical result set. Numbers returned are unchanged.
-     --------------------------------------------------------------------- */
-  const todaySql = ukDayOffsetSql('s.received_at', 0);
-  const PAY_GT = "SUM(CASE WHEN CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) > 0 THEN 1 ELSE 0 END)";
-  const PAY_EQ = "SUM(CASE WHEN CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) = 0 THEN 1 ELSE 0 END)";
-
-  /* ---- ranges: one grouped scan instead of 4 queries per range ---- */
-  const rangeStats = new Map();
-  db.all(`SELECT s.range_id AS k, COUNT(*) c, ${PAY_GT} paid, ${PAY_EQ} zeroed
-            FROM sms_records s
-           WHERE COALESCE(s.is_test,0)=0 AND ${todaySql} AND s.range_id IS NOT NULL
-           GROUP BY s.range_id`)
-    .forEach(r => rangeStats.set(String(r.k), r));
-
-  const rangeRules = new Map();
-  db.all("SELECT * FROM daily_limit_rules WHERE active=1 AND limit_type IN ('range','range_number') ORDER BY id ASC")
-    .forEach(r => {
-      const k = String(r.range_id);
-      if (!rangeRules.has(k)) rangeRules.set(k, {});
-      const slot = rangeRules.get(k);
-      if (r.limit_type === 'range') slot.range = Number(r.daily_limit || 0);
-      else slot.per = Number(r.daily_limit || 0);
-    });
-
-  const ranges = db.all('SELECT id,name FROM ranges ORDER BY name ASC').map(r=>{
-    const st = rangeStats.get(String(r.id)) || {};
-    const rl = rangeRules.get(String(r.id)) || {};
-    return {
-      range_id: r.id,
-      range_name: r.name,
-      daily_limit: rl.range || 0,
-      per_number_limit: rl.per || 0,
-      today_otps: st.c || 0,
-      paid: st.paid || 0,
-      zeroed: st.zeroed || 0,
-    };
+  const ranges=db.all('SELECT id,name FROM ranges ORDER BY name ASC').map(r=>{
+    const rangeRule=oneLimit('range','range_id=?',[r.id]);
+    const perRule=oneLimit('range_number','range_id=?',[r.id]);
+    const where='s.range_id=?', params=[r.id];
+    const today=countTodayUk(where,params);
+    return {range_id:r.id,range_name:r.name,daily_limit:rangeRule?Number(rangeRule.daily_limit||0):0,per_number_limit:perRule?Number(perRule.daily_limit||0):0,today_otps:today,paid:paidToday(where,params),zeroed:zeroedToday(where,params)};
   });
-
-  /* ---- CLIs: one grouped scan instead of 3 full scans per CLI ---- */
-  const cliStats = new Map();
-  db.all(`SELECT LOWER(s.cli) AS k, COUNT(*) c, ${PAY_GT} paid, ${PAY_EQ} zeroed
-            FROM sms_records s
-           WHERE COALESCE(s.is_test,0)=0 AND ${todaySql}
-             AND s.cli IS NOT NULL AND TRIM(s.cli) <> ''
-           GROUP BY LOWER(s.cli)`)
-    .forEach(r => cliStats.set(r.k, r));
-
-  /* Latest active rule wins, matching the old oneLimit() ORDER BY id DESC. */
-  const cliRules = new Map();
-  db.all("SELECT * FROM daily_limit_rules WHERE active=1 AND limit_type='cli' AND cli<>'' ORDER BY id ASC")
-    .forEach(r => cliRules.set(String(r.cli).toLowerCase(), Number(r.daily_limit || 0)));
-
-  const cliSet = new Set();
+  const cliSet=new Set();
   db.all("SELECT DISTINCT cli FROM sms_records WHERE cli IS NOT NULL AND cli<>'' ORDER BY cli ASC LIMIT 5000").forEach(x=>cliSet.add(String(x.cli)));
   db.all("SELECT cli FROM daily_limit_rules WHERE limit_type='cli' AND cli<>''").forEach(x=>cliSet.add(String(x.cli)));
-
   const clis=[...cliSet].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(cli=>{
-    const st = cliStats.get(String(cli).toLowerCase()) || {};
-    return {
-      cli,
-      daily_limit: cliRules.has(String(cli).toLowerCase()) ? cliRules.get(String(cli).toLowerCase()) : 0,
-      today_otps: st.c || 0,
-      paid: st.paid || 0,
-      zeroed: st.zeroed || 0,
-    };
+    const rule=oneLimit('cli','LOWER(cli)=LOWER(?)',[cli]);
+    const where='LOWER(s.cli)=LOWER(?)', params=[cli];
+    const today=countTodayUk(where,params);
+    return {cli,daily_limit:rule?Number(rule.daily_limit||0):0,today_otps:today,paid:paidToday(where,params),zeroed:zeroedToday(where,params)};
   });
   res.json({reporting_timezone:'Europe/London',ranges,clis});
 });
@@ -6053,7 +5919,7 @@ app.post('/api/panel-sharing/http/test', authRequired, requireRole('admin'), asy
   const method = (b.method || 'POST').toUpperCase();
   const authType = b.auth_type || 'none';
   const token = b.auth_token || '';
-  const headers = { 'User-Agent': 'Skyline-SMS-Webhook-Test/2.0' };
+  const headers = { 'User-Agent': 'AMS-SMS-Webhook-Test/2.0' };
 
   if (authType === 'bearer' && token) headers['Authorization'] = 'Bearer ' + token;
   else if (authType === 'header' && token) headers[b.auth_header || 'X-API-Key'] = token;
@@ -6064,7 +5930,7 @@ app.post('/api/panel-sharing/http/test', authRequired, requireRole('admin'), asy
   const sampleData = {
     cli: '67425',
     number: '+44712345678',
-    message: 'Skyline SMS connection test code: 123456',
+    message: 'AMS SMS connection test code: 123456',
     date: new Date().toISOString().slice(0, 10),
     time: new Date().toISOString().slice(11, 19),
     otp_code: '123456',
@@ -6160,7 +6026,7 @@ function forwardSharingOtpIfNeeded(savedId, smsRow){
         const method = (cfg.method || 'POST').toUpperCase();
         const authType = cfg.auth_type || 'none';
         const token = cfg.auth_token || '';
-        const headers = { 'User-Agent': 'Skyline-SMS-Forwarder/2.0' };
+        const headers = { 'User-Agent': 'AMS-SMS-Forwarder/2.0' };
 
         if (authType === 'bearer' && token) headers['Authorization'] = 'Bearer ' + token;
         else if (authType === 'header' && token) headers[cfg.auth_header || 'X-API-Key'] = token;
@@ -6257,7 +6123,7 @@ function getClientIp(req){
 }
 function carrierIpAllowed(config, ip){
   const allowed = String(config.carrier_ip||'').split(/[\s,;]+/).map(cleanIp).filter(Boolean);
-  try { // Skyline: Activity Integration entries (Provider Name + IP) bhi allowlist ka hissa
+  try { // AMS: Activity Integration entries (Provider Name + IP) bhi allowlist ka hissa
     for (const r of db.all('SELECT ip FROM activity_ips WHERE enabled=1')) allowed.push(cleanIp(r.ip));
   } catch(e) {}
   return allowed.includes(cleanIp(ip));
@@ -6268,8 +6134,8 @@ function cleanupWebhookLogs(days){
 }
 function getCarrierLockPassword(){
   let row = db.get('SELECT * FROM system_security ORDER BY id ASC LIMIT 1');
-  if(!row){ db.run("INSERT INTO system_security (admin_security_code,carrier_lock_password) VALUES ('Dawood','Dawood')"); row=db.get('SELECT * FROM system_security ORDER BY id ASC LIMIT 1'); }
-  return row.carrier_lock_password || process.env.CARRIER_LOCK_PASSWORD || 'Dawood';
+  if(!row){ db.run('INSERT INTO system_security (admin_security_code,carrier_lock_password) VALUES (?,?)',[process.env.ADMIN_SECURITY_CODE || require('crypto').randomBytes(24).toString('hex'),process.env.CARRIER_LOCK_PASSWORD || require('crypto').randomBytes(24).toString('hex')]); row=db.get('SELECT * FROM system_security ORDER BY id ASC LIMIT 1'); }
+  return row.carrier_lock_password || process.env.CARRIER_LOCK_PASSWORD || '';
 }
 function carrierLockPassword(){ return getCarrierLockPassword(); }
 function carrierLockOk(req){
@@ -6302,7 +6168,7 @@ function carrierRuntimeStatus(){
     last_error: last ? (last.error || '') : ''
   };
 }
-/* ===== Skyline: Activity Integration IPs (Provider Name + IP) ===== */
+/* ===== AMS: Activity Integration IPs (Provider Name + IP) ===== */
 app.get('/api/activity-ips', authRequired, requireRole('admin'), (req,res)=>{
   res.json(db.all('SELECT * FROM activity_ips ORDER BY id DESC'));
 });
@@ -6330,8 +6196,8 @@ app.delete('/api/activity-ips/:id', authRequired, requireRole('admin'), (req,res
   res.json({ ok: true });
 });
 
-/* ===== Skyline: Provider registry (relationship/payment/reporting) ===== */
-/* ===== Skyline P7: Provider Management (manual-only, accounting + partial settlements) ===== */
+/* ===== AMS: Provider registry (relationship/payment/reporting) ===== */
+/* ===== AMS P7: Provider Management (manual-only, accounting + partial settlements) ===== */
 app.get('/api/providers-info', authRequired, requireRole('admin'), (req,res)=>{
   const provs = db.all('SELECT * FROM ams_providers ORDER BY name COLLATE NOCASE');
   const names = new Set(provs.map(p => p.name));
@@ -6346,28 +6212,8 @@ app.get('/api/providers-info', authRequired, requireRole('admin'), (req,res)=>{
   const m3 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 3, 1)).toISOString().slice(0,10);
   /* Section 7: provider statistics follow the REAL link (ranges.provider_id),
      never the informational reference text. */
-  /* ---- PERF FIX (post-rebrand repair) ------------------------------------
-     The six payout windows used to run as six SEPARATE SUM() scans over
-     sms_records, each with the indexed column wrapped in strftime(), which
-     makes the predicate non-sargable and forces a full scan every time.
-     better-sqlite3 is SYNCHRONOUS, so each scan blocked the entire Node event
-     loop: opening the Providers page in the Management Panel stalled EVERY
-     other request on the server ("the whole application goes down"), and
-     recovered the moment the tab was closed. SMPP listing and provider
-     creation appeared "broken" for the same reason - they were starved.
-     Now: one pass, conditional SUMs, sargable half-open date bounds.
-     Results are identical to the previous queries.
-     ------------------------------------------------------------------- */
-  const dayStart = d => d + ' 00:00:00';
-  const nextDayStart = d => { const t = new Date(Date.UTC(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10))); t.setUTCDate(t.getUTCDate()+1); return t.toISOString().slice(0,10) + ' 00:00:00'; };
-  const monthStart = m => m + '-01 00:00:00';
-  const nextMonthStart = m => { const t = new Date(Date.UTC(+m.slice(0,4), +m.slice(5,7), 1)); return t.toISOString().slice(0,7) + '-01 00:00:00'; };
-  const W0 = dayStart(wkStart),  W1 = nextDayStart(dToday);   /* [wkStart .. dToday]    */
-  const P0 = dayStart(pwStart),  P1 = nextDayStart(wkStart);  /* [pwStart .. wkStart]   */
-  const M0 = monthStart(mThis),  M1 = nextMonthStart(mThis);  /* this month             */
-  const V0 = monthStart(mPrev),  V1 = M0;                     /* previous month         */
-  const T0 = dayStart(m3);                                    /* >= m3, excluding mThis */
-  const PAY = "CAST(COALESCE(s.payout_amount,'0') AS REAL)";
+  const sumRange = (sel, extra="", params=[]) => db.get(`SELECT COALESCE(SUM(CAST(s.payout_amount AS REAL)),0) p FROM sms_records s JOIN ranges r ON r.id=s.range_id WHERE r.provider_id=? ${extra}`, [sel, ...params])?.p || 0;
+  const cntRange = (sel, extra="", params=[]) => db.get(`SELECT COUNT(*) c FROM sms_records s JOIN ranges r ON r.id=s.range_id WHERE r.provider_id=? ${extra}`, [sel, ...params])?.c || 0;
   const out = [];
   for (const p of provs) {
     let conns = { api: 0, smpp: 0, ips: [] };
@@ -6383,24 +6229,13 @@ app.get('/api/providers-info', authRequired, requireRole('admin'), (req,res)=>{
       stats.ranges = db.get("SELECT COUNT(*) c FROM ranges WHERE provider_id=? AND COALESCE(deleted_at,'')=''", [p.id])?.c || 0;
       stats.numbers = db.get('SELECT COUNT(*) c FROM numbers n JOIN ranges r ON r.id=n.range_id WHERE r.provider_id=?', [p.id])?.c || 0;
       /* Section 7: keyed by the real provider id (registry), not by name text. */
-      const agg = db.get(
-        `SELECT COUNT(*) AS msgs,
-                COALESCE(SUM(${PAY}),0) AS lifetime,
-                COALESCE(SUM(CASE WHEN s.received_at >= ? AND s.received_at < ? THEN ${PAY} ELSE 0 END),0) AS wk,
-                COALESCE(SUM(CASE WHEN s.received_at >= ? AND s.received_at < ? THEN ${PAY} ELSE 0 END),0) AS pw,
-                COALESCE(SUM(CASE WHEN s.received_at >= ? AND s.received_at < ? THEN ${PAY} ELSE 0 END),0) AS mm,
-                COALESCE(SUM(CASE WHEN s.received_at >= ? AND s.received_at < ? THEN ${PAY} ELSE 0 END),0) AS pm,
-                COALESCE(SUM(CASE WHEN s.received_at >= ? AND NOT (s.received_at >= ? AND s.received_at < ?) THEN ${PAY} ELSE 0 END),0) AS p3
-           FROM sms_records s JOIN ranges r ON r.id = s.range_id
-          WHERE r.provider_id = ?`,
-        [W0, W1, P0, P1, M0, M1, V0, V1, T0, M0, M1, p.id]) || {};
-      totals.msgs = Number(agg.msgs) || 0;
-      totals.payout_lifetime   = normalizeDecimalString(agg.lifetime) || '0';
-      totals.payout_week       = normalizeDecimalString(agg.wk) || '0';
-      totals.payout_prev_week  = normalizeDecimalString(agg.pw) || '0';
-      totals.payout_month      = normalizeDecimalString(agg.mm) || '0';
-      totals.payout_prev_month = normalizeDecimalString(agg.pm) || '0';
-      totals.payout_prev_3m    = normalizeDecimalString(agg.p3) || '0';
+      totals.msgs = cntRange(p.id);
+      totals.payout_lifetime = normalizeDecimalString(sumRange(p.id)) || '0';
+      totals.payout_week = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m-%d', s.received_at) BETWEEN ? AND ?", [wkStart, dToday])) || '0';
+      totals.payout_prev_week = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m-%d', s.received_at) BETWEEN ? AND ?", [pwStart, wkStart])) || '0';
+      totals.payout_month = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m', s.received_at) = ?", [mThis])) || '0';
+      totals.payout_prev_month = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m', s.received_at) = ?", [mPrev])) || '0';
+      totals.payout_prev_3m = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m-%d', s.received_at) >= ? AND strftime('%Y-%m', s.received_at) != ?", [m3, mThis])) || '0';
       totals.paid_total = normalizeDecimalString(db.get('SELECT COALESCE(SUM(CAST(amount AS REAL)),0) p FROM provider_payments WHERE provider_name=?', [p.name])?.p || 0) || '0';
       const unpaid = Math.max(0, (parseFloat(totals.payout_lifetime) || 0) - (parseFloat(totals.paid_total) || 0));
       totals.payout_unpaid = normalizeDecimalString(unpaid) || '0';
@@ -6839,7 +6674,7 @@ function processIncomingSmsPayload(req, payload, sourceIp='', opts={}) {
     if (limitStatus.exceeded) { smsPayoutRate = '0'; limitReason = limitStatus.reason; }
   }
     /* Provider rule: if the provider explicitly reports payout 0, the SMS is
-     non-payable and Skyline SMS must show 0 regardless of the configured rate card.
+     non-payable and AMS SMS must show 0 regardless of the configured rate card.
      Any other provider payout (or none at all) is IGNORED for display - the
      panel always calculates payout from its own rate cards. */
   if (opts.forceZeroPayout) { smsPayoutRate = '0'; if (!limitReason) limitReason = 'provider_payout_zero'; }
@@ -6915,7 +6750,7 @@ app.get('/api/incoming-sms', smsIngestLimit, (req, res) => {
   const hasPayload = Object.keys(req.query || {}).some(k => ['number','to','To','recipient','destination','msisdn','receiver','called','message','text','body','Body','sms','content','msg'].includes(k));
   if (!hasPayload) {
     const settings = getCarrierSettings();
-    return res.json({ ok: true, service: 'Skyline SMS incoming SMS endpoint', method: 'POST preferred', path: '/api/incoming-sms', integration_status: settings.integration_status, accepted_content_types: ['application/json','application/x-www-form-urlencoded','multipart/form-data'] });
+    return res.json({ ok: true, service: 'Galaxy SMS incoming SMS endpoint', method: 'POST preferred', path: '/api/incoming-sms', integration_status: settings.integration_status, accepted_content_types: ['application/json','application/x-www-form-urlencoded','multipart/form-data'] });
   }
   return handleCarrierIncoming(req, res, normalizeIncomingPayload(req));
 });
@@ -7124,8 +6959,8 @@ app.get('/api/api-integration-logs', authRequired, requireRole('admin'), (req,re
 
 function getAdminSecurityCode(){
   let row = db.get('SELECT * FROM system_security ORDER BY id ASC LIMIT 1');
-  if(!row){ db.run("INSERT INTO system_security (admin_security_code) VALUES ('Dawood')"); row=db.get('SELECT * FROM system_security ORDER BY id ASC LIMIT 1'); }
-  return row.admin_security_code || 'Dawood';
+  if(!row){ db.run('INSERT INTO system_security (admin_security_code) VALUES (?)',[process.env.ADMIN_SECURITY_CODE || require('crypto').randomBytes(24).toString('hex')]); row=db.get('SELECT * FROM system_security ORDER BY id ASC LIMIT 1'); }
+  return row.admin_security_code || process.env.ADMIN_SECURITY_CODE || '';
 }
 
 
@@ -7136,17 +6971,17 @@ app.get('/api/backups', authRequired, requireRole('admin'), (req, res) => {
     res.json({ backups: backup.listBackups(db), backup_dir: backup.getBackupDir(db), db_file: db.getDbFile ? db.getDbFile() : '' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.post('/api/backups/create', authRequired, requireRole('admin'), async (req, res) => {
+app.post('/api/backups/create', authRequired, requireRole('admin'), (req, res) => {
   try {
-    const b = await backup.createBackup(db, 'manual');
+    const b = backup.createBackup(db, 'manual');
     backup.cleanupOldBackups(db);
     logAction(req, 'create_database_backup', 'backup', b.file);
     res.json({ ok: true, backup: b });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.get('/api/backups/latest/download', authRequired, requireRole('admin'), async (req, res) => {
+app.get('/api/backups/latest/download', authRequired, requireRole('admin'), (req, res) => {
   try {
-    const latest = backup.getLatestBackup(db) || await backup.createBackup(db, 'manual-latest');
+    const latest = backup.getLatestBackup(db) || backup.createBackup(db, 'manual-latest');
     const filePath = backup.backupPath(db, latest.file);
     res.download(filePath, latest.file);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -7157,9 +6992,9 @@ app.get('/api/backups/:file/download', authRequired, requireRole('admin'), (req,
     res.download(filePath, req.params.file);
   } catch (e) { res.status(404).json({ error: e.message }); }
 });
-app.post('/api/backups/:file/restore', authRequired, requireRole('admin'), async (req, res) => {
+app.post('/api/backups/:file/restore', authRequired, requireRole('admin'), (req, res) => {
   try {
-    const result = await backup.restoreBackup(db, req.params.file);
+    const result = backup.restoreBackup(db, req.params.file);
     createTables();
     seed();
     syncRangeProviderLinks();
@@ -7295,20 +7130,10 @@ const PORT = process.env.PORT || 4000;
   seed();
   /* Section 7: authoritative real-provider links (idempotent; exact matches only). */
   syncRangeProviderLinks();
-  // PHASE-2 optional process split: SKYLINE_ROLE=api runs web-only (no timers);
-  // SKYLINE_ROLE=sync runs only timers (2nd process). Default (unset/'all') = everything.
-  // The historical AMS_ROLE / ALMADA_ROLE names are still read, in that order,
-  // so an existing deployment keeps its role without editing .env.
-  /* POST-REBRAND FIX: the rebrand commit (3dfeae3) renamed the process-split env
-     var to SKYLINE_ROLE but dropped POWERX_ROLE from the read-chain. deploy/
-     ecosystem.config.cjs still starts powerx-api with POWERX_ROLE=api and
-     powerx-sync with POWERX_ROLE=sync, so BOTH processes resolved to 'all':
-     both called app.listen() -> EADDRINUSE -> PM2 crash loop, and both called
-     smppService.start() (double bind, doubled counters, duplicate timers).
-     POWERX_ROLE is restored here as a legacy fallback - zero risk, and it makes
-     the existing ecosystem.config.cjs work again without editing the VPS. */
-  const AMS_ROLE = (process.env.SKYLINE_ROLE || process.env.AMS_ROLE || process.env.ALMADA_ROLE || process.env.POWERX_ROLE || 'all').toLowerCase();
-  // PHASE-3: optional FTS5 trigram index over SMS messages (SKYLINE_FTS=1).
+  // PHASE-2 optional process split: AMS_ROLE=api runs web-only (no timers);
+  // AMS_ROLE=sync runs only timers (2nd process). Default (unset/'all') = everything.
+  const AMS_ROLE = (process.env.AMS_ROLE || process.env.ALMADA_ROLE || 'all').toLowerCase();
+  // PHASE-3: optional FTS5 trigram index over SMS messages (AMS_FTS=1).
   // Default off = zero change. Indexes new SMS via triggers; history backfills
   // in background; /api/sms/paged search switches to the index once ready.
   if (smsFts.enabled() && ['all', 'api'].includes(AMS_ROLE)) {
@@ -7329,15 +7154,15 @@ const PORT = process.env.PORT || 4000;
       });
     } catch (e) { console.warn('[SYNC] start failed:', e.message); }
   } else {
-    console.log('• SKYLINE_ROLE=' + AMS_ROLE + ': backup + provider-sync timers skipped (run a second process with SKYLINE_ROLE=sync)');
+    console.log('• AMS_ROLE=' + AMS_ROLE + ': backup + provider-sync timers skipped (run a second process with AMS_ROLE=sync)');
   }
   // SMPP channel. Independent of the HTTP integrations above: if it cannot
   // start (missing library, bad config, port in use) it reports the problem
   // and the rest of the panel carries on exactly as before.
-  // SKYLINE_ROLE=sync (timers-only process) skips SMPP + HTTP listen — the api
+  // AMS_ROLE=sync (timers-only process) skips SMPP + HTTP listen — the api
   // process owns those ports. Without this, split mode crash-loops on EADDRINUSE.
   if (AMS_ROLE === 'sync') {
-    console.log('• SKYLINE_ROLE=sync: timers-only process — HTTP listen + SMPP skipped (api process owns them)');
+    console.log('• AMS_ROLE=sync: timers-only process — HTTP listen + SMPP skipped (api process owns them)');
     return;
   }
   try {
@@ -7353,9 +7178,7 @@ const PORT = process.env.PORT || 4000;
     console.log('• Payment ledger startup backfill disabled (new OTPs are recorded normally)');
   }
   console.log('• API Integration poller disabled (HTTP incoming only)');
-  try { blockMonitor.startLagMonitor(console); } catch (e) {}
-
-app.listen(PORT, () => console.log(`\n✅ Skyline SMS backend running: http://localhost:${PORT}\n`));
+  app.listen(PORT, () => console.log(`\n✅ Galaxy SMS backend running: http://localhost:${PORT}\n`));
 
   /* ===== P19k #5: one-time startup stats reconciliation =====
      Owner report: purane deletes (pre-fix code) ke baad dashboard (SMS This Month /

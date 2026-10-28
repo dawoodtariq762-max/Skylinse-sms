@@ -1,5 +1,5 @@
 /**
- * Skyline SMS — Panel Branding token catalogue.
+ * AMS SMS — Panel Branding token catalogue.
  *
  * Split out of branding.js because the catalogue is data, not logic.
  *
@@ -52,7 +52,7 @@ const TOKENS = [
   { k: 'general.contentBg',     g: 'General Branding', l: 'Main content background',
     w: 'The area to the right of the sidebar where page content sits.', hint: '#f4f6fa' },
   { k: 'general.heading',       g: 'General Branding', l: 'Headings',
-    w: 'Page titles and section headings (h1 - h4) across the panels.', hint: '#191a1f' },
+    w: 'Page titles and section headings (h1 - h4) across the panels.', hint: '#0f172a' },
   { k: 'general.text',          g: 'General Branding', l: 'Body text',
     w: 'Default paragraph and label text throughout the application.', hint: '#1e293b' },
   { k: 'general.textSecondary', g: 'General Branding', l: 'Secondary text',
@@ -76,11 +76,11 @@ const TOKENS = [
   { k: 'login.cardBg',        g: 'Login Page', l: 'Card background',
     w: 'The panel holding the username, password and CAPTCHA fields.', hint: '#ffffff' },
   { k: 'login.cardBorder',    g: 'Login Page', l: 'Card border',
-    w: 'The outline around the login card.', hint: '#e4e6ea' },
+    w: 'The outline around the login card.', hint: '#e2e8f0' },
   { k: 'login.cardShadow',    g: 'Login Page', l: 'Card shadow',
     w: 'The drop shadow that lifts the card off the background.', hint: '#020a20' },
   { k: 'login.heading',       g: 'Login Page', l: 'Heading',
-    w: 'The brand title shown above the form fields.', hint: '#191a1f' },
+    w: 'The brand title shown above the form fields.', hint: '#0f172a' },
   { k: 'login.sub',           g: 'Login Page', l: 'Description text',
     w: 'The tagline or subtitle under the heading.', hint: '#475569' },
   { k: 'login.inputBg',       g: 'Login Page', l: 'Input background',
@@ -88,7 +88,7 @@ const TOKENS = [
   { k: 'login.inputBorder',   g: 'Login Page', l: 'Input border',
     w: 'The outline around each login field.', hint: '#cbd5e1' },
   { k: 'login.inputText',     g: 'Login Page', l: 'Input text',
-    w: 'The text typed into the login fields.', hint: '#191a1f' },
+    w: 'The text typed into the login fields.', hint: '#0f172a' },
   { k: 'login.placeholder',   g: 'Login Page', l: 'Placeholder text',
     w: 'The greyed prompt shown while a field is empty.', hint: '#94a3b8' },
   { k: 'login.inputFocus',    g: 'Login Page', l: 'Input focus ring',
@@ -114,7 +114,7 @@ const TOKENS = [
   { k: 'header.bg',   g: 'Header and Top Toolbar', l: 'Header background',
     w: 'The top bar holding the brand, clock, theme switch and user menu.', hint: '#ffffff' },
   { k: 'header.text', g: 'Header and Top Toolbar', l: 'Header text and icons',
-    w: 'The clock, user name and icon colour inside the top bar.', hint: '#191a1f' },
+    w: 'The clock, user name and icon colour inside the top bar.', hint: '#0f172a' },
 
   /* ---------------------------------------------------------------- *
    * 4. Sidebar                                                       *
@@ -170,7 +170,7 @@ const TOKENS = [
   { k: 'form.inputBorder', g: 'Forms and Inputs', l: 'Input border',
     w: 'The outline around each field.', hint: '#cbd5e1' },
   { k: 'form.inputText',   g: 'Forms and Inputs', l: 'Input text',
-    w: 'The value typed or selected in a field.', hint: '#191a1f' },
+    w: 'The value typed or selected in a field.', hint: '#0f172a' },
   { k: 'form.placeholder', g: 'Forms and Inputs', l: 'Placeholder text',
     w: 'The greyed prompt shown while a field is empty.', hint: '#94a3b8' },
   { k: 'form.focus',       g: 'Forms and Inputs', l: 'Focus border and glow',
@@ -188,7 +188,7 @@ const TOKENS = [
   { k: 'btn.primaryHover',  g: 'Buttons', l: 'Primary hover',
     w: 'The primary button while the pointer is over it.', hint: '#1e40af' },
   { k: 'btn.secondaryBg',   g: 'Buttons', l: 'Secondary background',
-    w: 'Softer actions such as Cancel, Back or Clear.', hint: '#e4e6ea' },
+    w: 'Softer actions such as Cancel, Back or Clear.', hint: '#e2e8f0' },
   { k: 'btn.secondaryText', g: 'Buttons', l: 'Secondary text',
     w: 'The label on a secondary or ghost button.', hint: '#1e293b' },
   { k: 'btn.successBg',     g: 'Buttons', l: 'Success background',

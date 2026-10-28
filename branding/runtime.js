@@ -1,1 +1,1 @@
-window.SKYLINE_BRAND = window.SKYLINE_BRAND || { panelName: "Skyline SMS", assets: {}, tabTitle: "Skyline SMS" };
+window.AMS_BRAND = window.AMS_BRAND || { panelName: "Galaxy SMS", assets: {}, tabTitle: "Galaxy SMS" };

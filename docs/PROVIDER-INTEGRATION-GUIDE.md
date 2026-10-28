@@ -1,57 +1,57 @@
-# Skyline SMS — Provider Integration Guide
+# Galaxy SMS — Provider Integration Guide
 
 **Audience:** the technical team of a carrier, SMS aggregator or SMS provider that
-needs to exchange traffic with an Skyline SMS installation.
+needs to exchange traffic with an Galaxy SMS installation.
 
-**Purpose:** this document explains the three integration methods Skyline SMS
+**Purpose:** this document explains the three integration methods Galaxy SMS
 supports, the parameters each one needs, the network access each one requires, and
 how to test and troubleshoot the connection. It is written so that it can be
-followed without access to the Skyline SMS source code or to the administration
+followed without access to the Galaxy SMS source code or to the administration
 panels.
 
-**Status of this document:** read together with the Skyline SMS administrator. The
+**Status of this document:** read together with the Galaxy SMS administrator. The
 fields, endpoints and defaults below describe the capabilities implemented in the
 current version. Anything that is **not** implemented is labelled
 *Not currently supported* or *Not configurable* rather than presented as
-available. If your requirement is not described here, raise it with the Skyline SMS
+available. If your requirement is not described here, raise it with the Galaxy SMS
 administrator before you build against it.
 
 ---
 
 ## 1. Introduction
 
-Skyline SMS receives inbound SMS (including OTP / one-time-password traffic) through
+Galaxy SMS receives inbound SMS (including OTP / one-time-password traffic) through
 a provider and records each message against the virtual number it was sent to.
 There are three ways to deliver that traffic:
 
 | # | Method | Who initiates the connection | Direction of traffic | Typical use |
 |---|--------|------------------------------|----------------------|-------------|
-| 1 | **HTTP incoming** (callback / push) | The provider | Provider → Skyline SMS | The provider's platform pushes each inbound SMS to a URL on the Skyline SMS server. |
-| 2 | **SMPP** (persistent TCP session) | Either side — agreed in advance | Provider ⇄ Skyline SMS | A long-lived SMPP bind. Skyline SMS can be the SMPP **client** (it binds out to the provider) or the SMPP **server** (the provider binds in to it). |
-| 3 | **API provider sync** (pull) | Skyline SMS | Skyline SMS → provider API → Skyline SMS | Skyline SMS polls the provider's HTTP API on a schedule and imports new records. |
+| 1 | **HTTP incoming** (callback / push) | The provider | Provider → Galaxy SMS | The provider's platform pushes each inbound SMS to a URL on the Galaxy SMS server. |
+| 2 | **SMPP** (persistent TCP session) | Either side — agreed in advance | Provider ⇄ Galaxy SMS | A long-lived SMPP bind. Galaxy SMS can be the SMPP **client** (it binds out to the provider) or the SMPP **server** (the provider binds in to it). |
+| 3 | **API provider sync** (pull) | Galaxy SMS | Galaxy SMS → provider API → Galaxy SMS | Galaxy SMS polls the provider's HTTP API on a schedule and imports new records. |
 
 Key distinction:
 
 * **HTTP incoming** is a *push* — the provider's system makes the HTTP request.
 * **SMPP** is a *session* — a TCP connection is established once and messages flow
   over it in both directions for as long as the session is bound.
-* **API provider sync** is a *pull* — **Skyline SMS calls the provider's API**; the
-  provider does not call Skyline SMS. It is **not** a webhook and it is **not** the
+* **API provider sync** is a *pull* — **Galaxy SMS calls the provider's API**; the
+  provider does not call Galaxy SMS. It is **not** a webhook and it is **not** the
   same thing as HTTP incoming.
 
 All three end in the same place: each message is validated, de-duplicated and
 written into the same SMS records, where the same number allocation, rate-card,
 payout and daily-limit rules apply. The method that is actually available to you,
-and the settings that can be changed, depend on what the Skyline SMS administrator
+and the settings that can be changed, depend on what the Galaxy SMS administrator
 has enabled in the installed version.
 
 ### 1.1 What the two sides must exchange
 
-| Skyline SMS must give the provider | The provider must give Skyline SMS |
+| Galaxy SMS must give the provider | The provider must give Galaxy SMS |
 |---|---|
 | The publicly reachable callback URL (HTTP incoming) | The provider's source / callback IP addresses (HTTP incoming) |
 | The SMPP server host and listening port (SMPP Server Mode) | The SMPP server host, port, system ID and password (SMPP Client Mode) |
-| The Skyline SMS public source IP (SMPP Client Mode, if the provider allowlists) | The agreed SMPP version, bind type, encoding and throughput limits |
+| The Galaxy SMS public source IP (SMPP Client Mode, if the provider allowlists) | The agreed SMPP version, bind type, encoding and throughput limits |
 | The assigned system ID and password (SMPP Server Mode) | API base URL, authentication scheme, response format and field names (API sync) |
 | The list of numbers / ranges in scope | A technical contact for troubleshooting |
 
@@ -65,20 +65,20 @@ confirm receipt out of band.
 
 ### 2.1 How it works, step by step
 
-1. The Skyline SMS administrator enables **HTTP Integration** and adds the
+1. The Galaxy SMS administrator enables **HTTP Integration** and adds the
    provider's source IP addresses to the **Allowed Carrier IP List**.
 2. The administrator gives the provider the **callback URL**.
 3. An SMS arrives at the provider for one of the numbers in scope.
 4. The provider issues an HTTP request to the callback URL containing the
    recipient number, the sender (CLI) and the message text.
-5. Skyline SMS checks that the integration is enabled and that the request's source
+5. Galaxy SMS checks that the integration is enabled and that the request's source
    IP is on the allowlist. If either check fails it returns **HTTP 403** and stores
    nothing.
-6. Skyline SMS looks the recipient number up, applies the allocation, rate-card and
+6. Galaxy SMS looks the recipient number up, applies the allocation, rate-card and
    daily-limit rules, and writes the SMS record.
-7. Skyline SMS answers **HTTP 200** with a JSON body.
+7. Galaxy SMS answers **HTTP 200** with a JSON body.
 8. If the provider sends the same message again with the same unique message id,
-   Skyline SMS recognises it as a duplicate and answers **200** with
+   Galaxy SMS recognises it as a duplicate and answers **200** with
    `"duplicate": true` without creating a second record.
 
 ### 2.2 Endpoint
@@ -86,7 +86,7 @@ confirm receipt out of band.
 | Item | Value |
 |---|---|
 | Path | `/api/incoming-sms` |
-| Full URL | `https://<Skyline-HOST>/api/incoming-sms` — the host is supplied by the Skyline SMS administrator |
+| Full URL | `https://<AMS-HOST>/api/incoming-sms` — the host is supplied by the Galaxy SMS administrator |
 | Methods | **POST** (required for production). **GET** is accepted for connectivity tests and for carriers that can only probe a URL with a query string. |
 | Accepted content types | `application/json`, `application/x-www-form-urlencoded`, `multipart/form-data` |
 | Authentication | **None implemented.** The endpoint has no token, key or signature check. Access is controlled by the source-IP allowlist and by the integration being enabled. |
@@ -108,11 +108,11 @@ and non-empty wins. Matching is on the exact spelling shown.
 | Original timestamp | `date`, `Date`, `datetime`, `date_time`, `timestamp`, `time`, `dt`, `api_dt`, `received_at`, `sent_at`, `created_at` | No — **strongly recommended** |
 | Unique message id (used for de-duplication) | `sms_id`, `id`, `message_id`, `msg_id`, `msgid`, `api_message_id`, `unique_id`, `uid` | No — **strongly recommended** |
 
-**Number format.** Send the recipient in the same form it was allocated in. Skyline SMS normalises a leading `+`, leading zeros and common separators before matching,
+**Number format.** Send the recipient in the same form it was allocated in. Galaxy SMS normalises a leading `+`, leading zeros and common separators before matching,
 so `+447700900123`, `447700900123` and `00447700900123` are treated as the same
 number. Do not add spaces, extensions or country-name prefixes.
 
-**Message format.** UTF-8 text. Skyline SMS extracts OTP codes from the text
+**Message format.** UTF-8 text. Galaxy SMS extracts OTP codes from the text
 automatically; send the raw message body, not a pre-parsed code.
 
 **Timestamp format.** Accepted: `YYYY-MM-DD HH:MM:SS` (assumed **UTC** if no zone
@@ -127,19 +127,19 @@ which can place a delayed or replayed message in the wrong reporting day.
 | `200` | `{"ok":true,"id":123,"received_at":"2026-01-31 12:00:00","matched_number":"447700900123","sender_type":"shortcode","otp_detected":true}` | Accepted and stored. Do not resend. |
 | `200` | `{"ok":true,"duplicate":true,"id":123,"provider_msg_id":"abc-1"}` | Already received — accepted, not stored twice. Stop retrying this message. |
 | `400` | `{"error":"number/to field required"}` | The recipient field is missing. Fix the payload; do not retry unchanged. |
-| `403` | `{"error":"Carrier integration is disabled"}` | The integration is switched off. Contact the Skyline SMS administrator. |
+| `403` | `{"error":"Carrier integration is disabled"}` | The integration is switched off. Contact the Galaxy SMS administrator. |
 | `403` | `{"error":"IP not allowed","ip":"203.0.113.10"}` | The request came from an IP that is not on the allowlist. Give the administrator the IP shown in the response. |
-| `404` | `{"error":"Number not found/allocated in system","number":"447700900123"}` | The recipient number is not provisioned or not allocated in Skyline SMS. Check the number list; retrying will not help. |
+| `404` | `{"error":"Number not found/allocated in system","number":"447700900123"}` | The recipient number is not provisioned or not allocated in Galaxy SMS. Check the number list; retrying will not help. |
 | `429` | rate-limit response | Slow down and retry with backoff. |
 
 ### 2.5 Retry and duplicate behaviour
 
-* Skyline SMS never initiates the HTTP request, so it has no retry schedule of its
+* Galaxy SMS never initiates the HTTP request, so it has no retry schedule of its
   own. Retry policy belongs to the provider.
 * Retries are safe **only if** a unique `id` / `message_id` field is supplied.
-  Skyline SMS records that id and answers `200 duplicate` for repeats, so a retry
+  Galaxy SMS records that id and answers `200 duplicate` for repeats, so a retry
   after a timeout is never paid for or reported twice.
-* If no unique id is supplied, Skyline SMS cannot tell a retry from a genuinely
+* If no unique id is supplied, Galaxy SMS cannot tell a retry from a genuinely
   repeated message, and the message may be recorded twice. **Always send a stable
   unique id.**
 * Recommended provider retry policy: retry `5xx` and network timeouts with
@@ -148,7 +148,7 @@ which can place a delayed or replayed message in the wrong reporting day.
 
 ### 2.6 How the provider should test
 
-1. Ask the administrator for a test number that is provisioned in Skyline SMS.
+1. Ask the administrator for a test number that is provisioned in Galaxy SMS.
 2. Send one message to that number from an allowlisted source IP.
 3. Confirm `HTTP 200` and note the `id` in the response.
 4. Send the **same** message again with the **same** unique id. Confirm
@@ -158,7 +158,7 @@ which can place a delayed or replayed message in the wrong reporting day.
    `IP not allowed`.
 7. Ask the administrator to confirm the records appear in the SMS report.
 
-### 2.7 Information Skyline SMS needs from the provider
+### 2.7 Information Galaxy SMS needs from the provider
 
 * Source IP address(es) that will call the callback (IPv4 and IPv6 if used).
 * The exact payload format (JSON / form-encoded) and the field names you will send.
@@ -169,19 +169,19 @@ which can place a delayed or replayed message in the wrong reporting day.
 
 ### 2.8 Ports, firewalls and TLS
 
-For HTTP incoming delivery the **provider must be able to reach** the Skyline SMS
+For HTTP incoming delivery the **provider must be able to reach** the Galaxy SMS
 callback URL. The path is:
 
 ```
-Provider platform  →  Internet  →  [cloud firewall]  →  [VPS firewall]  →  [reverse proxy / web server]  →  Skyline SMS
+Provider platform  →  Internet  →  [cloud firewall]  →  [VPS firewall]  →  [reverse proxy / web server]  →  Galaxy SMS
 ```
 
 | Layer | What must allow the traffic |
 |---|---|
 | Hosting provider cloud firewall | Inbound TCP **443** (HTTPS) to the VPS |
 | VPS / OS firewall (ufw, iptables, nftables) | Inbound TCP **443** |
-| Reverse proxy (Nginx, Caddy, …) | A TLS certificate and a `proxy_pass` to the Skyline SMS application port |
-| Skyline SMS application | Integration **enabled** and the provider's IP on the **Allowed Carrier IP List** |
+| Reverse proxy (Nginx, Caddy, …) | A TLS certificate and a `proxy_pass` to the Galaxy SMS application port |
+| Galaxy SMS application | Integration **enabled** and the provider's IP on the **Allowed Carrier IP List** |
 
 * **HTTPS (TCP 443) is required for production.** Plain HTTP on TCP 80 may be used
   only for a short controlled test.
@@ -191,10 +191,10 @@ Provider platform  →  Internet  →  [cloud firewall]  →  [VPS firewall]  �
 * **Do not open ports that are not needed.** In particular the application port,
   database ports and any administrative interface must stay closed to the
   provider's network.
-* **The Skyline SMS source-IP allowlist is not the VPS firewall.** Adding an IP to
+* **The Galaxy SMS source-IP allowlist is not the VPS firewall.** Adding an IP to
   the allowlist in the panel does **not** open a firewall port, and opening a
   firewall port does **not** add the IP to the allowlist. Both are required.
-* Behind a reverse proxy, Skyline SMS reads the client IP from
+* Behind a reverse proxy, Galaxy SMS reads the client IP from
   `CF-Connecting-IP`, then `X-Real-IP`, then the first entry of
   `X-Forwarded-For`, then the socket address. Make sure the proxy forwards the
   real client IP, otherwise the allowlist check will reject valid traffic.
@@ -204,13 +204,13 @@ Provider platform  →  Internet  →  [cloud firewall]  →  [VPS firewall]  �
 ## 3. HTTP Example Request and Response
 
 All values below are **placeholders**. Replace them with the values supplied by the
-Skyline SMS administrator.
+Galaxy SMS administrator.
 
 ### 3.1 JSON (recommended)
 
 ```http
 POST /api/incoming-sms HTTP/1.1
-Host: sms.example.com                     <-- Skyline-HOST placeholder
+Host: sms.example.com                     <-- AMS-HOST placeholder
 Content-Type: application/json
 Accept: application/json
 
@@ -285,7 +285,7 @@ Host: sms.example.com
 ```bash
 curl -i -X POST "https://sms.example.com/api/incoming-sms" \
      -H "Content-Type: application/json" \
-     -d '{"id":"PROV-MSG-TEST-1","number":"447700900123","cli":"TESTSENDER","message":"Skyline SMS integration test","date":"2026-01-31 12:00:00"}'
+     -d '{"id":"PROV-MSG-TEST-1","number":"447700900123","cli":"TESTSENDER","message":"Galaxy SMS integration test","date":"2026-01-31 12:00:00"}'
 ```
 
 > A `GET` to `/api/incoming-sms` **without** any of the message fields returns a
@@ -299,48 +299,48 @@ curl -i -X POST "https://sms.example.com/api/incoming-sms" \
 SMPP (Short Message Peer-to-Peer) is a binary protocol over a **persistent TCP
 connection**. One side listens (the *server* / SMSC role), the other connects and
 binds (the *client* / ESME role). Which side plays which role is agreed before the
-connection is built, and Skyline SMS supports both.
+connection is built, and Galaxy SMS supports both.
 
-### 4.1 SMPP Client Mode — Skyline SMS connects to the provider
+### 4.1 SMPP Client Mode — Galaxy SMS connects to the provider
 
 ```
-Skyline SMS (ESME, client)   --outbound TCP-->   Provider SMPP server (SMSC)
+Galaxy SMS (ESME, client)   --outbound TCP-->   Provider SMPP server (SMSC)
    host, port, system_id, password  ---- bind_transceiver / receiver / transmitter ---->
 ```
 
-* **Skyline SMS initiates the TCP connection** to the provider's SMPP server.
+* **Galaxy SMS initiates the TCP connection** to the provider's SMPP server.
 * The provider supplies the **host** (hostname or IP), the **port**, the
   **system ID** and the **password**, through a secure channel.
-* **The provider's server port is the destination port of Skyline SMS's outbound
-  connection.** It is not a port that Skyline SMS listens on.
+* **The provider's server port is the destination port of Galaxy SMS's outbound
+  connection.** It is not a port that Galaxy SMS listens on.
 * If the provider's SMPP server filters by source IP, the provider must allow
-  the **public IP of the Skyline SMS VPS**. The administrator supplies it.
-* Skyline SMS requires **outbound** network access from the VPS to the provider's
-  host and port. No inbound firewall rule is needed on the Skyline SMS side.
+  the **public IP of the Galaxy SMS VPS**. The administrator supplies it.
+* Galaxy SMS requires **outbound** network access from the VPS to the provider's
+  host and port. No inbound firewall rule is needed on the Galaxy SMS side.
 * The provider must confirm the parameters in §4.4 that both sides support.
 
-### 4.2 SMPP Server Mode — the provider connects to Skyline SMS
+### 4.2 SMPP Server Mode — the provider connects to Galaxy SMS
 
 ```
-Provider (ESME, client)   --inbound TCP-->   Skyline SMS (SMSC, listening)
+Provider (ESME, client)   --inbound TCP-->   Galaxy SMS (SMSC, listening)
    system_id, password  ---- bind_transceiver / receiver / transmitter ---->
 ```
 
-* **Skyline SMS listens** on a configured TCP port; the provider connects to it.
-* Skyline SMS must have a reachable public IP address or hostname.
+* **Galaxy SMS listens** on a configured TCP port; the provider connects to it.
+* Galaxy SMS must have a reachable public IP address or hostname.
 * The administrator configures the **listening port** and gives the provider the
   **server IP/hostname**, the **listening port**, the **system ID** and the
   **password**, all through a secure channel.
-* **The Skyline SMS VPS firewall and any cloud firewall must permit inbound TCP on
+* **The Galaxy SMS VPS firewall and any cloud firewall must permit inbound TCP on
   that listening port.** Restrict the source to the provider's IP range where
   possible.
 * The listening service must be running and bound to the correct interface.
-* The provider may need to allow the Skyline SMS server IP/port on its own
+* The provider may need to allow the Galaxy SMS server IP/port on its own
   egress controls.
-* Do not confuse the provider's outbound destination port with the Skyline SMS
+* Do not confuse the provider's outbound destination port with the Galaxy SMS
   server's listening port: in Server Mode they are the **same** port, and it is
-  opened **inbound** on the Skyline SMS side.
-* Skyline SMS can also restrict, per connection, which peer IP addresses may bind
+  opened **inbound** on the Galaxy SMS side.
+* Galaxy SMS can also restrict, per connection, which peer IP addresses may bind
   (`allowed_ips`; empty means any). The provider should send its source IPs so
   they can be added.
 
@@ -351,8 +351,8 @@ assigned:
 
 | Situation | Port to use |
 |---|---|
-| Skyline SMS is the SMPP **client** | The exact port assigned by the provider. Common examples are **2775**, **3550** or **5016** — these are conventions only. **Never assume 2775 is correct; confirm it.** |
-| Skyline SMS is the SMPP **server** | The listening port configured by the administrator and agreed with the provider. It must not clash with the web panel port or any other service. |
+| Galaxy SMS is the SMPP **client** | The exact port assigned by the provider. Common examples are **2775**, **3550** or **5016** — these are conventions only. **Never assume 2775 is correct; confirm it.** |
+| Galaxy SMS is the SMPP **server** | The listening port configured by the administrator and agreed with the provider. It must not clash with the web panel port or any other service. |
 
 Rules of thumb:
 
@@ -368,7 +368,7 @@ Rules of thumb:
 
 ### 4.4 SMPP bind and connection parameters
 
-Settings supported by the Skyline SMS SMPP implementation:
+Settings supported by the Galaxy SMS SMPP implementation:
 
 | Setting | Required / optional | Notes |
 |---|---|---|
@@ -392,7 +392,7 @@ Settings supported by the Skyline SMS SMPP implementation:
 | SMPP interface version | *Not configurable* | Handled by the SMPP library; agree the version with the administrator if your platform requires a specific one. |
 | TON / NPI settings | *Not configurable* | Handled by the SMPP library defaults. |
 | Data coding / character encoding | *Not configurable* | Handled by the SMPP library defaults. |
-| Throughput (throttle) limits | *Not configurable* in the current version | Agree an acceptable rate with the administrator; it is not enforced by the Skyline SMS connection settings. |
+| Throughput (throttle) limits | *Not configurable* in the current version | Agree an acceptable rate with the administrator; it is not enforced by the Galaxy SMS connection settings. |
 | Message window / queue size | *Not configurable* | — |
 
 ### 4.5 Message handling
@@ -414,19 +414,19 @@ Settings supported by the Skyline SMS SMPP implementation:
 
 ### 4.6 VPS firewall requirements
 
-| Connection mode | Direction from the Skyline SMS VPS | Required network configuration |
+| Connection mode | Direction from the Galaxy SMS VPS | Required network configuration |
 |---|---|---|
 | **SMPP Client Mode** | Outbound TCP to the provider | Allow **outbound** traffic to the provider's assigned host and port. Ask the provider to allow the VPS public source IP if their server filters by source. |
 | **SMPP Server Mode** | Inbound TCP from the provider | Open the configured SMPP listening port in the VPS firewall **and** the hosting provider's cloud firewall. Restrict source IPs to the provider's range where feasible. |
 | **HTTP Incoming Callback** | Inbound HTTP/HTTPS request | Make the callback endpoint reachable on the correct external port, normally **HTTPS 443**. Apply the application-level IP allowlist as well. |
-| **API Provider Sync** | Outbound HTTPS request from Skyline SMS | Allow **outbound** HTTPS (443) to the provider's API host. No inbound rule is needed for this method. |
+| **API Provider Sync** | Outbound HTTPS request from Galaxy SMS | Allow **outbound** HTTPS (443) to the provider's API host. No inbound rule is needed for this method. |
 
 These are **different layers** and each may need its own configuration:
 
 1. **Hosting provider cloud firewall / security group** — outside the VPS.
 2. **VPS / operating-system firewall** (ufw, iptables, nftables) — on the VPS.
 3. **Reverse proxy or load balancer rules** — in front of the application (HTTP).
-4. **Application allowlist** — the IP list configured inside Skyline SMS.
+4. **Application allowlist** — the IP list configured inside Galaxy SMS.
 
 **A port is not open because it is configured in the application, and an
 application allowlist entry does not open a firewall port.** Verify each layer
@@ -434,7 +434,7 @@ independently.
 
 ### 4.7 SMPP testing procedure
 
-Work through this checklist with the Skyline SMS administrator. Do **not** send real
+Work through this checklist with the Galaxy SMS administrator. Do **not** send real
 production traffic or change production provider settings during a test without
 authorisation.
 
@@ -459,7 +459,7 @@ authorisation.
         timeout, firewall or protocol errors.
 12. [ ] Record the agreed settings and sign off before production traffic.
 
-A TCP reachability probe is available in the Skyline SMS panel (**Test Connection**
+A TCP reachability probe is available in the Galaxy SMS panel (**Test Connection**
 on the connection) and reports whether the host/port answers at all, which
 separates "wrong address or firewall" from "wrong credentials".
 
@@ -469,15 +469,15 @@ separates "wrong address or firewall" from "wrong credentials".
 
 ### 5.1 What it is
 
-Skyline SMS runs a background sync service that **polls the provider's HTTP API**
-on a schedule and imports new inbound records. **Skyline SMS initiates the
-requests; the provider does not call Skyline SMS for this method.** It is an
+Galaxy SMS runs a background sync service that **polls the provider's HTTP API**
+on a schedule and imports new inbound records. **Galaxy SMS initiates the
+requests; the provider does not call Galaxy SMS for this method.** It is an
 outbound pull, not a webhook.
 
 Flow:
 
 ```
-Skyline SMS sync service  --HTTPS GET/POST-->  Provider API  --JSON-->  Skyline SMS database
+Galaxy SMS sync service  --HTTPS GET/POST-->  Provider API  --JSON-->  Galaxy SMS database
 ```
 
 ### 5.2 What the provider must provide
@@ -495,7 +495,7 @@ Skyline SMS sync service  --HTTPS GET/POST-->  Provider API  --JSON-->  Skyline 
 | Field mapping | Which JSON field holds the **unique reference id**, the **recipient number**, the **sender/CLI**, the **message text** and the **timestamp** |
 | Rate limits | Any quota, and the behaviour when it is exceeded |
 
-### 5.3 Configuration on the Skyline SMS side
+### 5.3 Configuration on the Galaxy SMS side
 
 | Setting | Notes |
 |---|---|
@@ -530,7 +530,7 @@ Skyline SMS sync service  --HTTPS GET/POST-->  Provider API  --JSON-->  Skyline 
 * **Non-blocking:** the sync runs on its own timer and in its own transaction; it
   never touches the panel's request path.
 * **Provider-reported payout**, if the API returns one, is not used to override the
-  Skyline SMS rate card except where the provider explicitly reports zero.
+  Galaxy SMS rate card except where the provider explicitly reports zero.
 
 ### 5.5 Errors, timeouts, rate limits and retries
 
@@ -567,7 +567,7 @@ Skyline SMS sync service  --HTTPS GET/POST-->  Provider API  --JSON-->  Skyline 
    records returned plus one sample.
 4. The administrator runs one sync cycle and confirms the fetched / new / duplicate
    counts.
-5. Send one new test message into your platform and confirm it appears in the Skyline SMS report within one sync interval.
+5. Send one new test message into your platform and confirm it appears in the Galaxy SMS report within one sync interval.
 6. Re-run the same window and confirm the duplicate count rises while the new
    count stays at zero.
 
@@ -578,7 +578,7 @@ Skyline SMS sync service  --HTTPS GET/POST-->  Provider API  --JSON-->  Skyline 
 * **Never put credentials in this document, in a ticket, or in a chat message.**
   System IDs, passwords and API keys are exchanged separately through an agreed
   secure channel.
-* **Never log secrets.** Skyline SMS redacts `Bearer` tokens and `token`, `key`,
+* **Never log secrets.** Galaxy SMS redacts `Bearer` tokens and `token`, `key`,
   `api_key`, `password`, `secret`, `auth` and `access_token` values from stored
   provider error text, and returns API tokens to the panel only in masked form.
 * **Prefer HTTPS.** Use TLS for the callback URL and for any provider API. Plain
@@ -600,7 +600,7 @@ Skyline SMS sync service  --HTTPS GET/POST-->  Provider API  --JSON-->  Skyline 
 
 | Symptom | Likely causes | What to check |
 |---|---|---|
-| **Connection timeout** (HTTP or SMPP) | Firewall dropping packets; wrong host; service not running; routing problem | From the Skyline SMS VPS: `curl -v https://host/api/...` or `nc -vz host port`. Check the cloud firewall, the VPS firewall and the service status. |
+| **Connection timeout** (HTTP or SMPP) | Firewall dropping packets; wrong host; service not running; routing problem | From the Galaxy SMS VPS: `curl -v https://host/api/...` or `nc -vz host port`. Check the cloud firewall, the VPS firewall and the service status. |
 | **Connection refused** | Nothing is listening on the port; wrong port; service stopped | `nc -vz host port` from the client side; confirm the listening service is up and bound to the right interface. |
 | **Firewall blocking traffic** | Rule missing on the cloud firewall or the VPS firewall; rule added in the wrong direction | Confirm the direction (inbound vs outbound) for the mode in §4.6; check both firewall layers; check any reverse proxy. |
 | **Incorrect hostname or IP** | Typo; DNS not propagated; the IP changed | Resolve the name from both sides; compare with the value in the connection settings. |
@@ -617,7 +617,7 @@ Skyline SMS sync service  --HTTPS GET/POST-->  Provider API  --JSON-->  Skyline 
 | **Connection disconnects / reconnect failures** | Idle timeout; network instability; the peer unbound; listen port already in use | For Client Mode, check the reconnect interval and the activity log; for Server Mode, check for "port already in use" and confirm only one process holds the port. |
 
 > Not every diagnostic described above exists as a button inside the panel. Where
-> a check requires shell access, it is performed by the Skyline SMS administrator or
+> a check requires shell access, it is performed by the Galaxy SMS administrator or
 > the provider's own operations team on their side of the connection.
 
 ---
@@ -637,9 +637,9 @@ secure channel.
 **Integration method** (tick all that apply)
 
 * [ ] HTTP Incoming Callback
-* [ ] SMPP — Client Mode (Skyline SMS connects to the provider)
-* [ ] SMPP — Server Mode (the provider connects to Skyline SMS)
-* [ ] API Provider Sync (Skyline SMS pulls from the provider)
+* [ ] SMPP — Client Mode (Galaxy SMS connects to the provider)
+* [ ] SMPP — Server Mode (the provider connects to Galaxy SMS)
+* [ ] API Provider Sync (Galaxy SMS pulls from the provider)
 
 **HTTP Incoming**
 
@@ -652,8 +652,8 @@ secure channel.
 
 **SMPP**
 
-* Mode: Client / Server ……… Skyline SMS is the: `____________________`
-* Skyline SMS public IP / hostname: `______________________________`
+* Mode: Client / Server ……… Galaxy SMS is the: `____________________`
+* Galaxy SMS public IP / hostname: `______________________________`
 * Provider SMPP host: `______________________________`
 * Port: `______________________________` ……… Direction: inbound / outbound
 * Bind type: `transceiver` / `receiver` / `transmitter`
@@ -691,6 +691,6 @@ secure channel.
 
 ---
 
-*End of document. Skyline SMS — Provider Integration Guide. Verify every
-host, port, URL and credential with the Skyline SMS administrator before use; the
+*End of document. Galaxy SMS — Provider Integration Guide. Verify every
+host, port, URL and credential with the Galaxy SMS administrator before use; the
 values in this guide are placeholders.*

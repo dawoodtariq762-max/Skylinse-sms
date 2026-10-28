@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="en">
-<head><script src="/assets/skyline-storage.js?v=skyline-20261026-fullrebrand-final"></script>
+<head><script src="/assets/ams-storage.js?v=ams-20261026-fullrebrand-final"></script>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex,nofollow,noarchive"/>
 <title>Panel Branding</title>
-<link rel="icon" type="image/png" href="/assets/skyline-favicon.png"/>
+<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png"/>
 <style>
 :root{
-  --bg:#f6f7f9;--surface:#fff;--ink:#191a1f;--text:#191a1f;--muted:#6e6d71;
-  --line:#e4e6ea;--line2:#cfd2d8;--brand:#3256df;--brand-d:#2748c4;
-  --ok:#17b380;--bad:#d9534f;--warn:#d98b2b;--r:12px;
+  --bg:#f4f6fa;--surface:#fff;--ink:#0f1b2d;--text:#1e293b;--muted:#64748b;
+  --line:#e3e8f0;--line2:#cfd7e3;--brand:#1d4ed8;--brand-d:#1e40af;
+  --ok:#0f9d6b;--bad:#d6364a;--warn:#c77d0a;--r:12px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Inter","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
@@ -25,18 +25,18 @@ button{font-family:inherit}
 .topbar img{height:34px;width:auto;object-fit:contain}
 .topbar h1{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
 .topbar .spacer{flex:1}
-.pill{font-size:11.5px;padding:4px 10px;border-radius:999px;background:#f6f7f9;color:var(--muted);border:1px solid var(--line)}
-.pill.dirty{background:#fcf1e2;color:#8a5608;border-color:#f2d5a5}
-.pill.saved{background:#e3f6ef;color:#0e7a57;border-color:#a8dcc7}
+.pill{font-size:11.5px;padding:4px 10px;border-radius:999px;background:#eef2f8;color:var(--muted);border:1px solid var(--line)}
+.pill.dirty{background:#fdf1dc;color:#9a5f05;border-color:#f2ddb4}
+.pill.saved{background:#e3f6ee;color:#0a7a54;border-color:#bfe8d8}
 
 /* ---------- buttons ---------- */
 .btn{padding:9px 15px;font-size:13px;font-weight:600;border-radius:9px;border:1px solid var(--line2);
   background:#fff;color:var(--text);cursor:pointer}
-.btn:hover{background:#f0f2f6}
+.btn:hover{background:#f3f6fb}
 .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
 .btn.primary:hover{background:var(--brand-d)}
-.btn.danger{background:#fff;border-color:#f1c2c0;color:#a82e2a}
-.btn.danger:hover{background:#fbecec}
+.btn.danger{background:#fff;border-color:#f0c3cb;color:#b72a3c}
+.btn.danger:hover{background:#fde8eb}
 .btn:disabled{opacity:.55;cursor:not-allowed}
 
 /* ---------- layout ---------- */
@@ -53,10 +53,10 @@ button{font-family:inherit}
 /* ---------- form ---------- */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:640px){.grid2{grid-template-columns:1fr}}
-.f label{display:block;font-size:12px;font-weight:600;color:#2d2e33;margin-bottom:5px}
+.f label{display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:5px}
 .f input[type=text],.f input[type=password],.f input[type=color]{
   width:100%;padding:9px 11px;font-size:13.5px;font-family:inherit;border:1px solid var(--line2);
-  border-radius:9px;background:#fff;color:#191a1f}
+  border-radius:9px;background:#fff;color:#0f172a}
 .f input[type=text]:focus,.f input[type=password]:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(29,78,216,.15)}
 
 /* ================================================================== *
@@ -64,7 +64,7 @@ button{font-family:inherit}
  * ================================================================== */
 
 /* theme-set switch (which set you are editing) */
-.setswitch{display:inline-flex;background:#f6f7f9;border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.setswitch{display:inline-flex;background:#eef2f8;border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
 .setswitch button{border:0;background:transparent;padding:7px 16px;border-radius:8px;font-size:12.5px;
   font-weight:600;color:var(--muted);cursor:pointer}
 .setswitch button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(15,27,45,.10)}
@@ -72,16 +72,16 @@ button{font-family:inherit}
 /* one category */
 .cat{border:1px solid var(--line);border-radius:11px;margin-bottom:10px;overflow:hidden;background:#fff}
 .cat>summary{cursor:pointer;list-style:none;padding:11px 14px;display:flex;align-items:center;gap:9px;
-  font-size:13px;font-weight:700;color:var(--ink);background:#fbfbfd}
+  font-size:13px;font-weight:700;color:var(--ink);background:#fafbfd}
 .cat>summary::-webkit-details-marker{display:none}
-.cat>summary:hover{background:#f0f2f6}
+.cat>summary:hover{background:#f3f6fb}
 .cat>summary .chev{width:14px;height:14px;flex:none;color:var(--muted);transition:transform .15s}
 .cat[open]>summary .chev{transform:rotate(90deg)}
-.cat>summary .cnt{font-size:11px;font-weight:600;color:var(--muted);background:#f6f7f9;
+.cat>summary .cnt{font-size:11px;font-weight:600;color:var(--muted);background:#eef2f8;
   border:1px solid var(--line);border-radius:999px;padding:1px 8px}
 .cat>summary .setdot{margin-left:auto;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;
-  background:#f6f7f9;color:var(--muted);border:1px solid var(--line)}
-.cat>summary .setdot.has{background:#e3f6ef;color:#0e7a57;border-color:#a8dcc7}
+  background:#eef2f8;color:var(--muted);border:1px solid var(--line)}
+.cat>summary .setdot.has{background:#e3f6ee;color:#0a7a54;border-color:#bfe8d8}
 .cat .catbody{padding:4px 14px 14px}
 
 /* one colour row */
@@ -93,24 +93,24 @@ button{font-family:inherit}
 .crow .sw input[type=color]{position:absolute;inset:-6px;width:calc(100% + 12px);height:calc(100% + 12px);
   border:0;padding:0;background:transparent;cursor:pointer}
 .crow .sw.unset::after{content:"";position:absolute;inset:0;
-  background:repeating-linear-gradient(45deg,#f0f2f6 0 5px,#fff 5px 10px);pointer-events:none}
+  background:repeating-linear-gradient(45deg,#f1f4f9 0 5px,#fff 5px 10px);pointer-events:none}
 .crow .meta{min-width:0}
-.crow .meta .lb{font-size:12.5px;font-weight:600;color:#2d2e33}
+.crow .meta .lb{font-size:12.5px;font-weight:600;color:#334155}
 .crow .meta .wh{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.45}
 .crow .hex{display:flex;align-items:center;gap:6px}
 .crow .hex input{width:100%;padding:7px 9px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  border:1px solid var(--line2);border-radius:8px;background:#fff;color:#191a1f}
+  border:1px solid var(--line2);border-radius:8px;background:#fff;color:#0f172a}
 .crow .hex input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(29,78,216,.15)}
-.crow .hex input.bad{border-color:#d9534f;background:#fbecec}
+.crow .hex input.bad{border-color:#d6364a;background:#fde8eb}
 .crow .state{display:flex;align-items:center;gap:6px;padding-top:8px}
 .crow .tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;border:1px solid;white-space:nowrap}
-.crow .tag.inh{background:#f6f7f9;color:#6e6d71;border-color:var(--line)}
-.crow .tag.saved{background:#e3f6ef;color:#0e7a57;border-color:#a8dcc7}
-.crow .tag.dirtyv{background:#fcf1e2;color:#8a5608;border-color:#f2d5a5}
+.crow .tag.inh{background:#f4f6fa;color:#64748b;border-color:var(--line)}
+.crow .tag.saved{background:#e3f6ee;color:#0a7a54;border-color:#bfe8d8}
+.crow .tag.dirtyv{background:#fdf1dc;color:#9a5f05;border-color:#f2ddb4}
 .crow .inhsw{width:11px;height:11px;border-radius:3px;border:1px solid var(--line2);flex:none}
 .crow .reset{border:1px solid var(--line2);background:#fff;border-radius:8px;font-size:11px;font-weight:600;
   color:var(--muted);padding:7px 10px;cursor:pointer;white-space:nowrap}
-.crow .reset:hover{background:#f0f2f6;color:var(--ink)}
+.crow .reset:hover{background:#f3f6fb;color:var(--ink)}
 .crow .reset:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:640px){
   .crow{grid-template-columns:38px 1fr;gap:9px}
@@ -132,54 +132,54 @@ button{font-family:inherit}
 
 /* the preview root: token defaults mirror the app's own inherited values */
 .pv-root{
-  --br-general-bg:#f6f7f9; --br-general-content-bg:#f6f7f9; --br-general-heading:#191a1f;
-  --br-general-text:#191a1f; --br-general-text-secondary:#424449; --br-general-text-muted:#6e6d71;
-  --br-general-footer-bg:#151b29; --br-general-footer-text:#a9a9ad;
-  --br-header-bg:#ffffff; --br-header-text:#191a1f;
-  --br-sidebar-bg:#151b29; --br-sidebar-text:#cfd2d8; --br-sidebar-hover-bg:#151b29;
-  --br-sidebar-active-bg:#3256df; --br-sidebar-active-text:#ffffff;
-  --br-card-bg:#ffffff; --br-card-border:#e4e6ea; --br-card-shadow:#191a1f;
-  --br-table-header-bg:#f6f7f9; --br-table-header-text:#424449; --br-table-row-bg:#ffffff;
-  --br-table-row-alt-bg:#f6f7f9; --br-table-row-hover-bg:#f0f2f6; --br-table-row-selected-bg:#e0ecfc;
-  --br-table-border:#e4e6ea; --br-table-text:#191a1f;
-  --br-form-label:#2d2e33; --br-form-input-bg:#ffffff; --br-form-input-border:#cfd2d8;
-  --br-form-input-text:#191a1f; --br-form-placeholder:#a9a9ad; --br-form-focus:#3256df; --br-form-checkbox:#3256df;
-  --br-btn-primary-bg:#3256df; --br-btn-primary-text:#ffffff; --br-btn-primary-hover:#2748c4;
-  --br-btn-secondary-bg:#e4e6ea; --br-btn-secondary-text:#191a1f;
-  --br-btn-success-bg:#17b380; --br-btn-success-text:#ffffff;
-  --br-btn-warning-bg:#d98b2b; --br-btn-warning-text:#ffffff;
-  --br-btn-danger-bg:#d9534f; --br-btn-danger-text:#ffffff;
-  --br-btn-neutral-bg:#6e6d71; --br-btn-neutral-text:#ffffff;
-  --br-modal-bg:#ffffff; --br-modal-text:#191a1f; --br-modal-overlay:#080b14;
-  --br-status-success-bg:#e3f6ef; --br-status-success-text:#0e7a57;
-  --br-status-warning-bg:#fcf1e2; --br-status-warning-text:#8a5608;
-  --br-status-danger-bg:#fbecec; --br-status-danger-text:#a82e2a;
-  --br-status-info-bg:#e0ecfc; --br-status-info-text:#3256df;
-  --br-login-bg:#0d111d; --br-login-bg2:#0d111d; --br-login-particle:#1f90f3;
-  --br-login-card-bg:#ffffff; --br-login-card-border:#e4e6ea;
-  --br-login-heading:#191a1f; --br-login-sub:#424449;
-  --br-login-input-bg:#ffffff; --br-login-input-border:#cfd2d8; --br-login-input-text:#191a1f;
-  --br-login-placeholder:#a9a9ad; --br-login-input-focus:#3256df;
-  --br-login-btn-bg:#3256df; --br-login-btn-text:#ffffff; --br-login-btn-hover:#2748c4;
-  --br-login-btn-active:#2748c4; --br-login-link:#3256df;
-  --br-login-error:#d9534f; --br-login-success:#16a34a;
+  --br-general-bg:#f4f6fa; --br-general-content-bg:#f4f6fa; --br-general-heading:#0f172a;
+  --br-general-text:#1e293b; --br-general-text-secondary:#475569; --br-general-text-muted:#64748b;
+  --br-general-footer-bg:#0c1730; --br-general-footer-text:#94a3b8;
+  --br-header-bg:#ffffff; --br-header-text:#0f172a;
+  --br-sidebar-bg:#0c1730; --br-sidebar-text:#cbd5e1; --br-sidebar-hover-bg:#16264a;
+  --br-sidebar-active-bg:#1d4ed8; --br-sidebar-active-text:#ffffff;
+  --br-card-bg:#ffffff; --br-card-border:#e3e8f0; --br-card-shadow:#0f1b2d;
+  --br-table-header-bg:#f8fafc; --br-table-header-text:#475569; --br-table-row-bg:#ffffff;
+  --br-table-row-alt-bg:#f8fafc; --br-table-row-hover-bg:#f3f6fb; --br-table-row-selected-bg:#eaf1ff;
+  --br-table-border:#e3e8f0; --br-table-text:#1e293b;
+  --br-form-label:#334155; --br-form-input-bg:#ffffff; --br-form-input-border:#cbd5e1;
+  --br-form-input-text:#0f172a; --br-form-placeholder:#94a3b8; --br-form-focus:#1d4ed8; --br-form-checkbox:#1d4ed8;
+  --br-btn-primary-bg:#1d4ed8; --br-btn-primary-text:#ffffff; --br-btn-primary-hover:#1e40af;
+  --br-btn-secondary-bg:#e2e8f0; --br-btn-secondary-text:#1e293b;
+  --br-btn-success-bg:#0f9d6b; --br-btn-success-text:#ffffff;
+  --br-btn-warning-bg:#c77d0a; --br-btn-warning-text:#ffffff;
+  --br-btn-danger-bg:#d6364a; --br-btn-danger-text:#ffffff;
+  --br-btn-neutral-bg:#64748b; --br-btn-neutral-text:#ffffff;
+  --br-modal-bg:#ffffff; --br-modal-text:#1e293b; --br-modal-overlay:#060c18;
+  --br-status-success-bg:#e3f6ee; --br-status-success-text:#0a7a54;
+  --br-status-warning-bg:#fdf1dc; --br-status-warning-text:#9a5f05;
+  --br-status-danger-bg:#fde8eb; --br-status-danger-text:#b72a3c;
+  --br-status-info-bg:#eaf1ff; --br-status-info-text:#1d4ed8;
+  --br-login-bg:#071f34; --br-login-bg2:#0b2a44; --br-login-particle:#38bdf8;
+  --br-login-card-bg:#ffffff; --br-login-card-border:#e2e8f0;
+  --br-login-heading:#0f172a; --br-login-sub:#475569;
+  --br-login-input-bg:#ffffff; --br-login-input-border:#cbd5e1; --br-login-input-text:#0f172a;
+  --br-login-placeholder:#94a3b8; --br-login-input-focus:#1d4ed8;
+  --br-login-btn-bg:#1d4ed8; --br-login-btn-text:#ffffff; --br-login-btn-hover:#1e40af;
+  --br-login-btn-active:#1e3a8a; --br-login-link:#1d4ed8;
+  --br-login-error:#dc2626; --br-login-success:#16a34a;
   font-family:"Inter","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
   font-size:12px;line-height:1.45;color:var(--br-general-text);
 }
 /* dark preview overrides the inherited defaults, mirroring the app */
 .pv-root.dk{
-  --br-general-bg:#0d111d; --br-general-content-bg:#0d111d; --br-general-heading:#e4e6ea;
-  --br-general-text:#e4e6ea; --br-general-text-secondary:#c7ccdc; --br-general-text-muted:#a9a9ad;
-  --br-general-footer-bg:#0d111d; --br-general-footer-text:#a9a9ad;
-  --br-header-bg:#151b29; --br-header-text:#e4e6ea;
-  --br-sidebar-bg:#0d111d; --br-sidebar-text:#c7ccdc; --br-sidebar-hover-bg:#151b29;
-  --br-sidebar-active-bg:#3256df; --br-sidebar-active-text:#ffffff;
-  --br-card-bg:#151b29; --br-card-border:#334059;
-  --br-table-header-bg:#151b29; --br-table-header-text:#c7ccdc; --br-table-row-bg:#151b29;
-  --br-table-row-alt-bg:#1a2030; --br-table-row-hover-bg:#151b29; --br-table-row-selected-bg:#1a2030;
-  --br-table-border:#334059; --br-table-text:#e4e6ea;
-  --br-form-label:#c7ccdc; --br-form-input-bg:#151b29; --br-form-input-border:#334059;
-  --br-form-input-text:#e4e6ea; --br-form-placeholder:#8a8e9b; --br-form-focus:#1f90f3; --br-form-checkbox:#1f90f3;
+  --br-general-bg:#0a1226; --br-general-content-bg:#0a1226; --br-general-heading:#e2e8f0;
+  --br-general-text:#e2e8f0; --br-general-text-secondary:#b6c6da; --br-general-text-muted:#94a3b8;
+  --br-general-footer-bg:#0a1226; --br-general-footer-text:#94a3b8;
+  --br-header-bg:#111c2e; --br-header-text:#e2e8f0;
+  --br-sidebar-bg:#0a1226; --br-sidebar-text:#b6c6da; --br-sidebar-hover-bg:#16233a;
+  --br-sidebar-active-bg:#1d4ed8; --br-sidebar-active-text:#ffffff;
+  --br-card-bg:#111c2e; --br-card-border:#2b3d59;
+  --br-table-header-bg:#16233a; --br-table-header-text:#b6c6da; --br-table-row-bg:#111c2e;
+  --br-table-row-alt-bg:#141f33; --br-table-row-hover-bg:#16233a; --br-table-row-selected-bg:#1b2c47;
+  --br-table-border:#2b3d59; --br-table-text:#e2e8f0;
+  --br-form-label:#b6c6da; --br-form-input-bg:#0d1728; --br-form-input-border:#2b3d59;
+  --br-form-input-text:#e2e8f0; --br-form-placeholder:#7d8ca3; --br-form-focus:#38bdf8; --br-form-checkbox:#38bdf8;
 }
 /* ---- preview primitives ---- */
 .pv-app{display:grid;grid-template-columns:150px 1fr;min-height:230px;background:var(--br-general-content-bg)}
@@ -282,10 +282,10 @@ button{font-family:inherit}
 /* ---------- logo ---------- */
 .logobox{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
 .prev{width:170px;flex:none;border:1px solid var(--line);border-radius:10px;background:
-  repeating-conic-gradient(#f0f2f6 0% 25%,#ffffff 0% 50%) 50%/16px 16px;padding:10px}
+  repeating-conic-gradient(#f1f4f9 0% 25%,#ffffff 0% 50%) 50%/16px 16px;padding:10px}
 .prev .onlight,.prev .ondark{border-radius:6px;padding:12px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
 .prev .onlight{background:#fff;border:1px solid var(--line)}
-.prev .ondark{background:#0d111d;border:1px solid #262d40;margin-bottom:0}
+.prev .ondark{background:#0b1424;border:1px solid #24344d;margin-bottom:0}
 .prev img{max-width:100%;max-height:64px;object-fit:contain;display:block}
 .prev .cap{font-size:10.5px;color:var(--muted);text-align:center;margin-top:4px}
 .logoact{display:flex;flex-direction:column;gap:8px;min-width:210px}
@@ -294,45 +294,45 @@ button{font-family:inherit}
 /* ---------- preview ---------- */
 .preview{position:sticky;top:14px}
 .pv{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
-.pv-top{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--pv-headerBg,#fff);color:var(--pv-headerText,#191a1f);border-bottom:1px solid var(--line)}
-.pv-top .dot{width:22px;height:22px;border-radius:5px;background:var(--pv-accent,#3256df)}
+.pv-top{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--pv-headerBg,#fff);color:var(--pv-headerText,#0f172a);border-bottom:1px solid var(--line)}
+.pv-top .dot{width:22px;height:22px;border-radius:5px;background:var(--pv-accent,#1d4ed8)}
 .pv-top b{font-size:12.5px}
 .pv-mid{display:flex;min-height:250px}
-.pv-side{width:112px;flex:none;background:var(--pv-sidebarBg,#151b29);color:var(--pv-sidebarText,#cfd2d8);padding:10px 8px;font-size:11.5px}
+.pv-side{width:112px;flex:none;background:var(--pv-sidebarBg,#0c1730);color:var(--pv-sidebarText,#cbd5e1);padding:10px 8px;font-size:11.5px}
 .pv-side div{padding:6px 8px;border-radius:6px;margin-bottom:3px}
-.pv-side div.act{background:var(--pv-sidebarActiveBg,#3256df);color:#fff}
-.pv-main{flex:1;padding:12px;background:var(--pv-contentBg,#f6f7f9);min-width:0}
-.pv-card{background:var(--pv-cardBg,#fff);border:1px solid var(--pv-cardBorder,#e4e6ea);border-radius:9px;padding:11px;margin-bottom:10px}
-.pv-card h4{font-size:12px;color:var(--pv-heading,#191a1f);margin-bottom:6px}
-.pv-card p{font-size:11px;color:var(--pv-textMuted,#6e6d71);margin-bottom:9px}
+.pv-side div.act{background:var(--pv-sidebarActiveBg,#1d4ed8);color:#fff}
+.pv-main{flex:1;padding:12px;background:var(--pv-contentBg,#f4f6fa);min-width:0}
+.pv-card{background:var(--pv-cardBg,#fff);border:1px solid var(--pv-cardBorder,#e3e8f0);border-radius:9px;padding:11px;margin-bottom:10px}
+.pv-card h4{font-size:12px;color:var(--pv-heading,#0f172a);margin-bottom:6px}
+.pv-card p{font-size:11px;color:var(--pv-textMuted,#64748b);margin-bottom:9px}
 .pv-row{display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap}
 .pv-btn{padding:5px 11px;font-size:11px;font-weight:600;border-radius:6px;border:0;
-  background:var(--pv-btnPrimaryBg,#3256df);color:var(--pv-btnPrimaryText,#fff)}
-.pv-btn.sec{background:var(--pv-btnSecondaryBg,#e4e6ea);color:var(--pv-btnSecondaryText,#191a1f)}
-.pv-btn.dan{background:var(--pv-btnDangerBg,#d9534f);color:var(--pv-btnDangerText,#fff)}
-.pv-inp{width:100%;padding:6px 9px;font-size:11.5px;border-radius:6px;border:1px solid var(--pv-inputBorder,#cfd2d8);
-  background:var(--pv-inputBg,#fff);color:var(--pv-inputText,#191a1f);margin-bottom:8px}
-.pv-inp:focus{outline:2px solid var(--pv-focus,#3256df);outline-offset:0}
+  background:var(--pv-btnPrimaryBg,#1d4ed8);color:var(--pv-btnPrimaryText,#fff)}
+.pv-btn.sec{background:var(--pv-btnSecondaryBg,#e2e8f0);color:var(--pv-btnSecondaryText,#1e293b)}
+.pv-btn.dan{background:var(--pv-btnDangerBg,#d6364a);color:var(--pv-btnDangerText,#fff)}
+.pv-inp{width:100%;padding:6px 9px;font-size:11.5px;border-radius:6px;border:1px solid var(--pv-inputBorder,#cbd5e1);
+  background:var(--pv-inputBg,#fff);color:var(--pv-inputText,#0f172a);margin-bottom:8px}
+.pv-inp:focus{outline:2px solid var(--pv-focus,#1d4ed8);outline-offset:0}
 .pv-tbl{width:100%;border-collapse:collapse;font-size:11px}
-.pv-tbl th{background:var(--pv-thBg,#f6f7f9);color:var(--pv-thText,#424449);text-align:left;padding:5px 7px;border-bottom:1px solid var(--pv-tableBorder,#e4e6ea)}
-.pv-tbl td{padding:5px 7px;border-bottom:1px solid var(--pv-tableBorder,#e4e6ea);color:var(--pv-tableText,#191a1f)}
-.pv-tbl tr:hover td{background:var(--pv-rowHover,#f0f2f6)}
+.pv-tbl th{background:var(--pv-thBg,#f8fafc);color:var(--pv-thText,#475569);text-align:left;padding:5px 7px;border-bottom:1px solid var(--pv-tableBorder,#e3e8f0)}
+.pv-tbl td{padding:5px 7px;border-bottom:1px solid var(--pv-tableBorder,#e3e8f0);color:var(--pv-tableText,#1e293b)}
+.pv-tbl tr:hover td{background:var(--pv-rowHover,#f3f6fb)}
 .badges{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
 .bdg{font-size:10px;padding:2px 7px;border-radius:999px}
-.bdg.ok{background:var(--pv-okBg,#e3f6ef);color:var(--pv-okText,#0e7a57)}
-.bdg.warn{background:var(--pv-warnBg,#fcf1e2);color:var(--pv-warnText,#8a5608)}
-.bdg.bad{background:var(--pv-badBg,#fbecec);color:var(--pv-badText,#a82e2a)}
+.bdg.ok{background:var(--pv-okBg,#e3f6ee);color:var(--pv-okText,#0a7a54)}
+.bdg.warn{background:var(--pv-warnBg,#fdf1dc);color:var(--pv-warnText,#9a5f05)}
+.bdg.bad{background:var(--pv-badBg,#fde8eb);color:var(--pv-badText,#b72a3c)}
 /* login preview */
-.pv-login{background:var(--pv-loginBg,#0d111d);padding:14px;display:flex;justify-content:center}
+.pv-login{background:var(--pv-loginBg,#071f34);padding:14px;display:flex;justify-content:center}
 .pv-lcard{width:100%;max-width:250px;background:var(--pv-loginCardBg,rgba(255,255,255,.92));
-  border:1px solid var(--pv-loginCardBorder,#e4e6ea);border-radius:12px;padding:14px;text-align:center}
+  border:1px solid var(--pv-loginCardBorder,#e2e8f0);border-radius:12px;padding:14px;text-align:center}
 .pv-lcard img{height:34px;margin-bottom:8px;object-fit:contain}
-.pv-lcard h5{font-size:12.5px;color:var(--pv-loginHeading,#191a1f);margin-bottom:3px}
-.pv-lcard small{font-size:10px;color:var(--pv-loginSub,#424449);display:block;margin-bottom:10px}
+.pv-lcard h5{font-size:12.5px;color:var(--pv-loginHeading,#0f172a);margin-bottom:3px}
+.pv-lcard small{font-size:10px;color:var(--pv-loginSub,#475569);display:block;margin-bottom:10px}
 .pv-lcard input{width:100%;padding:6px 8px;font-size:11px;border-radius:6px;margin-bottom:7px;
-  border:1px solid var(--pv-loginInputBorder,#cfd2d8);background:var(--pv-loginInputBg,#fff);color:var(--pv-loginInputText,#191a1f)}
+  border:1px solid var(--pv-loginInputBorder,#cbd5e1);background:var(--pv-loginInputBg,#fff);color:var(--pv-loginInputText,#0f172a)}
 .pv-lcard button{width:100%;padding:7px;font-size:11px;font-weight:600;border:0;border-radius:6px;
-  background:var(--pv-loginBtnBg,#3256df);color:var(--pv-loginBtnText,#fff)}
+  background:var(--pv-loginBtnBg,#1d4ed8);color:var(--pv-loginBtnText,#fff)}
 .pv-tabs{display:flex;gap:6px;margin-top:12px}
 .pv-tabs button{flex:1;padding:6px;font-size:11.5px;font-weight:600;border-radius:7px;border:1px solid var(--line2);
   background:#fff;color:var(--text);cursor:pointer}
@@ -346,13 +346,13 @@ button{font-family:inherit}
 .actions .spacer{flex:1}
 .toast{position:fixed;right:20px;bottom:76px;z-index:60;padding:12px 16px;border-radius:10px;
   font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(2,10,32,.28);display:none;max-width:420px}
-.toast.ok{background:#e3f6ef;color:#0e7a57;border:1px solid #a8dcc7;display:block}
-.toast.err{background:#fbecec;color:#a82e2a;border:1px solid #f1c2c0;display:block}
-.banner{background:#fcf1e2;border:1px solid #f2d5a5;color:#8a5608;padding:11px 16px;border-radius:10px;
+.toast.ok{background:#e3f6ee;color:#0a7a54;border:1px solid #bfe8d8;display:block}
+.toast.err{background:#fde8eb;color:#b72a3c;border:1px solid #f5c6cf;display:block}
+.banner{background:#fdf1dc;border:1px solid #f2ddb4;color:#9a5f05;padding:11px 16px;border-radius:10px;
   margin-top:14px;font-size:13px}
 .req{color:var(--bad)}
 
-/* ---------- motion polish (same tokens/timing as shared/skyline-motion.css; uses this page's own variables,
+/* ---------- motion polish (same tokens/timing as shared/ams-motion.css; uses this page's own variables,
    touches nothing in the .pv-* live previews) ---------- */
 .btn{transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease,transform .12s cubic-bezier(.22,.8,.24,1)}
 .btn:active:not(:disabled){transform:scale(.97)}
@@ -367,12 +367,12 @@ button{font-family:inherit}
 @keyframes amsBrFade{from{opacity:0;transform:translateY(8px)}}
 @media (prefers-reduced-motion:reduce){.btn,.card,.pill,.cat>summary,.cat>summary .chev{transition:none}.cat[open]>.catbody,.toast.ok,.toast.err{animation:none}}
 </style>
-</head>
+<link rel="stylesheet" href="/assets/galaxy-theme.css?v=20261028-fixes"/></head>
 <body>
 <div class="wrap">
 
   <div class="topbar">
-    <img id="topLogo" src="/assets/skyline-logo-trim.png" alt=""/>
+    <img id="topLogo" src="/assets/galaxy-logo.png?v=20261027" alt=""/>
     <h1 id="topName">Panel Branding</h1>
     <span class="pill" id="who"></span>
     <span class="spacer"></span>
@@ -430,9 +430,9 @@ button{font-family:inherit}
         <div class="body">
           <div class="logobox">
             <div class="prev">
-              <div class="onlight"><img id="pvLogo" src="/assets/skyline-logo-trim.png" alt=""/></div>
+              <div class="onlight"><img id="pvLogo" src="/assets/galaxy-logo.png?v=20261027" alt=""/></div>
               <div class="cap">on light</div>
-              <div class="ondark" style="margin-top:8px"><img id="pvLogoDark" src="/assets/skyline-logo-trim.png" alt=""/></div>
+              <div class="ondark" style="margin-top:8px"><img id="pvLogoDark" src="/assets/galaxy-logo.png?v=20261027" alt=""/></div>
               <div class="cap">on dark</div>
             </div>
             <div class="logoact">
@@ -513,12 +513,12 @@ button{font-family:inherit}
               <div class="pv-pane on" data-pane="dashboard">
                 <div class="pv-app">
                   <div class="pv-sb">
-                    <div class="b"><img id="pvSbLogo" src="/assets/skyline-logo-trim.png" alt=""/><span id="pvSbName">Skyline SMS</span></div>
+                    <div class="b"><img id="pvSbLogo" src="/assets/galaxy-logo.png?v=20261027" alt=""/><span id="pvSbName">Galaxy SMS</span></div>
                     <div class="i act">Dashboard</div><div class="i">Numbers</div>
                     <div class="i">SMS Test</div><div class="i">Reports</div>
                   </div>
                   <div class="pv-main">
-                    <div class="pv-hd"><span class="nm" id="pvHdName">Skyline SMS</span><span class="sp"></span>
+                    <div class="pv-hd"><span class="nm" id="pvHdName">Galaxy SMS</span><span class="sp"></span>
                       <span class="clk">14:32 GMT</span></div>
                     <div class="pv-bd">
                       <div class="pv-c"><h4>Today's Traffic</h4><p class="mut">Delivered, failed and pending messages.</p>
@@ -535,7 +535,7 @@ button{font-family:inherit}
                         </table>
                       </div>
                     </div>
-                    <div class="pv-ft" id="pvFtText">Skyline SMS · support</div>
+                    <div class="pv-ft" id="pvFtText">Galaxy SMS · support</div>
                   </div>
                 </div>
               </div>
@@ -545,8 +545,8 @@ button{font-family:inherit}
                 <div class="pv-lg">
                   <div class="orb o1"></div><div class="orb o2"></div>
                   <div class="pv-lc">
-                    <img id="pvLgLogo" src="/assets/skyline-logo-trim.png" alt=""/>
-                    <h5 id="pvLgTitle">Skyline SMS</h5>
+                    <img id="pvLgLogo" src="/assets/galaxy-logo.png?v=20261027" alt=""/>
+                    <h5 id="pvLgTitle">Galaxy SMS</h5>
                     <small id="pvLgTag">Intelligent Messaging Infrastructure</small>
                     <input value="Username" readonly/>
                     <input class="f" value="Password" readonly/>
@@ -561,7 +561,7 @@ button{font-family:inherit}
               <!-- 3. HEADER / TOOLBAR -->
               <div class="pv-pane" data-pane="header">
                 <div class="pv-hd" style="border-bottom:1px solid var(--br-card-border)">
-                  <span class="nm" id="pvHdName2">Skyline SMS</span><span class="sp"></span>
+                  <span class="nm" id="pvHdName2">Galaxy SMS</span><span class="sp"></span>
                   <span class="clk">14:32 GMT</span><span class="clk">·</span>
                   <span class="clk">admin</span><span class="clk">·</span><span class="clk">Theme</span>
                 </div>
@@ -580,8 +580,8 @@ button{font-family:inherit}
               <div class="pv-pane" data-pane="sidebar">
                 <div class="pv-app" style="grid-template-columns:190px 1fr">
                   <div class="pv-sb">
-                    <div class="b"><img id="pvSbLogo2" src="/assets/skyline-logo-trim.png" alt=""/>
-                      <span id="pvSbName2">Skyline SMS</span></div>
+                    <div class="b"><img id="pvSbLogo2" src="/assets/galaxy-logo.png?v=20261027" alt=""/>
+                      <span id="pvSbName2">Galaxy SMS</span></div>
                     <div class="i">Dashboard</div><div class="i act">Numbers</div>
                     <div class="i">Ranges</div><div class="i">Reports</div><div class="i">Settings</div>
                   </div>
@@ -791,7 +791,7 @@ function rowFor(t){
     return d;
   }
   d.innerHTML=
-    '<div class="sw" title="Pick a colour"><input type="color" data-c="'+esc(t.k)+'" value="'+(t.hint||'#6e6d71')+'"/></div>'+
+    '<div class="sw" title="Pick a colour"><input type="color" data-c="'+esc(t.k)+'" value="'+(t.hint||'#888888')+'"/></div>'+
     '<div class="meta"><div class="lb">'+esc(t.l)+'</div><div class="wh">'+esc(t.w||'')+'</div>'+
       '<div class="state"><span class="tag" data-tag></span>'+
       '<span class="inhsw" data-inhsw title="Inherited value"></span>'+
@@ -843,11 +843,11 @@ function paintRow(k){
   var tag=row.querySelector('[data-tag]'), isw=row.querySelector('[data-inhsw]'), itx=row.querySelector('[data-inhtxt]');
   var rs=row.querySelector('button[data-r]');
   sw.classList.toggle('unset', !cur);
-  if(cur){ ci.value=/^#[0-9a-f]{6}$/i.test(cur)?cur:'#6e6d71'; }
-  else   { ci.value=t.hint||'#6e6d71'; }
+  if(cur){ ci.value=/^#[0-9a-f]{6}$/i.test(cur)?cur:'#888888'; }
+  else   { ci.value=t.hint||'#888888'; }
   if(ti.value!==cur) ti.value=cur;
   ti.classList.toggle('bad', cur!=='' && !HEXOK.test(cur));
-  isw.style.background=t.hint||'#6e6d71';
+  isw.style.background=t.hint||'#888888';
   itx.textContent='inherits '+(t.hint||'default');
   tag.className='tag '+(cur?(cur!==savedV?'dirtyv':'saved'):'inh');
   tag.textContent=cur?(cur!==savedV?'unsaved':'saved'):'inherited';
@@ -930,7 +930,7 @@ function applyPreview(){
   var ef=$('pvFtText'); if(ef)ef.textContent=ft;
   /* the settings response exposes URLs for uploaded assets, never server paths */
   var au=(work.assetUrls)||{};
-  var lg=au.logo||'/assets/skyline-logo-trim.png';
+  var lg=au.logo||'/assets/galaxy-logo.png?v=20261027';
   ['pvSbLogo','pvSbLogo2','pvLgLogo','pvLogo','topLogo'].forEach(function(id){var e=$(id); if(e)e.src=lg;});
   var e=$('pvLogoDark'); if(e)e.src=au.logoDark||lg;
   var tn=$('topName'); if(tn)tn.textContent=(work.general.shortName||nm);
@@ -949,7 +949,7 @@ function fill(){
   tokensFor(editSet).forEach(function(t){ paintRow(t.k); });
   refreshSetDots();
   applyFilter();
-  var lg=(work.assets&&work.assets.logo)||'/assets/skyline-logo-trim.png';
+  var lg=(work.assets&&work.assets.logo)||'/assets/galaxy-logo.png?v=20261027';
   $('topLogo').src=lg;
   $('topName').textContent=(work.general.shortName||work.general.panelName||'Panel Branding');
   applyPreview();refreshDirty();

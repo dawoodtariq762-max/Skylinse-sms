@@ -1,0 +1,75 @@
+/* Galaxy SMS reference palette. Paint-only outside approved dashboard components.
+   Keep legacy class names/storage/API contracts for backwards compatibility. */
+html:root body.ams-light{--galaxy-bg:#eef6ff;--galaxy-surface:#fff;--galaxy-text:#10315c;--galaxy-muted:#718bab;--galaxy-line:#e2ecf7;--galaxy-top:#f8fbff;--galaxy-field:#fff;--galaxy-grid:#e9eff7}
+html:root body.ams-dark{--galaxy-bg:#031226;--galaxy-surface:#061a36;--galaxy-text:#d7e7ff;--galaxy-muted:#91acd1;--galaxy-line:#193555;--galaxy-top:#061b39;--galaxy-field:#092242;--galaxy-grid:#15304b}
+html:root body:is(.ams-light,.ams-dark){--bg:var(--galaxy-bg);--bg2:var(--galaxy-surface);--panel:var(--galaxy-surface);--panel2:var(--galaxy-field);--text:var(--galaxy-text);--muted:var(--galaxy-muted);--border:var(--galaxy-line);--border2:var(--galaxy-line);--accent:#0875e1;--blue:#0875e1;--ds-brand:#0875e1;--ds-text:var(--galaxy-text);--ds-muted:var(--galaxy-muted);--ds-line:var(--galaxy-line);--ds-line2:var(--galaxy-line);--ds-surface:var(--galaxy-surface);--ams-panel-bg:var(--galaxy-bg);--ams-panel-navy:var(--galaxy-text);--ams-panel-muted:var(--galaxy-muted);--ams-panel-border:var(--galaxy-line);background:var(--galaxy-bg)!important;color:var(--galaxy-text)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.main,.content,.main-content){background:var(--galaxy-bg)!important;color:var(--galaxy-text)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.sidebar,.rail,.side){background:#082348!important;border-color:#173653!important;color:#bed5f5!important}
+html:root body.ams-dark.ams-panel :is(.sidebar,.rail,.side){background:#031831!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.topbar,.tb1,.mgr-topbar,.top,.appbar,.headerbar){background:var(--galaxy-top)!important;color:var(--galaxy-text)!important;border-color:var(--galaxy-line)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.sidebar,.rail,.side) :is(.nav-item,.ritem,.navtab,.item,.tab,.sub-item,.rsubitem,.dropitem){background:transparent!important;color:#bed5f5!important;border-color:transparent!important;box-shadow:none!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.sidebar,.rail,.side) :is(.active,.nav-item:hover,.item:hover,.ritem:hover){background:#0969d6!important;color:#fff!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.sidebar,.rail,.side) :is(h1,h2,.brand-text,.brand-text h1){color:#fff!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.sidebar,.rail,.side) svg{color:inherit!important;stroke:currentColor!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.sb-section,.side-group,.group-label,.sg-title){color:#7fb4f4!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.card,.panel,.table-wrap,.toolbar,.modal-box,.ms-modal,.box,.table-controls,.table-foot,.card-head,.modal-head,.ams-ui-chart-card,.ams-ui-wcard,.ams-panel-chart-card){background:var(--galaxy-surface)!important;color:var(--galaxy-text)!important;border-color:var(--galaxy-line)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(h1,h2,h3,.tb-title,.stat-info h3,table th,table td){color:var(--galaxy-text)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(input:not([type=checkbox]):not([type=radio]),select,textarea,.tb-btn,.tb-icon){background:var(--galaxy-field)!important;color:var(--galaxy-text)!important;border-color:var(--galaxy-line)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(input,textarea)::placeholder{color:var(--galaxy-muted)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(table th,table td,.table-wrap,.page-head){border-color:var(--galaxy-line)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(thead,table th){background:var(--galaxy-field)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(tbody tr:hover,.dropdown-menu,.ms-dropdown){background:var(--galaxy-field)!important;color:var(--galaxy-text)!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.btn-blue,.ams-blue,.btn-primary){background:#0875e1!important;border-color:#0875e1!important;color:#fff!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel :is(.breadcrumb,.crumb){background:transparent!important;color:var(--galaxy-muted)!important;border-color:var(--galaxy-line)!important}
+html:root body img[data-brand-logo]{object-fit:contain!important;background:transparent!important;border-radius:0!important}
+html:root body :is(.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo,.brand-logo .logo){background:transparent!important;border-color:transparent!important}
+/* Approved dashboard card geometry and internal design. */
+html:root body:is(.ams-light,.ams-dark).ams-panel .ams-panel-kpi{min-height:118px;box-sizing:border-box;border-radius:11px;padding:20px 18px 18px 86px;border:1px solid #ffffff18;box-shadow:0 5px 18px #082d6010;color:#fff!important}
+html:root body:is(.ams-light,.ams-dark).ams-panel .ams-panel-kpi-label{font-size:12px;letter-spacing:0;margin:0 0 8px;color:inherit!important;opacity:.9}
+html:root body:is(.ams-light,.ams-dark).ams-panel .ams-panel-kpi-value{font-size:29px;font-weight:750;line-height:1.15;color:inherit!important;position:relative;z-index:1}
+html:root body:is(.ams-light,.ams-dark).ams-panel .ams-panel-kpi-sub{font-size:12px;margin-top:8px;color:inherit!important;opacity:.85}
+.galaxy-kpi-icon{position:absolute;left:20px;top:19px;width:49px;height:49px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#249afa,#0061d9);color:#fff;box-shadow:inset 0 0 15px #ffffff18}
+.galaxy-kpi-icon svg{width:25px;height:25px}
+html:root body .ams-panel-green .galaxy-kpi-icon{background:linear-gradient(135deg,#48e0d4,#0aabae)}
+html:root body .ams-panel-orange .galaxy-kpi-icon{background:linear-gradient(135deg,#6072ff,#3a23ca)}
+html:root body.ams-light .ams-panel-blue{background:linear-gradient(110deg,#09264f,#155dbb)!important}
+html:root body.ams-light .ams-panel-pink{background:linear-gradient(110deg,#99c9fa,#c4e3ff)!important;color:#103b75!important}
+html:root body.ams-light .ams-panel-green{background:linear-gradient(110deg,#007f8f,#09a0ad)!important}
+html:root body.ams-light .ams-panel-orange{background:linear-gradient(110deg,#d1e6fd,#e5f1ff)!important;color:#103b75!important}
+html:root body.ams-dark .ams-panel-blue{background:linear-gradient(110deg,#061b3c,#003992)!important}
+html:root body.ams-dark .ams-panel-pink{background:linear-gradient(110deg,#092750,#06467f)!important}
+html:root body.ams-dark .ams-panel-green{background:linear-gradient(110deg,#043045,#007d88)!important}
+html:root body.ams-dark .ams-panel-orange{background:linear-gradient(110deg,#292166,#111e51)!important}
+html:root body .ams-panel-kpi .ams-panel-info{color:inherit!important;opacity:.65}
+html:root body .ams-panel-meta{background:var(--galaxy-surface)!important;color:var(--galaxy-text)!important;border-color:var(--galaxy-line)!important;letter-spacing:0;font-family:inherit;text-transform:none}
+html:root body .ams-panel-dash-meta-row{border-color:var(--galaxy-line)!important}
+html:root body .ams-panel-chart-card{border-radius:11px;padding:20px 22px 16px;box-shadow:0 5px 18px #082d6008}
+html:root body .ams-panel-chart-head h3{font-size:18px;color:var(--galaxy-text)!important}
+html:root body .ams-panel-chart-head p{color:var(--galaxy-muted)!important}
+html:root body .ams-panel-chart-totals{gap:24px;font-size:12px;color:var(--galaxy-text)!important}
+html:root body .ams-panel-chart-totals strong{font-size:13px}
+html:root body .ams-panel-swatch-pink{background:#19bbb8!important}
+html:root body .ams-panel-swatch-blue{background:#0875e1!important}
+html:root body .ams-panel-plot-bg{fill:transparent!important}
+html:root body :is(.ams-panel-grid,.ams-panel-baseline){stroke:var(--galaxy-grid)!important}
+html:root body :is(.ams-panel-axis,.ams-ui-chart-body text,.ams-metric-volume-svg text){fill:var(--galaxy-muted)!important}
+html:root body :is(.ams-ui-chart-body,.ams-metric-volume-svg) line{stroke:var(--galaxy-grid)!important}
+html:root body .galaxy-chart-point{stroke:var(--galaxy-surface);stroke-width:1.4}
+html:root body .galaxy-chart-point:is(:hover,:focus){r:5;stroke-width:2;outline:none}
+html:root body .ams-panel-rail{background:var(--galaxy-surface);border:1px solid var(--galaxy-line);border-radius:11px;padding:20px 18px;gap:0}
+html:root body .galaxy-quick-title{font-size:18px;margin:0 0 12px;color:var(--galaxy-text)!important}
+html:root body .ams-panel-rail-item{padding:13px 0;border-bottom:1px solid var(--galaxy-line)}
+html:root body .ams-panel-rail-item:last-child{border-bottom:0}
+html:root body .ams-panel-rail-icon{background:linear-gradient(135deg,#1487ef,#0060d1)!important;color:#fff!important;border:0}
+html:root body .ams-panel-rail-item:nth-of-type(2) .ams-panel-rail-icon{background:linear-gradient(135deg,#22cbc1,#05aaa8)!important}
+html:root body .ams-panel-rail-item:nth-of-type(3) .ams-panel-rail-icon{background:linear-gradient(135deg,#8364f5,#5137d1)!important}
+html:root body .ams-panel-rail-txt strong{color:var(--galaxy-text)!important;font-size:18px}
+html:root body .ams-panel-rail-txt small{color:var(--galaxy-muted)!important;letter-spacing:0;font-size:11px}
+html:root body .ams-ui-tip{background:var(--galaxy-field)!important;color:var(--galaxy-text)!important;border:1px solid var(--galaxy-line)}
+@media(max-width:1100px){html:root body .ams-panel-kpi{padding-left:70px}.galaxy-kpi-icon{left:14px;width:42px;height:42px}html:root body .ams-panel-kpi-value{font-size:24px}}
+@media(max-width:640px){html:root body .ams-panel-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}html:root body .ams-panel-kpi{padding:15px; padding-top:68px}html:root body .ams-panel-chart-card{padding:16px 10px}html:root body .ams-panel-kpi-label{font-size:10px}}
+/* Match root canvas as well as content; older role styles use three classes. */
+html:root body.ams-panel:is(.ams-light,.ams-dark){background:var(--galaxy-bg)!important;color:var(--galaxy-text)!important}
+
+/* CAPTCHA question on the existing white calculation tile. */
+html:root body:is(.ams-login,.gx-login):is(.ams-light,.ams-dark,.gx-light,.gx-dark) #captchaText{color:#111!important;-webkit-text-fill-color:#111!important}

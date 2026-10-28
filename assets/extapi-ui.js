@@ -78,8 +78,8 @@
     + '.apibtn:disabled{opacity:.55;cursor:not-allowed;}'
     + '.apistatus{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;'
     + ' padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);}'
-    + '.apistatus.active{color:#0e7a57;background:rgba(23,179,128,.12);border-color:rgba(23,179,128,.3);}'
-    + '.apistatus.inactive{color:#8a5608;background:rgba(217,139,43,.12);border-color:rgba(217,139,43,.3);}'
+    + '.apistatus.active{color:#0a7d3f;background:rgba(10,125,63,.12);border-color:rgba(10,125,63,.3);}'
+    + '.apistatus.inactive{color:#8a6d00;background:rgba(180,140,0,.12);border-color:rgba(180,140,0,.3);}'
     + '.apistatus.revoked{color:var(--danger);background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.3);}'
     + '.apistatus.not_created{color:var(--text-muted);}'
     + '.apinote{font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.55;}'
@@ -88,7 +88,7 @@
     + '.apitable th{font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);}'
     + '.apierr{background:rgba(220,38,38,.1);border:1px solid var(--danger);color:var(--danger);'
     + ' padding:9px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;display:none;}'
-    + '.apimsg{background:rgba(23,179,128,.10);border:1px solid rgba(23,179,128,.35);color:#0e7a57;'
+    + '.apimsg{background:rgba(10,125,63,.1);border:1px solid rgba(10,125,63,.35);color:#0a7d3f;'
     + ' padding:9px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;display:none;}'
     /* ---- numbered section headers (six clearly separated areas) ---- */
     + '.apihead{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;}'
@@ -98,17 +98,17 @@
     + '.apihead .sub{margin-bottom:0;}'
     /* ---- warnings ---- */
     + '.apiwarn{margin-top:12px;padding:10px 12px;border-radius:9px;font-size:12.5px;line-height:1.55;'
-    + ' background:rgba(217,139,43,.10);border:1px solid rgba(217,139,43,.35);color:#8a5608;}'
-    + 'body.ams-dark .apiwarn{background:rgba(245,196,106,.10);border-color:rgba(245,196,106,.30);color:#f5c46a;}'
+    + ' background:rgba(180,140,0,.10);border:1px solid rgba(180,140,0,.35);color:#8a6d00;}'
+    + 'body.ams-dark .apiwarn{background:rgba(250,204,21,.10);border-color:rgba(250,204,21,.30);color:#facc15;}'
     /* ---- code + json viewer ---- */
     + '.apicode,.apijson{margin:10px 0 0;padding:12px 14px;border-radius:10px;overflow:auto;'
     + ' max-height:340px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;'
     + ' background:var(--bg2);border:1px solid var(--border);color:var(--text);white-space:pre;tab-size:2;}'
     + '.apicode{margin-top:4px;color:var(--text-muted);}'
     + '.apiempty{color:var(--text-muted);font-style:italic;}'
-    + '.jkey{color:#5b4bd8;} .jstr{color:#0e7a57;} .jnum{color:#8a5608;} .jbool{color:#2748c4;}'
-    + 'body.ams-dark .jkey{color:#b8aef2;} body.ams-dark .jstr{color:#5ed3a2;}'
-    + 'body.ams-dark .jnum{color:#f5c46a;} body.ams-dark .jbool{color:#5fc3f0;}'
+    + '.jkey{color:#7c3aed;} .jstr{color:#0a7d3f;} .jnum{color:#b45309;} .jbool{color:#2563eb;}'
+    + 'body.ams-dark .jkey{color:#c4b5fd;} body.ams-dark .jstr{color:#86efac;}'
+    + 'body.ams-dark .jnum{color:#fcd34d;} body.ams-dark .jbool{color:#93c5fd;}'
     /* ---- filters ---- */
     + '.apifilters{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}'
     + '.apifield{display:flex;flex-direction:column;gap:5px;}'
@@ -401,7 +401,7 @@
        away would wipe the only chance they get to copy it. */
     function paint2(r, message) {
       var token = r.token || '';
-      var html = '<div class="apinote" style="color:#0e7a57;font-weight:600">' + esc(message) + '</div>';
+      var html = '<div class="apinote" style="color:#0a7d3f;font-weight:600">' + esc(message) + '</div>';
       html += '<div class="apirow" style="margin-top:10px"><span class="apilbl">Your token</span>'
         + '<span class="apival" id="apiTokenVal">' + esc(token) + '</span>'
         + '<button class="apibtn primary" id="apiCopyTok">Copy token</button>'

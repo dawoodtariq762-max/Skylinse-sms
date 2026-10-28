@@ -1,9 +1,9 @@
 /**
- * PM2 Process Configuration — Skyline SMS
+ * PM2 Process Configuration — AMS SMS
  * =============================================================================
  * Start:    pm2 start ecosystem.config.js
- * Reload:   pm2 restart skyline-sms --update-env
- * Logs:     pm2 logs skyline-sms
+ * Reload:   pm2 restart ams-sms --update-env
+ * Logs:     pm2 logs ams-sms
  *
  * ARCHITECTURAL REQUIREMENTS:
  *
@@ -26,7 +26,7 @@
 module.exports = {
   apps: [
     {
-      name: 'skyline-sms',
+      name: 'ams-sms',
       script: 'backend/server.js',
       cwd: __dirname,
 

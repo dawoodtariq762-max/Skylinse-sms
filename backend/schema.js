@@ -19,10 +19,10 @@ function tableColumns(table) {
 }
 
 /*
- * Skyline SMS provider-registry table migration.
+ * AMS SMS provider-registry table migration.
  *
  * Existing production databases may still have the provider registry under its
- * pre-Skyline table name. Rename it in place so provider IDs — and therefore every
+ * pre-AMS table name. Rename it in place so provider IDs — and therefore every
  * ranges.provider_id link — remain unchanged. The both-tables path is only a
  * defensive merge for a partially migrated database: IDs are preserved where
  * possible, range links are remapped where an ID collision/name match makes
@@ -255,39 +255,6 @@ function createTables() {
     created_at TEXT DEFAULT (datetime('now'))
   )`);
 
-  /* ---- Agent payout -> Client Panel attribution (+ historical backfill) ----
-     payment_ledger never carried a client_id, so a Client could not see the
-     payouts their Agent earned on their numbers. The link already exists through
-     the originating SMS row:
-        payment_ledger.sms_record_id -> sms_records.id -> sms_records.client_id
-     This is purely ADDITIVE: no amount, status, cycle_key or eligibility is
-     rewritten, and no row is inserted or deleted. Existing rows are backfilled
-     from that link so historically saved payouts become visible too. Rows whose
-     SMS had no client (unallocated number) correctly stay NULL. */
-  ensureColumn('payment_ledger', 'client_id', 'INTEGER');
-  db.run(`UPDATE payment_ledger SET client_id = (
-            SELECT s.client_id FROM sms_records s WHERE s.id = payment_ledger.sms_record_id
-          ) WHERE client_id IS NULL AND sms_record_id IS NOT NULL`);
-
-  /* §16 — Payment clearance markers for the Credit Notes settlement statement.
-     Deliberately a SEPARATE table: the statement module is read-only by contract and
-     payment_ledger must never be mutated, backfilled or repriced, so clearing never
-     rewrites amounts, statuses or eligibility. A row here only records that an Admin
-     marked a settlement group as paid/cleared. A partial unique index keeps one
-     clearance per settlement group while tolerating empty cycle_key/eligible_at. */
-  db.run(`CREATE TABLE IF NOT EXISTS credit_note_clearances (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    agent_id INTEGER NOT NULL,
-    payment_type TEXT NOT NULL,
-    cycle_key TEXT DEFAULT '',
-    eligible_at TEXT DEFAULT '',
-    amount TEXT DEFAULT '0',
-    note TEXT DEFAULT '',
-    cleared_by INTEGER,
-    cleared_by_name TEXT DEFAULT '',
-    cleared_at TEXT DEFAULT (datetime('now'))
-  )`);
-
   db.run(`CREATE TABLE IF NOT EXISTS payment_requests_v2 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     agent_id INTEGER NOT NULL,
@@ -448,7 +415,7 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     if (!ex) db.run('INSERT INTO payment_schedule (payment_type) VALUES (?)', [t]);
   });
   ensureColumn('carrier_settings', 'retention_days', 'INTEGER DEFAULT 30');
-  // Skyline: Range/Rate Management fields (additive, all optional)
+  // AMS: Range/Rate Management fields (additive, all optional)
   ensureColumn('ranges', 'country', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'provider', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'currency_rate', "TEXT DEFAULT ''");
@@ -456,7 +423,7 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   ensureColumn('ranges', 'range_start', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'range_end', "TEXT DEFAULT ''");
   ensureColumn('ranges', 'status', "TEXT DEFAULT 'Active'");
-  // Skyline: Activity Integration entries (Provider Name + IP allowlist)
+  // AMS: Activity Integration entries (Provider Name + IP allowlist)
   db.run(`CREATE TABLE IF NOT EXISTS activity_ips (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     provider_name TEXT DEFAULT '',
@@ -465,7 +432,7 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     created_at TEXT DEFAULT (datetime('now'))
   )`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_activity_ips_enabled ON activity_ips(enabled)`);
-  // Skyline: Provider-level registry (relationship/payment/reporting — credentials stay in connections)
+  // AMS: Provider-level registry (relationship/payment/reporting — credentials stay in connections)
   migrateProviderRegistryTable();
   db.run(`CREATE TABLE IF NOT EXISTS ams_providers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -477,7 +444,7 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   )`);
-  /* Skyline P6: provider accounting (additive, non-destructive) */
+  /* AMS P6: provider accounting (additive, non-destructive) */
   ensureColumn('ams_providers', 'payment_method', "TEXT DEFAULT ''");
   ensureColumn('ams_providers', 'status', "TEXT DEFAULT 'Active'");
   ensureColumn('ams_providers', 'conn_type', "TEXT DEFAULT ''");
@@ -549,7 +516,7 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   ensureColumn('users', 'is_super_manager', 'INTEGER DEFAULT 0');
   ensureColumn('users', 'chat_display_name', "TEXT DEFAULT ''");
 
-  /* Skyline SMS Official Channel */
+  /* AMS SMS Official Channel */
   const cs = db.get('SELECT COUNT(*) AS c FROM carrier_settings');
   if (!cs || cs.c === 0) {
     db.run(`INSERT INTO carrier_settings (integration_status,carrier_ip,http_callback_url,notes)
@@ -625,8 +592,8 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
    * integrations keep working byte-for-byte as before.
    *
    * mode:
-   *   'client' = Skyline SMS binds OUT to the provider's SMPP server (ESME).
-   *   'server' = Skyline SMS LISTENS on a port and the carrier binds IN to us.
+   *   'client' = AMS SMS binds OUT to the provider's SMPP server (ESME).
+   *   'server' = AMS SMS LISTENS on a port and the carrier binds IN to us.
    */
   db.run(`CREATE TABLE IF NOT EXISTS smpp_connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -715,18 +682,18 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
 
   db.run(`CREATE TABLE IF NOT EXISTS system_security (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    admin_security_code TEXT DEFAULT 'Dawood',
-    carrier_lock_password TEXT DEFAULT 'Dawood',
+    admin_security_code TEXT DEFAULT '',
+    carrier_lock_password TEXT DEFAULT '',
     updated_at TEXT DEFAULT (datetime('now'))
   )`);
-  ensureColumn('system_security', 'carrier_lock_password', "TEXT DEFAULT 'Dawood'");
+  ensureColumn('system_security', 'carrier_lock_password', "TEXT DEFAULT ''");
   // Callback providers (IKANGOO-style) send a unique {id} per SMS. Storing the
   // resulting sms_records.id lets a retried callback return the original row
   // instead of inserting - and paying for - the same message twice.
   ensureColumn('api_integration_seen', 'sms_record_id', 'INTEGER');
   const sc = db.get('SELECT COUNT(*) AS c FROM system_security');
   if (!sc || sc.c === 0) {
-    db.run(`INSERT INTO system_security (admin_security_code) VALUES ('Dawood')`);
+    db.run('INSERT INTO system_security (admin_security_code,carrier_lock_password) VALUES (?,?)', [process.env.ADMIN_SECURITY_CODE || require('crypto').randomBytes(24).toString('hex'), process.env.CARRIER_LOCK_PASSWORD || require('crypto').randomBytes(24).toString('hex')]);
   }
 
 
@@ -744,10 +711,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_agent_date ON sms_records(agent_id, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_client_date ON sms_records(client_id, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_range_date ON sms_records(range_id, received_at)`);
-  /* Post-rebrand repair: covering index for the provider payout aggregation in
-     GET /api/providers-info (range_id -> received_at -> payout_amount). Lets the
-     single-pass conditional SUM run entirely from the index. Additive only. */
-  db.run(`CREATE INDEX IF NOT EXISTS idx_sms_range_date_payout ON sms_records(range_id, received_at, payout_amount)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_number_date ON sms_records(number, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_ranges_name_nocase ON ranges(name COLLATE NOCASE)`);
 
@@ -776,9 +739,6 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   db.run(`CREATE INDEX IF NOT EXISTS idx_failed_sms_created ON failed_sms_queue(created_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_failed_sms_number_clean ON failed_sms_queue(REPLACE(REPLACE(REPLACE(REPLACE(number,'+',''),' ',''),'-',''),'_',''))`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_ledger_agent_type_status ON payment_ledger(agent_id, payment_type, status)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_payment_ledger_client ON payment_ledger(client_id)`);
-  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_cnc_group ON credit_note_clearances(agent_id, payment_type, cycle_key, eligible_at)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_cnc_cleared_at ON credit_note_clearances(cleared_at DESC)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_ledger_eligible ON payment_ledger(payment_type, eligible_at, status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_requests_agent_type_status ON payment_requests_v2(agent_id, payment_type, status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests_v2(status, requested_at)`);

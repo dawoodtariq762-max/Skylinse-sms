@@ -4,7 +4,8 @@
 const jwt = require('jsonwebtoken');
 const db = require('./db');
 
-const SECRET = process.env.JWT_SECRET || 'ms-sms-dev-secret-change-in-production';
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) throw new Error('JWT_SECRET is required. Preserve the existing deployment secret to retain sessions.');
 
 function sign(user) {
   return jwt.sign(
