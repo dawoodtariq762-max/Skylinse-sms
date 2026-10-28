@@ -711,6 +711,10 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_agent_date ON sms_records(agent_id, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_client_date ON sms_records(client_id, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_range_date ON sms_records(range_id, received_at)`);
+  /* Post-rebrand repair: covering index for the provider payout aggregation in
+     GET /api/providers-info (range_id -> received_at -> payout_amount). Lets the
+     single-pass conditional SUM run entirely from the index. Additive only. */
+  db.run(`CREATE INDEX IF NOT EXISTS idx_sms_range_date_payout ON sms_records(range_id, received_at, payout_amount)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_number_date ON sms_records(number, received_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_ranges_name_nocase ON ranges(name COLLATE NOCASE)`);
 

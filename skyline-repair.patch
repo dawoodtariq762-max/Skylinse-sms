@@ -1,0 +1,123 @@
+diff --git a/backend/schema.js b/backend/schema.js
+index e3a71c4..6693722 100644
+--- a/backend/schema.js
++++ b/backend/schema.js
+@@ -711,6 +711,10 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
+   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_agent_date ON sms_records(agent_id, received_at)`);
+   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_client_date ON sms_records(client_id, received_at)`);
+   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_range_date ON sms_records(range_id, received_at)`);
++  /* Post-rebrand repair: covering index for the provider payout aggregation in
++     GET /api/providers-info (range_id -> received_at -> payout_amount). Lets the
++     single-pass conditional SUM run entirely from the index. Additive only. */
++  db.run(`CREATE INDEX IF NOT EXISTS idx_sms_range_date_payout ON sms_records(range_id, received_at, payout_amount)`);
+   db.run(`CREATE INDEX IF NOT EXISTS idx_sms_number_date ON sms_records(number, received_at)`);
+   db.run(`CREATE INDEX IF NOT EXISTS idx_ranges_name_nocase ON ranges(name COLLATE NOCASE)`);
+ 
+diff --git a/backend/server.js b/backend/server.js
+index 1c4c161..5b242de 100644
+--- a/backend/server.js
++++ b/backend/server.js
+@@ -6194,8 +6194,28 @@ app.get('/api/providers-info', authRequired, requireRole('admin'), (req,res)=>{
+   const m3 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 3, 1)).toISOString().slice(0,10);
+   /* Section 7: provider statistics follow the REAL link (ranges.provider_id),
+      never the informational reference text. */
+-  const sumRange = (sel, extra="", params=[]) => db.get(`SELECT COALESCE(SUM(CAST(s.payout_amount AS REAL)),0) p FROM sms_records s JOIN ranges r ON r.id=s.range_id WHERE r.provider_id=? ${extra}`, [sel, ...params])?.p || 0;
+-  const cntRange = (sel, extra="", params=[]) => db.get(`SELECT COUNT(*) c FROM sms_records s JOIN ranges r ON r.id=s.range_id WHERE r.provider_id=? ${extra}`, [sel, ...params])?.c || 0;
++  /* ---- PERF FIX (post-rebrand repair) ------------------------------------
++     The six payout windows used to run as six SEPARATE SUM() scans over
++     sms_records, each with the indexed column wrapped in strftime(), which
++     makes the predicate non-sargable and forces a full scan every time.
++     better-sqlite3 is SYNCHRONOUS, so each scan blocked the entire Node event
++     loop: opening the Providers page in the Management Panel stalled EVERY
++     other request on the server ("the whole application goes down"), and
++     recovered the moment the tab was closed. SMPP listing and provider
++     creation appeared "broken" for the same reason - they were starved.
++     Now: one pass, conditional SUMs, sargable half-open date bounds.
++     Results are identical to the previous queries.
++     ------------------------------------------------------------------- */
++  const dayStart = d => d + ' 00:00:00';
++  const nextDayStart = d => { const t = new Date(Date.UTC(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10))); t.setUTCDate(t.getUTCDate()+1); return t.toISOString().slice(0,10) + ' 00:00:00'; };
++  const monthStart = m => m + '-01 00:00:00';
++  const nextMonthStart = m => { const t = new Date(Date.UTC(+m.slice(0,4), +m.slice(5,7), 1)); return t.toISOString().slice(0,7) + '-01 00:00:00'; };
++  const W0 = dayStart(wkStart),  W1 = nextDayStart(dToday);   /* [wkStart .. dToday]    */
++  const P0 = dayStart(pwStart),  P1 = nextDayStart(wkStart);  /* [pwStart .. wkStart]   */
++  const M0 = monthStart(mThis),  M1 = nextMonthStart(mThis);  /* this month             */
++  const V0 = monthStart(mPrev),  V1 = M0;                     /* previous month         */
++  const T0 = dayStart(m3);                                    /* >= m3, excluding mThis */
++  const PAY = "CAST(COALESCE(s.payout_amount,'0') AS REAL)";
+   const out = [];
+   for (const p of provs) {
+     let conns = { api: 0, smpp: 0, ips: [] };
+@@ -6211,13 +6231,24 @@ app.get('/api/providers-info', authRequired, requireRole('admin'), (req,res)=>{
+       stats.ranges = db.get("SELECT COUNT(*) c FROM ranges WHERE provider_id=? AND COALESCE(deleted_at,'')=''", [p.id])?.c || 0;
+       stats.numbers = db.get('SELECT COUNT(*) c FROM numbers n JOIN ranges r ON r.id=n.range_id WHERE r.provider_id=?', [p.id])?.c || 0;
+       /* Section 7: keyed by the real provider id (registry), not by name text. */
+-      totals.msgs = cntRange(p.id);
+-      totals.payout_lifetime = normalizeDecimalString(sumRange(p.id)) || '0';
+-      totals.payout_week = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m-%d', s.received_at) BETWEEN ? AND ?", [wkStart, dToday])) || '0';
+-      totals.payout_prev_week = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m-%d', s.received_at) BETWEEN ? AND ?", [pwStart, wkStart])) || '0';
+-      totals.payout_month = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m', s.received_at) = ?", [mThis])) || '0';
+-      totals.payout_prev_month = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m', s.received_at) = ?", [mPrev])) || '0';
+-      totals.payout_prev_3m = normalizeDecimalString(sumRange(p.id, " AND strftime('%Y-%m-%d', s.received_at) >= ? AND strftime('%Y-%m', s.received_at) != ?", [m3, mThis])) || '0';
++      const agg = db.get(
++        `SELECT COUNT(*) AS msgs,
++                COALESCE(SUM(${PAY}),0) AS lifetime,
++                COALESCE(SUM(CASE WHEN s.received_at >= ? AND s.received_at < ? THEN ${PAY} ELSE 0 END),0) AS wk,
++                COALESCE(SUM(CASE WHEN s.received_at >= ? AND s.received_at < ? THEN ${PAY} ELSE 0 END),0) AS pw,
++                COALESCE(SUM(CASE WHEN s.received_at >= ? AND s.received_at < ? THEN ${PAY} ELSE 0 END),0) AS mm,
++                COALESCE(SUM(CASE WHEN s.received_at >= ? AND s.received_at < ? THEN ${PAY} ELSE 0 END),0) AS pm,
++                COALESCE(SUM(CASE WHEN s.received_at >= ? AND NOT (s.received_at >= ? AND s.received_at < ?) THEN ${PAY} ELSE 0 END),0) AS p3
++           FROM sms_records s JOIN ranges r ON r.id = s.range_id
++          WHERE r.provider_id = ?`,
++        [W0, W1, P0, P1, M0, M1, V0, V1, T0, M0, M1, p.id]) || {};
++      totals.msgs = Number(agg.msgs) || 0;
++      totals.payout_lifetime   = normalizeDecimalString(agg.lifetime) || '0';
++      totals.payout_week       = normalizeDecimalString(agg.wk) || '0';
++      totals.payout_prev_week  = normalizeDecimalString(agg.pw) || '0';
++      totals.payout_month      = normalizeDecimalString(agg.mm) || '0';
++      totals.payout_prev_month = normalizeDecimalString(agg.pm) || '0';
++      totals.payout_prev_3m    = normalizeDecimalString(agg.p3) || '0';
+       totals.paid_total = normalizeDecimalString(db.get('SELECT COALESCE(SUM(CAST(amount AS REAL)),0) p FROM provider_payments WHERE provider_name=?', [p.name])?.p || 0) || '0';
+       const unpaid = Math.max(0, (parseFloat(totals.payout_lifetime) || 0) - (parseFloat(totals.paid_total) || 0));
+       totals.payout_unpaid = normalizeDecimalString(unpaid) || '0';
+@@ -7116,7 +7147,15 @@ const PORT = process.env.PORT || 4000;
+   // SKYLINE_ROLE=sync runs only timers (2nd process). Default (unset/'all') = everything.
+   // The historical AMS_ROLE / ALMADA_ROLE names are still read, in that order,
+   // so an existing deployment keeps its role without editing .env.
+-  const AMS_ROLE = (process.env.SKYLINE_ROLE || process.env.AMS_ROLE || process.env.ALMADA_ROLE || 'all').toLowerCase();
++  /* POST-REBRAND FIX: the rebrand commit (3dfeae3) renamed the process-split env
++     var to SKYLINE_ROLE but dropped POWERX_ROLE from the read-chain. deploy/
++     ecosystem.config.cjs still starts powerx-api with POWERX_ROLE=api and
++     powerx-sync with POWERX_ROLE=sync, so BOTH processes resolved to 'all':
++     both called app.listen() -> EADDRINUSE -> PM2 crash loop, and both called
++     smppService.start() (double bind, doubled counters, duplicate timers).
++     POWERX_ROLE is restored here as a legacy fallback - zero risk, and it makes
++     the existing ecosystem.config.cjs work again without editing the VPS. */
++  const AMS_ROLE = (process.env.SKYLINE_ROLE || process.env.AMS_ROLE || process.env.ALMADA_ROLE || process.env.POWERX_ROLE || 'all').toLowerCase();
+   // PHASE-3: optional FTS5 trigram index over SMS messages (SKYLINE_FTS=1).
+   // Default off = zero change. Indexes new SMS via triggers; history backfills
+   // in background; /api/sms/paged search switches to the index once ready.
+diff --git a/deploy/ecosystem.config.cjs b/deploy/ecosystem.config.cjs
+index d0b07d5..7217348 100644
+--- a/deploy/ecosystem.config.cjs
++++ b/deploy/ecosystem.config.cjs
+@@ -11,7 +11,9 @@ module.exports = {
+       script: 'backend/server.js',
+       instances: 1,
+       exec_mode: 'fork',
+-      env: { POWERX_ROLE: 'api' },
++      /* POST-REBRAND FIX: belt-and-braces. The var was renamed to SKYLINE_ROLE;
++         POWERX_ROLE is kept so this file also works with a pre-fix build. */
++      env: { SKYLINE_ROLE: 'api', POWERX_ROLE: 'api' },
+       max_memory_restart: '1500M',
+       time: true,
+     },
+@@ -20,7 +22,7 @@ module.exports = {
+       script: 'backend/server.js',
+       instances: 1,
+       exec_mode: 'fork',
+-      env: { POWERX_ROLE: 'sync' },
++      env: { SKYLINE_ROLE: 'sync', POWERX_ROLE: 'sync' },
+       max_memory_restart: '800M',
+       time: true,
+     },

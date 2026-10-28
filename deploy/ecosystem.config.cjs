@@ -11,7 +11,9 @@ module.exports = {
       script: 'backend/server.js',
       instances: 1,
       exec_mode: 'fork',
-      env: { POWERX_ROLE: 'api' },
+      /* POST-REBRAND FIX: belt-and-braces. The var was renamed to SKYLINE_ROLE;
+         POWERX_ROLE is kept so this file also works with a pre-fix build. */
+      env: { SKYLINE_ROLE: 'api', POWERX_ROLE: 'api' },
       max_memory_restart: '1500M',
       time: true,
     },
@@ -20,7 +22,7 @@ module.exports = {
       script: 'backend/server.js',
       instances: 1,
       exec_mode: 'fork',
-      env: { POWERX_ROLE: 'sync' },
+      env: { SKYLINE_ROLE: 'sync', POWERX_ROLE: 'sync' },
       max_memory_restart: '800M',
       time: true,
     },
