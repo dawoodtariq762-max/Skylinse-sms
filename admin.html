@@ -480,6 +480,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
           </div>
           <div class="bulk-bar">
             <span class="info" id="selInfo">0 selected</span>
+            <button type="button" class="ams-btn" onclick="returnSelected()" data-tip="Return selected numbers" title="Return selected numbers" aria-label="Return selected numbers" style="font-weight:700">Return Selected</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -1193,6 +1194,50 @@ function updateSelInfo(){
 function getSelectedIds(){ return [...document.querySelectorAll('.rowchk:checked')].map(c=>parseInt(c.dataset.id)).filter(n=>!isNaN(n));}
 async function unallocateSelected(){const ids=getSelectedIds();if(!ids.length){alert('Please select numbers first.');return;}
   try{ await API.post('/numbers/unallocate',{ids}); alert(`✅ ${ids.length} numbers unallocated.`); loadNumbers(); }catch(e){ alert('❌ '+e.message); }}
+
+/* ---- Hierarchical Number Return -------------------------------------------
+   Returns the selected numbers one or more levels UP the allocation chain:
+     Client -> back to its Agent      (number stays in the Agent's inventory)
+     Agent  -> back to Admin          (Manager + Client links released too)
+     Manager-> back to Admin          (Agent + Client links released too)
+     Admin  -> fully unallocated
+   Two-phase: the server first reports the exact impact, which is shown in the
+   confirmation dialog, then the change runs in a single transaction.
+   -------------------------------------------------------------------------- */
+async function returnSelected(){
+  const ids=getSelectedIds();
+  if(!ids.length){ alert('Please select the numbers you want to return.'); return; }
+  let preview;
+  try{
+    preview=await API.post('/numbers/return',{ids, confirm:false});
+  }catch(e){
+    alert('❌ '+(e.message||'Could not prepare the return.')); return;
+  }
+  const n=preview.count!=null?preview.count:ids.length;
+  const bits=[];
+  bits.push('Return '+n+' number'+(n===1?'':'s')+'?');
+  bits.push('');
+  bits.push(preview.message||'');
+  if(preview.releases_clients&&preview.releases_clients.length)
+    bits.push('Clients released: '+preview.releases_clients.join(', '));
+  if(preview.releases_agents&&preview.releases_agents.length)
+    bits.push('Agents released: '+preview.releases_agents.join(', '));
+  if(preview.releases_managers&&preview.releases_managers.length)
+    bits.push('Managers released: '+preview.releases_managers.join(', '));
+  if(preview.skipped) bits.push('');
+  if(preview.skipped) bits.push(preview.skipped+' selected number(s) will be skipped (not yours or already returned).');
+  bits.push('');
+  bits.push('The number records and all SMS/CDR history are kept.');
+  if(!confirm(bits.join('\n'))) return;
+  try{
+    const r=await API.post('/numbers/return',{ids, confirm:true});
+    alert('✅ '+(r.count||0)+' number(s) returned.'+((r.skipped)?('\n'+r.skipped+' skipped.'):''));
+  }catch(e){
+    alert('❌ '+(e.message||'Return failed.')); return;
+  }
+  try{ loadNumbers(); }catch(e){}
+  try{ if(typeof updateSelInfo==='function') updateSelInfo(); }catch(e){}
+}
 async function unassignOne(id){if(confirm('Unallocate this number?')){try{await API.post('/numbers/unallocate',{ids:[id]});loadNumbers();}catch(e){alert('❌ '+e.message);}}}
 function askDeleteSmsHistory(){
   return confirm('Do you also want to delete OTP/SMS history for these number(s)?\n\nOK = Delete OTP/SMS history too\nCancel = Keep OTP/SMS history');

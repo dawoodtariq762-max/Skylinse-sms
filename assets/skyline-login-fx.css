@@ -134,10 +134,10 @@ html body.skyline-light.skyline-login .captcha-row{grid-template-columns:128px m
 html body.skyline-light.skyline-login .captcha-box{
   height:48px !important; padding:0 8px !important;
   background:#eaf2fd !important; border:1.5px dashed #7fa9f7 !important; border-radius:14px !important;
-  color:#dbe6fb !important; box-shadow:none !important; gap:8px !important;
+  color:#191a1f !important; box-shadow:none !important; gap:8px !important;
 }
 html body.skyline-light.skyline-login #captchaText{
-  color:#dbe6fb !important; text-shadow:none !important; font-size:18px !important; font-weight:800 !important;
+  color:#191a1f !important; text-shadow:none !important; font-size:18px !important; font-weight:800 !important;
   letter-spacing:.05em !important; white-space:nowrap; font-variant-numeric:tabular-nums;
 }
 html body.skyline-light.skyline-login .refresh-btn{
@@ -250,4 +250,13 @@ body:is(.skyline-light,.skyline-dark):is(.skyline-login,.skyline-portal-login) .
   html body.skyline-light:is(.skyline-login,.skyline-portal-login) :is(.brand img,.logo img){height:44px !important;}
   html body.skyline-light:is(.skyline-login,.skyline-portal-login) :is(.eyebrow,.login-head p,.sub){display:none !important;}
   html body.skyline-light:is(.skyline-login,.skyline-portal-login){align-items:flex-start !important;}
+}
+
+/* Contrast guard: the arithmetic CAPTCHA question must always be dark text on
+   the light captcha panel (~14:1). Only colour is forced — no layout change. */
+html body:is(.skyline-light,.skyline-dark,.ams-light,.ams-dark)
+  :is(.skyline-login,.skyline-portal-login,.ams-login,.ams-portal-login) #captchaText{
+  color:#191a1f !important;
+  text-shadow:none !important;
+  -webkit-text-fill-color:#191a1f !important;
 }

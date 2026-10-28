@@ -540,7 +540,13 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   try {
     db.run(`UPDATE numbers SET manager_rate = rate WHERE manager_id IS NOT NULL AND (manager_rate IS NULL OR manager_rate = '') AND rate != '' AND rate IS NOT NULL`);
     db.run(`UPDATE numbers SET agent_rate = rate WHERE agent_id IS NOT NULL AND manager_id IS NULL AND (agent_rate IS NULL OR agent_rate = '') AND rate != '' AND rate IS NOT NULL`);
-    db.run(`UPDATE numbers SET client_rate = payout WHERE client_id IS NOT NULL AND (client_rate IS NULL OR client_rate = '') AND payout != '' AND payout != '0' AND payout IS NOT NULL`);
+    /* Agent->Client rate integrity: this backfill used to copy `payout` into
+       `client_rate` whenever client_rate was empty, which INVENTED a client rate
+       from an unrelated field even when the Agent had configured nothing. It runs
+       on every boot, so the invented value kept reappearing. Removed: an
+       unconfigured Agent value must resolve to 0.00, never to a copied default.
+       Existing rows are deliberately left alone - the original intended value
+       cannot be established safely, so history is not rewritten. */
     db.run(`UPDATE ranges SET pattern = prefix WHERE (pattern IS NULL OR pattern = '') AND prefix IS NOT NULL AND prefix != ''`);
     db.run(`UPDATE numbers SET pattern = prefix WHERE (pattern IS NULL OR pattern = '') AND prefix IS NOT NULL AND prefix != ''`);
   } catch (_) {}

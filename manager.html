@@ -471,7 +471,7 @@ body .content{padding:20px 14px!important;}
         <div class="tc-left"><label>Show Records:</label><select id="numLen" onchange="renderNumbers()"><option>10</option><option selected>25</option><option>50</option><option>100</option><option>500</option><option>1000</option><option>5000</option><option value="All">All</option></select>
         <div class="exp-btns"><button type="button" class="ams-btn ams-blue" onclick="copyNumbersOnly()" data-tip="Copy numbers" title="Copy numbers" aria-label="Copy numbers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button type="button" class="ams-btn ams-blue"  data-tip="Download CSV" title="Download CSV" aria-label="Download CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button type="button" class="ams-btn ams-green"  data-tip="Download Excel" title="Download Excel" aria-label="Download Excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
         <div class="tc-right"><label>Search:</label><input type="text" id="numSearch" oninput="renderNumbers()" placeholder="Search..."/></div></div>
-      <div class="bulk-bar"><span class="info" id="selInfo">0 selected</span></div>
+      <div class="bulk-bar"><span class="info" id="selInfo">0 selected</span><button type="button" class="ams-btn" onclick="returnSelected()" data-tip="Return selected numbers" title="Return selected numbers" aria-label="Return selected numbers" style="font-weight:700">Return Selected</button></div>
     </div>
     <div class="table-wrap"><div class="tscroll"><table>
       <thead><tr>
@@ -741,6 +741,50 @@ function renderNumbers(){
 function toggleAll(cb){document.querySelectorAll('.rc').forEach(c=>c.checked=cb.checked);updSel();}
 function updSel(){document.getElementById('selInfo').textContent=document.querySelectorAll('.rc:checked').length+' selected';}
 function selIds(){return[...document.querySelectorAll('.rc:checked')].map(c=>parseInt(c.dataset.id));}
+
+/* ---- Hierarchical Number Return -------------------------------------------
+   Returns the selected numbers one or more levels UP the allocation chain:
+     Client -> back to its Agent      (number stays in the Agent's inventory)
+     Agent  -> back to Admin          (Manager + Client links released too)
+     Manager-> back to Admin          (Agent + Client links released too)
+     Admin  -> fully unallocated
+   Two-phase: the server first reports the exact impact, which is shown in the
+   confirmation dialog, then the change runs in a single transaction.
+   -------------------------------------------------------------------------- */
+async function returnSelected(){
+  const ids=selIds();
+  if(!ids.length){ alert('Please select the numbers you want to return.'); return; }
+  let preview;
+  try{
+    preview=await API.post('/numbers/return',{ids, confirm:false});
+  }catch(e){
+    alert('❌ '+(e.message||'Could not prepare the return.')); return;
+  }
+  const n=preview.count!=null?preview.count:ids.length;
+  const bits=[];
+  bits.push('Return '+n+' number'+(n===1?'':'s')+'?');
+  bits.push('');
+  bits.push(preview.message||'');
+  if(preview.releases_clients&&preview.releases_clients.length)
+    bits.push('Clients released: '+preview.releases_clients.join(', '));
+  if(preview.releases_agents&&preview.releases_agents.length)
+    bits.push('Agents released: '+preview.releases_agents.join(', '));
+  if(preview.releases_managers&&preview.releases_managers.length)
+    bits.push('Managers released: '+preview.releases_managers.join(', '));
+  if(preview.skipped) bits.push('');
+  if(preview.skipped) bits.push(preview.skipped+' selected number(s) will be skipped (not yours or already returned).');
+  bits.push('');
+  bits.push('The number records and all SMS/CDR history are kept.');
+  if(!confirm(bits.join('\n'))) return;
+  try{
+    const r=await API.post('/numbers/return',{ids, confirm:true});
+    alert('✅ '+(r.count||0)+' number(s) returned.'+((r.skipped)?('\n'+r.skipped+' skipped.'):''));
+  }catch(e){
+    alert('❌ '+(e.message||'Return failed.')); return;
+  }
+  try{ loadNumbers(); }catch(e){}
+  try{ if(typeof updateSelInfo==='function') updateSelInfo(); }catch(e){}
+}
 async function unallocSel(){const ids=selIds();if(!ids.length){alert('Select numbers.');return;}try{await API.post('/numbers/unallocate',{ids});alert(`✅ ${ids.length} numbers unallocated.`);loadNumbers();}catch(e){alert('❌ '+e.message);}}
 /* Allocate All modal (to Agent or Client) */
 async function openAllocAll(){const ids=selIds();if(!ids.length){alert('Please select numbers first (checkbox).');return;}

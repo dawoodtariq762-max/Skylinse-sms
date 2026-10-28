@@ -2790,17 +2790,25 @@ function numberSelectSql(where, options = {}) {
       CASE WHEN n.manager_id IS NULL THEN NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.rate,''))),'NA'),'') ELSE NULL END,
       ${cardRateExpr})`;
   } else if (role === 'client') {
-    effExpr = `COALESCE(
-      NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.client_rate,''))),'NA'),''),
-      NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.payout,''))),'NA'),''),
-      '0')`;
+    /* Agent->Client rate rule: the Client's rate/payout is EXACTLY what the Agent
+       configured for that allocation (numbers.client_rate). Empty, unset, '0' and
+       '0.00' all resolve to '0'. There is deliberately NO fallback to `payout`,
+       `rate` or any range rate: falling back to `payout` was what let a Client keep
+       receiving an obsolete non-zero value after the Agent had zeroed the rate. */
+    effExpr = `CASE
+      WHEN COALESCE(NULLIF(TRIM(COALESCE(n.client_rate,'')),''),'0') IN ('0','0.0','0.00','0.000','0.0000','0.00000','0.000000') THEN '0'
+      ELSE COALESCE(NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.client_rate,''))),'NA'),''),'0')
+    END`;
   } else {
     // Admin or unspecified: displays the rate Admin assigned to the top assigned tier
     effExpr = `COALESCE(
       CASE
         WHEN n.manager_id IS NOT NULL THEN COALESCE(NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.manager_rate,''))),'NA'),''), NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.rate,''))),'NA'),''))
         WHEN n.agent_id IS NOT NULL THEN COALESCE(NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.agent_rate,''))),'NA'),''), NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.rate,''))),'NA'),''))
-        WHEN n.client_id IS NOT NULL THEN COALESCE(NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.client_rate,''))),'NA'),''), NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.payout,''))),'NA'),''))
+        WHEN n.client_id IS NOT NULL THEN CASE
+          WHEN COALESCE(NULLIF(TRIM(COALESCE(n.client_rate,'')),''),'0') IN ('0','0.0','0.00','0.000','0.0000','0.00000','0.000000') THEN '0'
+          ELSE COALESCE(NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.client_rate,''))),'NA'),''),'0')
+        END
         ELSE NULLIF(NULLIF(UPPER(TRIM(COALESCE(n.rate,''))),'NA'),'')
       END,
       ${cardRateExpr})`;
@@ -3099,7 +3107,10 @@ function validatedAllocationRate(user, raw, targetRole = '') {
   const str = String(raw).trim();
   if (str.startsWith('-'))
     return { ok: false, error: 'Invalid rate: positive decimal number required (e.g. 0.013)' };
-  if (targetRole === 'client' && (str === '0' || /^0+(\.0+)?$/.test(str))) {
+  /* A configured zero is a real, intentional value for every target tier, not a
+     missing one: '0' / '0.00' must be stored as zero so an Agent can zero a
+     Client rate instead of being told the rate is invalid. */
+  if (str === '0' || /^0+(\.0+)?$/.test(str)) {
     return { ok: true, value: '0' };
   }
   const v = normalizeDecimalString(str);
@@ -3652,6 +3663,154 @@ app.post('/api/numbers/unallocate', authRequired, (req, res) => {
     try { if (db.inTransaction()) db.exec('ROLLBACK'); } catch (_) {}
     console.error('[UNALLOCATE] failed:', e.message);
     return res.status(500).json({ error: 'Unallocate failed: ' + e.message });
+  }
+});
+
+/* ============================================================================
+   HIERARCHICAL NUMBER RETURN  (POST /api/numbers/return)
+
+   A number flows Admin -> Manager -> Agent -> Client. "Return" releases a
+   selection one or more levels UP that chain, and never deletes the number or
+   any SMS/CDR history - only ownership columns and their rate fields change.
+
+     caller   ownership guard      releases                          lands at
+     -------  -------------------  ---------------------------------  ----------
+     client   client_id = me       client_id                          its Agent
+     agent    agent_id  = me       agent_id + client_id + manager_id  Admin
+     manager  manager_id = me      manager_id + agent_id + client_id  Admin
+     admin    (any)                all three                          Admin
+
+   Ownership is enforced in the SQL WHERE clause, so a forged request from
+   another user simply matches zero rows - the UI is never the only guard.
+   A Client return deliberately keeps agent_id so the number becomes free
+   for that Agent to re-allocate, rather than jumping to Admin.
+
+   Two-phase: without confirm=true the endpoint only REPORTS the impact
+   (counts + affected downstream users) so the UI can show an accurate
+   confirmation for cascading returns. With confirm=true it runs the whole
+   thing inside one transaction, so a partial return is impossible.
+   ========================================================================== */
+const RETURN_RULES = {
+  client: {
+    scopeCol: 'client_id',
+    sets: "client_id=NULL, client_rate='', payout='0'",
+    cascades: false,
+    summary: 'These numbers will be released back to your Agent.',
+  },
+  agent: {
+    scopeCol: 'agent_id',
+    /* Up the hierarchy to Admin: the Manager link goes too, so the number no
+       longer shows under that Manager or any Client. */
+    sets: "agent_id=NULL, client_id=NULL, manager_id=NULL, agent_rate='', client_rate='', payout='0'",
+    cascades: true,
+    summary: 'These numbers will be returned to Admin and every Client assignment on them will be released.',
+  },
+  manager: {
+    scopeCol: 'manager_id',
+    sets: "manager_id=NULL, agent_id=NULL, client_id=NULL, manager_rate='', agent_rate='', client_rate='', payout='0'",
+    cascades: true,
+    summary: 'These numbers will be returned to Admin and every Agent and Client assignment below them will be released.',
+  },
+  admin: {
+    scopeCol: null,
+    sets: "manager_id=NULL, agent_id=NULL, client_id=NULL, manager_rate='', agent_rate='', client_rate='', payout='0', rate=''",
+    cascades: true,
+    summary: 'These numbers will be fully unallocated.',
+  },
+};
+
+app.post('/api/numbers/return', authRequired, (req, res) => {
+  const { ids, confirm } = req.body || {};
+  if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'ids[] required' });
+
+  const clean = [...new Set(ids.map(x => parseInt(x, 10)).filter(x => Number.isFinite(x) && x > 0))];
+  if (!clean.length) return res.status(400).json({ error: 'No valid number ids supplied' });
+
+  const role = req.user.role;
+  const rule = RETURN_RULES[role];
+  if (!rule) return res.status(403).json({ error: 'Your role cannot return numbers' });
+
+  const scopeWhere = rule.scopeCol ? `n.${rule.scopeCol}=?` : '1=1';
+  const scopeParams = rule.scopeCol ? [req.user.id] : [];
+
+  let out = null;
+  try {
+    if (!db.inTransaction()) db.exec('BEGIN IMMEDIATE');
+    db.execNoSave('DROP TABLE IF EXISTS tmp_return_ids');
+    db.execNoSave('CREATE TEMP TABLE tmp_return_ids (id INTEGER PRIMARY KEY)');
+    const CHUNK = 5000;
+    for (let i = 0; i < clean.length; i += CHUNK) {
+      const chunk = clean.slice(i, i + CHUNK);
+      if (!chunk.length) continue;
+      db.runNoSave(`INSERT OR IGNORE INTO tmp_return_ids (id) VALUES ${chunk.map(() => '(?)').join(',')}`, chunk);
+    }
+
+    /* Everything is scoped: only rows the caller actually owns can match. */
+    const owned = db.all(
+      `SELECT n.id,n.number,n.manager_id,n.agent_id,n.client_id FROM numbers n
+        WHERE n.id IN (SELECT id FROM tmp_return_ids) AND ${scopeWhere}`, scopeParams);
+
+    if (!owned.length) {
+      db.execNoSave('DROP TABLE IF EXISTS tmp_return_ids');
+      if (db.inTransaction()) db.exec('COMMIT');
+      return res.status(404).json({
+        error: 'No numbers you are authorised to return were found in the selection. They may already have been returned.',
+      });
+    }
+
+    const ownedIds = owned.map(r => r.id);
+    const clientIds = [...new Set(owned.map(r => r.client_id).filter(Boolean))];
+    const agentIds  = [...new Set(owned.map(r => r.agent_id).filter(Boolean))];
+    const mgrIds    = [...new Set(owned.map(r => r.manager_id).filter(Boolean))];
+    const nameOf = (id) => (db.get('SELECT username FROM users WHERE id=?', [id]) || {}).username || ('#' + id);
+
+    /* ---- phase 1: impact preview, no writes ---- */
+    if (confirm !== true) {
+      db.execNoSave('DROP TABLE IF EXISTS tmp_return_ids');
+      if (db.inTransaction()) db.exec('COMMIT');
+      return res.json({
+        ok: true, preview: true, count: ownedIds.length,
+        requested: clean.length,
+        skipped: clean.length - ownedIds.length,
+        releases_clients: clientIds.map(nameOf),
+        releases_agents: agentIds.map(nameOf),
+        releases_managers: mgrIds.map(nameOf),
+        cascades: rule.cascades,
+        message: rule.summary,
+        requires_confirm: true,
+      });
+    }
+
+    /* ---- phase 2: perform, atomically ---- */
+    db.execNoSave('DROP TABLE IF EXISTS tmp_return_ids2');
+    db.execNoSave('CREATE TEMP TABLE tmp_return_ids2 (id INTEGER PRIMARY KEY)');
+    for (let i = 0; i < ownedIds.length; i += CHUNK) {
+      const chunk = ownedIds.slice(i, i + CHUNK);
+      db.runNoSave(`INSERT OR IGNORE INTO tmp_return_ids2 (id) VALUES ${chunk.map(() => '(?)').join(',')}`, chunk);
+    }
+    const upd = db.runNoSave(
+      `UPDATE numbers SET ${rule.sets} WHERE id IN (SELECT id FROM tmp_return_ids2)`, []);
+    const count = upd.changes || 0;
+    db.execNoSave('DROP TABLE IF EXISTS tmp_return_ids');
+    db.execNoSave('DROP TABLE IF EXISTS tmp_return_ids2');
+    if (db.inTransaction()) db.exec('COMMIT');
+
+    try {
+      db.beginBatch();
+      for (const nr of owned) logNumberHistory(req, nr, 'unallocated', '', '', 'Return number (' + role + ' -> up hierarchy)');
+    } finally { db.endBatch(); }
+    logAction(req, 'return_numbers', 'numbers', { count, role, requested: clean.length });
+    bumpNumbersVer();
+    if (app.broadcastSseAll) app.broadcastSseAll('allocation_update', { action: 'return', count, role, timestamp: Date.now() });
+    out = { ok: true, count, released: count, skipped: clean.length - ownedIds.length,
+            releases_clients: clientIds.map(nameOf), releases_agents: agentIds.map(nameOf) };
+    res.json(out);
+  } catch (e) {
+    try { db.execNoSave('DROP TABLE IF EXISTS tmp_return_ids'); } catch (_) {}
+    try { db.execNoSave('DROP TABLE IF EXISTS tmp_return_ids2'); } catch (_) {}
+    try { if (db.inTransaction()) db.exec('ROLLBACK'); } catch (_) {}
+    console.error('[RETURN] failed:', e.message);
+    return res.status(500).json({ error: 'Return failed: ' + e.message });
   }
 });
 
