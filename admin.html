@@ -458,6 +458,10 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
             <div id="numRangeContainer" style="display:inline-block;min-width:180px"><select class="sel-lg" id="numRange"><option value="">Select Range</option></select></div>
             <!-- Provider filter (admin only): shows ALL eligible numbers of the provider across all its ranges -->
             <div id="numProviderContainer" style="display:inline-block;min-width:180px"><select class="sel-lg" id="numProvider"><option value="">Select Provider</option></select></div>
+            <!-- §9.2: user filter (Manager / Agent / Client). The container previously did
+                 not exist, so renderSearchSelect() fell through to a dead else-branch and
+                 the owner filter never rendered at all. -->
+            <div id="numClientContainer" style="display:inline-block;min-width:220px"></div>
             <button type="button" class="ams-btn ams-blue"  onclick="applyNumFilter()" data-tip="Filters" title="Filters" aria-label="Filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></button>
             <button type="button" class="ams-btn"  onclick="clearNumFilter()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
           </div>
@@ -487,9 +491,8 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
               <th class="sortable" onclick="sortNumbers('prefix')">Prefix <span class="sort">⇅</span></th>
               <th>Country</th>
               <th class="sortable" onclick="sortNumbers('number')">Number <span class="sort" id="numSortHint">⇅</span></th>
-              <th class="sortable" onclick="sortNumbers('manager')">Manager <span class="sort">⇅</span></th>
-              <th class="sortable" onclick="sortNumbers('agent')">Agent <span class="sort">⇅</span></th>
-              <th class="sortable" onclick="cycleClientFilter()">Client <span class="sort" id="clientSortHint">⇅</span></th>
+              <th class="sortable" onclick="sortNumbers('manager')">Manager <span class="sort">⇅</span><button type="button" class="alloc-toggle" id="mgrAllocHint" onclick="event.stopPropagation();cycleManagerAllocFilter()" title="Filter by Manager allocation state" aria-label="Filter by Manager allocation state">▾</button></th>
+              <th class="sortable" onclick="sortNumbers('agent')">Agent <span class="sort">⇅</span><button type="button" class="alloc-toggle" id="agtAllocHint" onclick="event.stopPropagation();cycleAgentAllocFilter()" title="Filter by Agent allocation state" aria-label="Filter by Agent allocation state">▾</button></th>
               <th class="sortable" onclick="sortNumbers('myVal')">My Rate <span class="sort">⇅</span></th>
               <th class="sortable" onclick="sortNumbers('payVal')">Payout <span class="sort">⇅</span></th>
               <th>Provider Rate</th>
@@ -841,25 +844,37 @@ function refreshHierarchy(){
 function ownerNamesForAdmin(){
   return unique([...(usersData.manager||[]).map(x=>x.username), ...(usersData.agent||[]).map(x=>x.username)]);
 }
+/* §9.2 — searchable user filter covering Manager, Agent AND Client.
+   The value is encoded "role:username" so the backend can filter the exact
+   ownership column instead of the combined owner match (which could not
+   select a Client at all). Selecting a user answers "how many numbers belong
+   to this Manager/Agent" via the server-side count. */
 function fillAdminOwnerSelects(){
-  const owners=ownerNamesForAdmin();
+  const items=[];
+  (usersData.manager||[]).forEach(u=>items.push({value:'manager:'+u.username,label:'Manager \u2014 '+u.username}));
+  (usersData.agent||[]).forEach(u=>items.push({value:'agent:'+u.username,label:'Agent \u2014 '+u.username}));
+  (usersData.client||[]).forEach(u=>items.push({value:'client:'+u.username,label:'Client \u2014 '+u.username}));
   if (window.renderSearchSelect && document.getElementById('numClientContainer')) {
-    const items = owners.map(o => ({ value: o, label: o }));
     window.renderSearchSelect('numClientContainer', {
       id: 'numClient',
-      placeholder: 'Select Owner',
-      searchPlaceholder: 'Search owner...',
-      style: 'min-width:180px',
+      placeholder: 'Select User',
+      searchPlaceholder: 'Search user...',
+      style: 'min-width:220px',
       items: items,
-      value: numClientFilter || '',
+      value: numUserFilter.value ? (numUserFilter.role+':'+numUserFilter.value) : '',
       onChange: (val) => {
-        numClientFilter = val;
+        const raw=String(val||''); const i=raw.indexOf(':');
+        if(i>0) numUserFilter={role:raw.slice(0,i), value:raw.slice(i+1)};
+        else numUserFilter={value:'',role:''};
         renderNumbers();
       }
     });
   } else {
-    fillSelect('numClient', owners);
-    const s=document.getElementById('numClient'); if(s && s.children[0]) s.children[0].textContent='Select Owner';
+    const sel=document.getElementById('numClient');
+    if(sel){ sel.innerHTML='<option value="">Select User</option>'+items.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
+      sel.onchange=()=>{ const raw=sel.value; const i=raw.indexOf(':');
+        if(i>0) numUserFilter={role:raw.slice(0,i), value:raw.slice(i+1)}; else numUserFilter={value:'',role:''};
+        renderNumbers(); }; }
   }
 }
 function renderAdminNumbersRangeFilter(){
@@ -1073,6 +1088,17 @@ function doAllocate(){
 
 /* =============== SMS NUMBERS (API-backed) =============== */
 let numSort={key:null,dir:1}, clientFilterMode=0, numRangeFilter='', numClientFilter='', numProviderFilter='';
+/* §9.2/§9.3/§9.4 — Admin SMS Numbers user + allocation filters.
+   numUserFilter holds {value, role} so the backend can filter the right column
+   (manager / agent / client) instead of the combined 'owner' match.
+   mgrAllocMode and agtAllocMode are INDEPENDENT 3-state cycles on the Manager and
+   Agent column headers. They are deliberately separate queries:
+     unalloc_mgr   = no Manager AND no Agent
+     alloc_mgr     = has a Manager OR an Agent
+     unalloc_agent = no Agent, REGARDLESS of Manager  (NOT 'unallocated to everyone')
+     alloc_agent   = has an Agent, regardless of Manager
+   Only one cycle is active at a time so the two states can never be confused. */
+let mgrAllocMode=0, agtAllocMode=0, numUserFilter={value:'',role:''};
 async function loadTestNumbers(){
   try{ const data=await API.get('/test-numbers?paged=1&page=1&limit=100'); const rows=data.rows||data; testNumbers=(rows||[]).map(t=>({range:t.range_name,prefix:t.prefix||'',num:t.number,payout:t.payout||'Ask',created_at:t.created_at||''})); }
   catch(e){ testNumbers=[]; }
@@ -1083,7 +1109,24 @@ function sortNumbers(key){if(numSort.key===key)numSort.dir*=-1;else{numSort.key=
   if(key==='number'){document.getElementById('numSortHint').textContent=numSort.dir===1?'▲':'▼';}
   renderNumbers();}
 function cycleClientFilter(){clientFilterMode=(clientFilterMode+1)%3;
-  document.getElementById('clientSortHint').textContent=clientFilterMode===0?'⇅':(clientFilterMode===1?'Unallocated ▾':'Allocated ▾');renderNumbers();}
+  const h=document.getElementById('clientSortHint'); if(h) h.textContent=clientFilterMode===0?'⇅':(clientFilterMode===1?'Unallocated ▾':'Allocated ▾');
+  renderNumbers();}
+/* Resolve whichever allocation cycle is active into the backend parameter. */
+function currentAllocationParam(){
+  if(agtAllocMode===1) return 'unalloc_agent';
+  if(agtAllocMode===2) return 'alloc_agent';
+  if(mgrAllocMode===1) return 'unalloc_mgr';
+  if(mgrAllocMode===2) return 'alloc_mgr';
+  if(clientFilterMode===1) return 'unallocated';
+  if(clientFilterMode===2) return 'allocated';
+  return null;
+}
+function paintAllocHints(){
+  const m=document.getElementById('mgrAllocHint'); if(m){ m.textContent=mgrAllocMode===0?'▾':(mgrAllocMode===1?'Unalloc ▾':'Alloc ▾'); m.classList.toggle('on',mgrAllocMode!==0); m.title=mgrAllocMode===0?'Filter by Manager allocation state':(mgrAllocMode===1?'Showing: not allocated to any Manager or Agent — click for Allocated':(mgrAllocMode===2?'Showing: allocated to a Manager or Agent — click to clear':'Filter by Manager allocation state')); }
+  const a=document.getElementById('agtAllocHint'); if(a){ a.textContent=agtAllocMode===0?'▾':(agtAllocMode===1?'Unalloc ▾':'Alloc ▾'); a.classList.toggle('on',agtAllocMode!==0); a.title=agtAllocMode===0?'Filter by Agent allocation state':(agtAllocMode===1?'Showing: not allocated to any Agent (Manager allocation ignored) — click for Allocated':(agtAllocMode===2?'Showing: allocated to an Agent — click to clear':'Filter by Agent allocation state')); }
+}
+function cycleManagerAllocFilter(){ mgrAllocMode=(mgrAllocMode+1)%3; agtAllocMode=0; clientFilterMode=0; paintAllocHints(); renderNumbers(); }
+function cycleAgentAllocFilter(){ agtAllocMode=(agtAllocMode+1)%3; mgrAllocMode=0; clientFilterMode=0; paintAllocHints(); renderNumbers(); }
 function applyNumFilter(){
   const nr=document.getElementById('numRange'); if(nr) numRangeFilter=nr.value;
   const nc=document.getElementById('numClient'); if(nc) numClientFilter=nc.value;
@@ -1093,6 +1136,8 @@ function applyNumFilter(){
 function clearNumFilter(){
   numRangeFilter='';
   numClientFilter='';
+  numUserFilter={value:'',role:''};
+  mgrAllocMode=0; agtAllocMode=0; clientFilterMode=0; paintAllocHints();
   numProviderFilter='';
   const npc=document.getElementById('numProvider'); if(npc) npc.value='';
   if (window.setSearchDropdownValue) window.setSearchDropdownValue('numProvider','','Select Provider');
@@ -1297,7 +1342,7 @@ async function exportNumbersCsv(){
     if(typeof numRangeFilter!=='undefined'&&numRangeFilter) body.range=numRangeFilter;
     /* provider filter is exported too, so the CSV matches what the table shows */
     if(typeof numProviderFilter!=='undefined'&&numProviderFilter) body.provider=numProviderFilter;
-    if(typeof clientFilterMode!=='undefined'){ if(clientFilterMode===1) body.allocation='unallocated'; if(clientFilterMode===2) body.allocation='allocated'; }
+    if(typeof currentAllocationParam==='function'){ const _a=currentAllocationParam(); if(_a) body.allocation=_a; }
     const r=await API.post('/exports',body);
     alert('📤 Export started in background. The CSV download will start automatically when ready.');
     pollExportJob(r.job_id);
@@ -1546,8 +1591,13 @@ function sdChipsHtml(){
 }
 function sdSyncFilterSelects(){
   const sel=window.__sdSel=window.__sdSel||sdSelAll();
-  const map={range:'sdSelRange',manager:'sdSelManager',agent:'sdSelAgent',client:'sdSelClient',provider:'sdSelProvider'};
-  for(const k of Object.keys(map)){ const el=document.getElementById(map[k]); if(el){ const want=String(sel[k]||''); if(el.value!==want){ el.value=want; } } }
+  const map={range:['sdSelRange','All Ranges'],manager:['sdSelManager','All Managers'],agent:['sdSelAgent','All Agents'],client:['sdSelClient','All Clients'],provider:['sdSelProvider','All Providers']};
+  for(const k of Object.keys(map)){
+    const id=map[k][0], ph=map[k][1], want=String(sel[k]||'');
+    /* Prefer the searchable-dropdown setter; fall back to a plain <select>. */
+    if(window.setSearchDropdownValue){ try{ window.setSearchDropdownValue(id, want, want||ph); continue; }catch(e){} }
+    const el=document.getElementById(id); if(el && el.value!==want) el.value=want;
+  }
 }
 function sdGbActive(){ const out=[]; for(const d of Object.keys(sdDims())){ const el=document.getElementById('sdGb_'+d); if(el&&el.checked) out.push(d); } return out; }
 function sdReset(){
@@ -2610,9 +2660,13 @@ async function deleteCurrentFilteredNumbers(){
   const body={};
   if(q) body.search=q;
   if(numRangeFilter) body.range=numRangeFilter;
-  if(numClientFilter) body.owner=numClientFilter;
-  if(clientFilterMode===1) body.allocation='unallocated';
-  if(clientFilterMode===2) body.allocation='allocated';
+  if(numUserFilter && numUserFilter.value){
+    if(numUserFilter.role==='manager') body.manager=numUserFilter.value;
+    else if(numUserFilter.role==='agent') body.agent=numUserFilter.value;
+    else if(numUserFilter.role==='client') body.client=numUserFilter.value;
+    else body.owner=numUserFilter.value;
+  }
+  const _alloc=currentAllocationParam(); if(_alloc) body.allocation=_alloc;
   if(!body.search&&!body.range&&!body.owner&&!body.allocation){alert('Apply Search / Range / Manager / Allocated filter first, or use Delete ALL Numbers.');return;}
   const params=new URLSearchParams({paged:'1',page:'1',limit:'1'});
   Object.keys(body).forEach(k=>params.set(k,body[k]));
@@ -2666,9 +2720,15 @@ function numberFilterParams(){
   if(numRangeFilter) params.set('range',numRangeFilter);
   /* provider filter is server-side (admin only); combines with range + owner + search + allocation */
   if(numProviderFilter) params.set('provider',numProviderFilter);
-  if(numClientFilter) params.set('owner',numClientFilter);
-  if(clientFilterMode===1) params.set('allocation','unallocated');
-  if(clientFilterMode===2) params.set('allocation','allocated');
+  /* §9.2 — role-explicit user filter (manager / agent / client column). */
+  if(numUserFilter && numUserFilter.value){
+    if(numUserFilter.role==='manager') params.set('manager',numUserFilter.value);
+    else if(numUserFilter.role==='agent') params.set('agent',numUserFilter.value);
+    else if(numUserFilter.role==='client') params.set('client',numUserFilter.value);
+    else params.set('owner',numUserFilter.value);
+  }
+  /* §9.3 / §9.4 — single resolved allocation mode. */
+  const alloc=currentAllocationParam(); if(alloc) params.set('allocation',alloc);
   if(numSort.key) { params.set('sort',numSort.key); params.set('dir',numSort.dir===-1?'desc':'asc'); }
   return params;
 }
@@ -2687,7 +2747,7 @@ async function renderNumbers(){
   const state=pagerState('adminNumbersServer');
   const len=document.getElementById('numLen').value;
   const q=(document.getElementById('numSearch').value||'').trim();
-  const signature=JSON.stringify({len,q,range:numRangeFilter,owner:numClientFilter,provider:numProviderFilter,allocation:clientFilterMode,sort:numSort.key||'',dir:numSort.dir});
+  const signature=JSON.stringify({len,q,range:numRangeFilter,user:numUserFilter.value||'',role:numUserFilter.role||'',provider:numProviderFilter,allocation:currentAllocationParam()||'',sort:numSort.key||'',dir:numSort.dir});
   if(state.signature && state.signature!==signature) state.page=1;
   state.signature=signature;
   /* FINAL POLISH 3D: rows on screen change here, so any checkbox state from the
@@ -2715,11 +2775,10 @@ async function renderNumbers(){
     <td data-label="Range">${r.range}</td>${numProviderCell(r)}<td data-label="Prefix" class="muted">${r.prefix||'—'}</td>
     <td data-label="Country" class="muted">${r.country||'—'}</td><td data-label="Number" class="ams-num"><b>${r.number}</b></td>
     <td data-label="Manager" class="muted">${r.manager}</td><td data-label="Agent" class="muted">${r.agent}</td>
-    <td data-label="Client">${r.client?`<span class="tag ${r.ownerType==='agent'?'tag-agt':'tag-mgr'}">${r.client}${window.AMS_PANEL_MODE==='admin_light'?'':` <span class="x" onclick="unassignOne(${r._id})">✕</span>`}</span>`:`<span class="tag tag-gray">—</span>`}</td>
     <td data-label="My Rate">${r.myPay}<br><span class="cell-sub cell-money">${r.myVal}</span></td>
     <td data-label="Payout">${r.payType}<br><span class="cell-sub">${r.payVal}</span></td>
     <td data-label="Provider Rate" class="muted"${r.provider?` title="Provider: ${r.provider}"`:''}>${r.provRate?`$ ${r.provRate}`:'—'}</td>
-    <td data-label="Limits" class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="${window.AMS_PANEL_MODE==='admin_light'?12:13}" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`;
+    <td data-label="Limits" class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="${window.AMS_PANEL_MODE==='admin_light'?11:12}" class="muted" style="text-align:center;padding:24px">No numbers found</td></tr>`;
   const currentNumbers = (numbersData || []).map(r => String(r.number || '').trim()).filter(Boolean);
   const countEl = document.getElementById('numPageCount');
   if(countEl) countEl.textContent = currentNumbers.length.toLocaleString();
@@ -2774,38 +2833,50 @@ async function ensureAdminManagers(){
 }
 async function ensureAdminSms(){ if(!smsRecords || !smsRecords.length) await loadSmsRecords(); }
 async function fillSmsDetailLiteFilters(){
+  /* ------------------------------------------------------------------
+     §14 / §21 — SMS Detailed Report dimension filters.
+     ROOT CAUSE OF THE BROKEN FILTERS: the report markup declares only the
+     CONTAINERS (sdSelRangeContainer, sdSelManagerContainer, sdSelAgentContainer,
+     sdSelClientContainer, sdSelProviderContainer). The previous version of this
+     function looked for finished <select id="sdSelRange">… elements, which were
+     never rendered anywhere — so getElementById() returned null, every branch was
+     skipped, and all five dropdowns came up empty. The backend already supports
+     range/manager/agent/client/provider on /api/sms/paged; only the UI was missing.
+     Fix: render a SEARCHABLE dropdown into each container via the existing
+     renderSearchSelect() component, wiring each one to sdSelPick() so the existing
+     state, query-building, Group By and server pagination all keep working.
+     Group By stays a separate control and is never used as a filter substitute.
+     ------------------------------------------------------------------ */
   try{ await Promise.allSettled([ensureAdminRates(), ensureAdminManagers()]); }catch(e){}
-  const rangeSel=document.getElementById('sdRange'), userSel=document.getElementById('sdUser');
-  if(rangeSel && (!rangeSel.options || rangeSel.options.length<=1)) rangeSel.innerHTML='<option value="">All Ranges</option>'+((ratesData||[]).map(r=>`<option value="${r.name}">${r.name}</option>`).join(''));
-  if(userSel && (!userSel.options || userSel.options.length<=1)) userSel.innerHTML='<option value="">All Managers</option>'+((usersData.manager||[]).map(m=>`<option value="${m.username}">${m.username}</option>`).join(''));
-  /* P19k #2/#9: direct multi-filter selects — Range (Rate Management ranges), Manager
-     (users), CLI (existing /api/sms/clis — wide window taake all-time CLIs aayen),
-     Provider (existing Provider Management /api/providers-info — koi duplicate list nahi). */
+  const sel=window.__sdSel=window.__sdSel||sdSelAll();
+  /* Lazy-load the lists this report needs (each is already role-scoped). */
+  if(!(usersData.agent||[]).length){ try{ usersData.agent=await API.get('/users/agent'); }catch(e){ usersData.agent=[]; } }
+  if(!(usersData.client||[]).length){ try{ usersData.client=await API.get('/users/client'); }catch(e){ usersData.client=[]; } }
+  if(!(adminProviderNames||[]).length){ try{ adminProviderNames=providerNamesFromSummary(await API.get('/provider-summary')); }catch(e){ adminProviderNames=[]; } }
   const escOpt=(v)=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  const rsel=document.getElementById('sdSelRange');
-  if(rsel && rsel.options.length<=1) rsel.innerHTML='<option value="">All Ranges</option>'+((ratesData||[]).map(r=>`<option value="${escOpt(r.name)}">${escOpt(r.name)}</option>`).join(''));
-  const msel=document.getElementById('sdSelManager');
-  if(msel && msel.options.length<=1) msel.innerHTML='<option value="">All Managers</option>'+((usersData.manager||[]).map(m=>`<option value="${escOpt(m.username)}">${escOpt(m.username)}</option>`).join(''));
-  /* P20: Agent/Client filter selects bhi (users API — scope-safe; CLI ab free-text
-     SEARCH input hai, select nahi — reference design). */
-  const asel=document.getElementById('sdSelAgent');
-  if(asel && asel.options.length<=1){
-    let ags=(usersData.agent||[]);
-    if(!ags.length){ try{ ags=await API.get('/users/agent'); usersData.agent=ags; }catch(e){ ags=[]; } }
-    asel.innerHTML='<option value="">All Agents</option>'+ags.map(a=>`<option value="${escOpt(a.username)}">${escOpt(a.username)}</option>`).join('');
-  }
-  const clsel=document.getElementById('sdSelClient');
-  if(clsel && clsel.options.length<=1){
-    let cls=(usersData.client||[]);
-    if(!cls.length){ try{ cls=await API.get('/users/client'); usersData.client=cls; }catch(e){ cls=[]; } }
-    clsel.innerHTML='<option value="">All Clients</option>'+cls.map(c=>`<option value="${escOpt(c.username)}">${escOpt(c.username)}</option>`).join('');
-  }
-  const psel=document.getElementById('sdSelProvider');
-  if(psel && psel.options.length<=1){
-    try{ const pj=await API.get('/providers-info');
-      const provs=(pj.providers||[]).map(p=>p.name).filter(Boolean);
-      psel.innerHTML='<option value="">All Providers</option>'+provs.map(p=>`<option value="${escOpt(p)}">${escOpt(p)}</option>`).join('');
-    }catch(e){ psel.innerHTML='<option value="">All Providers</option>'; }
+  const D=[
+    {dim:'range',    c:'sdSelRangeContainer',    id:'sdSelRange',    ph:'All Ranges',    vals:()=> (ratesData||[]).map(r=>r.name)},
+    {dim:'manager',  c:'sdSelManagerContainer',  id:'sdSelManager',  ph:'All Managers',  vals:()=> (usersData.manager||[]).map(u=>u.username)},
+    {dim:'agent',    c:'sdSelAgentContainer',    id:'sdSelAgent',    ph:'All Agents',    vals:()=> (usersData.agent||[]).map(u=>u.username)},
+    {dim:'client',   c:'sdSelClientContainer',   id:'sdSelClient',   ph:'All Clients',   vals:()=> (usersData.client||[]).map(u=>u.username)},
+    {dim:'provider', c:'sdSelProviderContainer', id:'sdSelProvider', ph:'All Providers', vals:()=> (adminProviderNames||[])},
+  ];
+  for(const d of D){
+    const c=document.getElementById(d.c); if(!c) continue;
+    const vals=unique((d.vals()||[]).filter(Boolean));
+    if(window.renderSearchSelect){
+      window.renderSearchSelect(d.c,{
+        id:d.id, placeholder:d.ph, searchPlaceholder:'Search\u2026',
+        style:'min-width:150px',
+        items: vals.map(v=>({value:v,label:v})),
+        value: String(sel[d.dim]||''),
+        onChange:(val)=>sdSelPick(d.dim, String(val||''))
+      });
+    } else {
+      c.innerHTML='<select id="'+d.id+'" onchange="sdSelPick(\''+d.dim+'\',this.value)"><option value="">'+d.ph+'</option>'
+        +vals.map(v=>'<option value="'+escOpt(v)+'">'+escOpt(v)+'</option>').join('')+'</select>';
+      const s2=document.getElementById(d.id); if(s2) s2.value=String(sel[d.dim]||'');
+    }
   }
   sdSyncFilterSelects();
 }

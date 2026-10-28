@@ -325,6 +325,7 @@ html body.ams-panel:is(.ams-light,.ams-dark) .tb1 .tb-btn{flex:0 0 auto!importan
       <div class="tab active" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</div>
       <div class="tab" data-page="numbers"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>SMS Numbers</div>
       <div class="tab" data-page="stats"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>SMS Detailed Report</div>
+            <div class="tab" data-page="payouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/></svg>Payouts</div>
             <div class="tab" data-page="test"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18v-6a3 3 0 0 1 6 0v6"/><rect x="4" y="18" width="16" height="3"/><path d="M12 3v3"/></svg>SMS Test Panel</div>
     </nav>
   </aside>
@@ -374,6 +375,25 @@ html body.ams-panel:is(.ams-light,.ams-dark) .tb1 .tb-btn{flex:0 0 auto!importan
         <thead><tr><th class="sortable" onclick="sortNum('range')">Range <span class="sort">⇅</span></th><th class="sortable" onclick="sortNum('number')">Number <span class="sort" id="nSortHint">⇅</span></th><th>Payterm</th><th>Status</th><th>Payout</th><th>Last SMS Time</th><th>Limits</th></tr></thead>
         <tbody id="numBody"></tbody></table></div>
         <div class="table-foot"><div class="info" id="numInfo"></div><div class="pagination"><button>‹</button><button class="active">1</button><button>2</button><button>›</button></div></div></div>
+    </section>
+
+    <!-- PAYOUTS: Agent payouts belonging to this Client (non-zero only) -->
+    <section class="page" id="page-payouts">
+      <div class="page-head"><div><h2>Payouts</h2><div class="breadcrumb"><b>My Panel</b> &rsaquo; Agent Payouts</div></div>
+        <div class="head-actions"><span class="masknote">Only payouts on numbers allocated to you</span></div></div>
+      <div class="toolbar"><div class="filter-row">
+        <label>From<input type="date" id="payFrom" onchange="loadPayouts()"></label>
+        <label>To<input type="date" id="payTo" onchange="loadPayouts()"></label>
+        <label>Type<select id="payType" onchange="loadPayouts()"><option value="">All</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly_30x45">Monthly</option></select></label>
+        <label>Status<select id="payStatus" onchange="loadPayouts()"><option value="">All</option><option value="open">Open</option><option value="requested">Requested</option><option value="paid">Paid</option><option value="rejected">Rejected</option></select></label>
+        <button type="button" class="ams-btn" onclick="resetPayoutFilters()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      </div></div>
+      <div id="paySummary" style="display:flex;flex-wrap:wrap;gap:10px;margin:0 2px 12px"></div>
+      <div class="table-wrap"><div class="tscroll"><table>
+        <thead><tr><th>Date</th><th>Agent</th><th>Term</th><th>Cycle</th><th>Amount</th><th>Status</th><th>Eligible At</th></tr></thead>
+        <tbody id="payBody"></tbody></table></div>
+        <div class="table-foot"><div class="info" id="payInfo">Loading payouts&hellip;</div>
+          <div class="pagination"><button id="payPrev" type="button" onclick="payGo(-1)">&lsaquo;</button><button id="payNext" type="button" onclick="payGo(1)">&rsaquo;</button></div></div></div>
     </section>
 
     <!-- SMS STATS (received SMS / OTP records, full CLI + message) -->
@@ -732,10 +752,78 @@ async function loadClientPageData(page){
     if(page==='numbers'){ loadRanges(); return loadNumbers(); }
     if(page==='stats'){ await loadRanges(); return renderStats(true); }
     if(page==='test'){ await loadRanges(); await loadTestNumbers(); renderTestRangeSelect(); return renderTest(); }
+    if(page==='payouts'){ return loadPayouts(); }
   }catch(e){console.warn('loadClientPageData failed',page,e);}
 }
 
 
+
+
+/* ==========================================================================
+   AGENT PAYOUTS (Client scope)
+   Reads /api/payment-v2/client/payouts, scoped server-side to the authenticated
+   client (payment_ledger.client_id = session user id). Zero-value rows are
+   already excluded by the server, so an empty 0.00 payout is never presented as
+   an eligible payout. Statuses render EXACTLY as stored. Historical payouts are
+   included because client_id is backfilled on boot.
+   ========================================================================== */
+let payPage=1, payTotalPages=1, paySeq=0;
+function resetPayoutFilters(){
+  const f=document.getElementById('payFrom'), t=document.getElementById('payTo'),
+        ty=document.getElementById('payType'), st=document.getElementById('payStatus');
+  if(f)f.value=''; if(t)t.value=''; if(ty)ty.value=''; if(st)st.value='';
+  payPage=1; loadPayouts();
+}
+function payGo(d){
+  const n=payPage+d; if(n<1||n>payTotalPages) return;
+  payPage=n; loadPayouts();
+}
+const PAY_TERM={daily:'Daily',weekly:'Weekly',monthly_30x45:'Monthly'};
+const PAY_TAG={paid:'tag-green',requested:'tag-blue',open:'tag-amber',rejected:'tag-red'};
+function payEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function loadPayouts(){
+  const body=document.getElementById('payBody'); if(!body) return;
+  const own=++paySeq;
+  const info=document.getElementById('payInfo'); if(info) info.textContent='Loading payouts\u2026';
+  try{
+    const q=new URLSearchParams({page:String(payPage),limit:'50'});
+    const f=document.getElementById('payFrom'), t=document.getElementById('payTo'),
+          ty=document.getElementById('payType'), st=document.getElementById('payStatus');
+    if(f&&f.value)q.set('from',f.value);
+    if(t&&t.value)q.set('to',t.value);
+    if(ty&&ty.value)q.set('payment_type',ty.value);
+    if(st&&st.value)q.set('status',st.value);
+    const d=await API.get('/payment-v2/client/payouts?'+q.toString());
+    if(own!==paySeq) return;                       /* ignore stale responses */
+    const rows=d.rows||[]; payPage=d.page||1; payTotalPages=d.totalPages||1;
+    body.innerHTML=rows.map(r=>`<tr>
+        <td data-label="Date">${payEsc((r.earned_at||'').slice(0,19))}</td>
+        <td data-label="Agent">${payEsc(r.agent_name||('Agent #'+r.agent_id))}</td>
+        <td data-label="Term">${payEsc(PAY_TERM[r.payment_type]||r.payment_type)}</td>
+        <td data-label="Cycle">${payEsc(r.cycle_key||'\u2014')}</td>
+        <td data-label="Amount" class="amount"><b>${payEsc(r.amount)}</b></td>
+        <td data-label="Status"><span class="tag ${PAY_TAG[r.status]||'tag-gray'}">${payEsc(String(r.status||'open'))}</span></td>
+        <td data-label="Eligible At">${payEsc((r.eligible_at||'').slice(0,19)||'\u2014')}</td>
+      </tr>`).join('')||'<tr><td colspan="7" class="muted" style="text-align:center;padding:26px">No payouts found.</td></tr>';
+    if(info) info.textContent = d.total
+      ? ('Showing '+rows.length+' of '+d.total+' payout(s) \u00b7 Page '+payPage+' of '+payTotalPages)
+      : 'No payouts found.';
+    const prev=document.getElementById('payPrev'), next=document.getElementById('payNext');
+    if(prev)prev.disabled=payPage<=1; if(next)next.disabled=payPage>=payTotalPages;
+    const sum=document.getElementById('paySummary');
+    if(sum){
+      const bs=d.by_status||{}; const keys=Object.keys(bs);
+      sum.innerHTML = keys.length
+        ? '<span class="ams-chip"><b>Total</b> '+payEsc(d.total_amount||'0')+'</span>'
+          + keys.map(k=>'<span class="ams-chip"><b>'+payEsc(k)+'</b> '+payEsc(bs[k].amount||'0')+' ('+bs[k].count+')</span>').join('')
+        : '<span class="muted" style="font-size:12px">No payout records yet.</span>';
+    }
+  }catch(e){
+    if(own!==paySeq) return;
+    body.innerHTML='<tr><td colspan="7" class="muted" style="text-align:center;padding:26px">Unable to load payouts.</td></tr>';
+    if(info) info.textContent=(e&&e.message)||'Unable to load payouts';
+  }
+}
 
 /* FAST SERVER-SIDE CLIENT NUMBERS */
 let cliNumSeq=0;function cliState(key){window.__cliFast=window.__cliFast||{};if(!window.__cliFast[key])window.__cliFast[key]={page:1,totalPages:1,signature:''};return window.__cliFast[key];}

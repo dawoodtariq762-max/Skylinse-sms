@@ -255,6 +255,39 @@ function createTables() {
     created_at TEXT DEFAULT (datetime('now'))
   )`);
 
+  /* ---- Agent payout -> Client Panel attribution (+ historical backfill) ----
+     payment_ledger never carried a client_id, so a Client could not see the
+     payouts their Agent earned on their numbers. The link already exists through
+     the originating SMS row:
+        payment_ledger.sms_record_id -> sms_records.id -> sms_records.client_id
+     This is purely ADDITIVE: no amount, status, cycle_key or eligibility is
+     rewritten, and no row is inserted or deleted. Existing rows are backfilled
+     from that link so historically saved payouts become visible too. Rows whose
+     SMS had no client (unallocated number) correctly stay NULL. */
+  ensureColumn('payment_ledger', 'client_id', 'INTEGER');
+  db.run(`UPDATE payment_ledger SET client_id = (
+            SELECT s.client_id FROM sms_records s WHERE s.id = payment_ledger.sms_record_id
+          ) WHERE client_id IS NULL AND sms_record_id IS NOT NULL`);
+
+  /* §16 — Payment clearance markers for the Credit Notes settlement statement.
+     Deliberately a SEPARATE table: the statement module is read-only by contract and
+     payment_ledger must never be mutated, backfilled or repriced, so clearing never
+     rewrites amounts, statuses or eligibility. A row here only records that an Admin
+     marked a settlement group as paid/cleared. A partial unique index keeps one
+     clearance per settlement group while tolerating empty cycle_key/eligible_at. */
+  db.run(`CREATE TABLE IF NOT EXISTS credit_note_clearances (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id INTEGER NOT NULL,
+    payment_type TEXT NOT NULL,
+    cycle_key TEXT DEFAULT '',
+    eligible_at TEXT DEFAULT '',
+    amount TEXT DEFAULT '0',
+    note TEXT DEFAULT '',
+    cleared_by INTEGER,
+    cleared_by_name TEXT DEFAULT '',
+    cleared_at TEXT DEFAULT (datetime('now'))
+  )`);
+
   db.run(`CREATE TABLE IF NOT EXISTS payment_requests_v2 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     agent_id INTEGER NOT NULL,
@@ -743,6 +776,9 @@ db.run(`CREATE TABLE IF NOT EXISTS payment_notifications_v2 (
   db.run(`CREATE INDEX IF NOT EXISTS idx_failed_sms_created ON failed_sms_queue(created_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_failed_sms_number_clean ON failed_sms_queue(REPLACE(REPLACE(REPLACE(REPLACE(number,'+',''),' ',''),'-',''),'_',''))`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_ledger_agent_type_status ON payment_ledger(agent_id, payment_type, status)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_payment_ledger_client ON payment_ledger(client_id)`);
+  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_cnc_group ON credit_note_clearances(agent_id, payment_type, cycle_key, eligible_at)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_cnc_cleared_at ON credit_note_clearances(cleared_at DESC)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_ledger_eligible ON payment_ledger(payment_type, eligible_at, status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_requests_agent_type_status ON payment_requests_v2(agent_id, payment_type, status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests_v2(status, requested_at)`);

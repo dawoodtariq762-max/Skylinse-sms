@@ -1516,6 +1516,8 @@ function paymentCycleInfo(type, earnedAt){
   const per=schedulePeriodFor(type, date);
   return {cycle_key:per.start, eligible_at:utcSqlFromMs(per.payMs)};
 }
+/* Decimal-safe string addition (no float drift) for report totals. */
+function decAddStr(a,b){const norm=(v)=>{const t=String(v==null?'':v).trim();if(!/^-?\d+(?:\.\d+)?$/.test(t))return{n:0n,s:0};const neg=t.startsWith('-');const wf=t.replace('-','').split('.');const w=wf[0];const f=wf[1]||'';return{n:BigInt(w+f)*(neg?-1n:1n),s:f.length};};const x=norm(a),y=norm(b),sc=Math.max(x.s,y.s);const sum=x.n*10n**BigInt(sc-x.s)+y.n*10n**BigInt(sc-y.s);const neg=sum<0n;let out=(neg?-sum:sum).toString().padStart(sc+1,'0');if(sc)out=(out.slice(0,-sc)+'.'+out.slice(-sc)).replace(/\.?0+$/,'');return (neg&&out!=='0'?'-':'')+(out===''?'0':out);}
 function walletValid(v){ return /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(String(v||'').trim()); } /* legacy TRC20 check — pre-P19j records only */
 /* P19j: Binance UID = 8-12 digit numeric ID (Binance Pay profile). Deliberately not overly restrictive. */
 function binanceUidValid(v){ return /^\d{8,12}$/.test(String(v||'').trim()); }
@@ -1534,12 +1536,13 @@ function agentManagerId(agentId) {
 function recordPaymentLedgerForSms(smsId, persist=true){
   /* P16: priority 1) sms.payment_type (ingestion snapshot) 2) numbers.payterm (allocation)
      3) users.payment_type (agent default) 4) ranges.payment_type 5) weekly — backfill rows ke liye bhi sahi cycle */
-  const srow=db.get(`SELECT s.id,s.agent_id,s.manager_id,s.range_id,s.payout_amount,s.received_at,COALESCE(NULLIF(s.payment_type,''), NULLIF(n.payterm,''), u.payment_type, r.payment_type, 'weekly') AS payment_type FROM sms_records s LEFT JOIN numbers n ON n.id=s.number_id LEFT JOIN users u ON u.id=s.agent_id LEFT JOIN ranges r ON r.id=s.range_id WHERE s.id=?`,[smsId]);
+  const srow=db.get(`SELECT s.id,s.agent_id,s.manager_id,s.range_id,s.payout_amount,s.received_at,s.client_id,COALESCE(NULLIF(s.payment_type,''), NULLIF(n.payterm,''), u.payment_type, r.payment_type, 'weekly') AS payment_type FROM sms_records s LEFT JOIN numbers n ON n.id=s.number_id LEFT JOIN users u ON u.id=s.agent_id LEFT JOIN ranges r ON r.id=s.range_id WHERE s.id=?`,[smsId]);
   if(!srow || !srow.agent_id || cents(srow.payout_amount)<=0) return;
   if(db.get('SELECT id FROM payment_ledger WHERE sms_record_id=?',[smsId])) return;
   const type=normalizePaymentType(srow.payment_type||'weekly'); const cyc=paymentCycleInfo(type,srow.received_at);
-  db.runNoSave(`INSERT INTO payment_ledger (sms_record_id,agent_id,manager_id,range_id,payment_type,amount,earned_at,cycle_key,eligible_at,status)
-    VALUES (?,?,?,?,?,?,?,?,?,'open')`, [srow.id,srow.agent_id,srow.manager_id||agentManagerId(srow.agent_id),srow.range_id,type,normalizeDecimalString(srow.payout_amount)||'0',srow.received_at,cyc.cycle_key,cyc.eligible_at]);
+  /* client_id stored at write time so NEW payouts are attributable immediately */
+  db.runNoSave(`INSERT INTO payment_ledger (sms_record_id,agent_id,manager_id,client_id,range_id,payment_type,amount,earned_at,cycle_key,eligible_at,status)
+    VALUES (?,?,?,?,?,?,?,?,?,?,'open')`, [srow.id,srow.agent_id,srow.manager_id||agentManagerId(srow.agent_id),srow.client_id||null,srow.range_id,type,normalizeDecimalString(srow.payout_amount)||'0',srow.received_at,cyc.cycle_key,cyc.eligible_at]);
   db.runNoSave('UPDATE sms_records SET payment_type=? WHERE id=?',[type,smsId]);
   if(persist) db.save();
 }
@@ -2697,6 +2700,16 @@ function buildNumberQuery(user, q) {
     else if (user.role === 'agent') { where.push('cu.username=?'); params.push(q.owner); }
     need.users = true;
   }
+  /* ---- §9.2 Admin SMS Numbers: explicit user filters ----------------------
+     Lets Admin filter by a specific Manager, Agent or Client. These are
+     role-explicit (numbers.manager_id / agent_id / client_id) rather than the
+     combined `owner` match, so selecting a Client only returns that Client's
+     numbers. All three are LEFT JOINed on users, so a number that has BOTH a
+     Manager and an Agent relationship is still returned exactly once — the
+     joins cannot duplicate rows. */
+  if (q.manager && user && user.role === 'admin') { where.push('mu.username=?'); params.push(q.manager); need.users = true; }
+  if (q.agent   && user && user.role === 'admin') { where.push('au.username=?'); params.push(q.agent);   need.users = true; }
+  if (q.client  && user && user.role === 'admin') { where.push('cu.username=?'); params.push(q.client);  need.users = true; }
   if (q.allocation === 'unallocated') {
     // unqualified: lets the planner use idx_numbers_unallocated (measured @5M: 2.1 s → 250 ms)
     if (user.role === 'admin') where.push('manager_id IS NULL AND agent_id IS NULL AND client_id IS NULL');
@@ -2704,6 +2717,28 @@ function buildNumberQuery(user, q) {
   } else if (q.allocation === 'allocated') {
     if (user.role === 'admin') where.push('(manager_id IS NOT NULL OR agent_id IS NOT NULL OR client_id IS NOT NULL)');
     else { const col = numberOwnerColumnForRole(user.role); where.push(`${col} IS NOT NULL`); }
+  }
+  /* ---- §9.3 / §9.4: role-specific allocation toggles ----------------------
+     These are DELIBERATELY different from the generic unallocated/allocated
+     pair above, and must not be conflated:
+       unalloc_mgr   : no Manager AND no Agent     (Manager allocation state)
+       alloc_mgr     : has a Manager OR an Agent
+       unalloc_agent : no Agent, REGARDLESS of whether a Manager is set
+       alloc_agent   : has an Agent, regardless of Manager
+     "Unallocated to an Agent" therefore still returns numbers that are
+     allocated to a Manager — it is not the same as "unallocated to everyone".
+     Every branch uses the indexed manager_id / agent_id columns. */
+  else if (q.allocation === 'unalloc_mgr' || q.allocation === 'alloc_mgr') {
+    const isUn = q.allocation === 'unalloc_mgr';
+    if (user.role === 'admin') {
+      where.push(isUn ? 'manager_id IS NULL AND agent_id IS NULL'
+                      : '(manager_id IS NOT NULL OR agent_id IS NOT NULL)');
+    } else { const col = numberOwnerColumnForRole(user.role); where.push(`${col} IS ${isUn ? 'NULL' : 'NOT NULL'}`); }
+  } else if (q.allocation === 'unalloc_agent' || q.allocation === 'alloc_agent') {
+    const isUn = q.allocation === 'unalloc_agent';
+    if (user.role === 'admin' || user.role === 'manager') {
+      where.push(`agent_id IS ${isUn ? 'NULL' : 'NOT NULL'}`);
+    } else { const col = numberOwnerColumnForRole(user.role); where.push(`${col} IS ${isUn ? 'NULL' : 'NOT NULL'}`); }
   }
   return { where: where.join(' AND '), params, need };
 }
@@ -5307,6 +5342,52 @@ app.post('/api/payment-v2/admin/requests/:id/pay', authRequired, requireRole('ad
   let screenshotUrl=''; if(req.file&&req.file.buffer){ const dir=path.join(FRONTEND_ROOT,'uploads','payment-screenshots'); fs.mkdirSync(dir,{recursive:true}); const ext=(path.extname(req.file.originalname||'')||'.png').toLowerCase(); const file=`payment-${id}-${Date.now()}${ext}`; fs.writeFileSync(path.join(dir,file),req.file.buffer); screenshotUrl='/uploads/payment-screenshots/'+file; }
   try{db.execNoSave('BEGIN'); db.runNoSave("UPDATE payment_requests_v2 SET status='Paid',processed_by=?,paid_at=datetime('now'),txid=?,screenshot_url=?,admin_notes=? WHERE id=?",[req.user.id,req.body?.txid||'',screenshotUrl,req.body?.notes||'',id]); db.runNoSave("UPDATE payment_ledger SET status='paid' WHERE request_id=?",[id]); db.execNoSave('COMMIT'); db.save(); paymentNotify(r.agent_id,id,'paid',`${paymentTypeLabel(r.payment_type)} payment sent: $${r.amount}`); paymentAudit(req,'payment_sent',{request_id:id,agent_id:r.agent_id,manager_id:r.manager_id,payment_type:r.payment_type,amount:r.amount,wallet_address:r.wallet_address,status:'Paid',details:{txid:req.body?.txid||'',screenshot_url:screenshotUrl,notes:req.body?.notes||'',binance_uid:r.binance_uid||''}}); res.json({ok:true,screenshot_url:screenshotUrl});}catch(e){try{db.execNoSave('ROLLBACK')}catch(_){} res.status(500).json({error:e.message});}
 });
+/* ---------------------------------------------------------------------------
+   Agent payout visibility in the Client Panel.
+   Returns the Agent payout ledger rows belonging to the AUTHENTICATED Client
+   (payment_ledger.client_id = req.user.id). Scope comes from the session, never
+   from a request parameter, so one Client cannot read another Client's payouts.
+   Zero-value rows are excluded so an empty 0.00 is never shown as an eligible
+   payout. Statuses are returned EXACTLY as stored (open|requested|paid|rejected)
+   and are never converted or derived. Historical rows are included because
+   client_id is backfilled from the originating sms_record on boot.
+   --------------------------------------------------------------------------- */
+app.get('/api/payment-v2/client/payouts', authRequired, requireRole('client'), (req,res)=>{
+  res.set('Cache-Control','no-store');
+  try{
+    const clientId=req.user.id, q=req.query||{};
+    const where=["l.client_id=?"], params=[clientId];
+    where.push("CAST(COALESCE(NULLIF(TRIM(COALESCE(l.amount,'')),''),'0') AS REAL) <> 0");
+    if(q.payment_type){
+      if(!['daily','weekly','monthly_30x45'].includes(String(q.payment_type))) throw new Error('Invalid payment_type');
+      where.push('l.payment_type=?'); params.push(String(q.payment_type));
+    }
+    if(q.status){ where.push('l.status=?'); params.push(String(q.status)); }
+    if(q.agent_id){
+      if(!/^\d+$/.test(String(q.agent_id))) throw new Error('Invalid agent_id');
+      where.push('l.agent_id=?'); params.push(Number(q.agent_id));
+    }
+    if(q.from){ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(q.from))) throw new Error('Invalid from date'); where.push('date(l.earned_at)>=date(?)'); params.push(String(q.from)); }
+    if(q.to){ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(q.to))) throw new Error('Invalid to date'); where.push('date(l.earned_at)<=date(?)'); params.push(String(q.to)); }
+    const limit=Math.max(1,Math.min(200,parseInt(q.limit,10)||50));
+    const filter=where.join(' AND ');
+    const total=Number(db.get('SELECT COUNT(*) AS n FROM payment_ledger l WHERE '+filter, params)?.n||0);
+    const totalPages=Math.max(1,Math.ceil(total/limit));
+    const page=Math.min(totalPages,Math.max(1,parseInt(q.page,10)||1));
+    const rows=db.all('SELECT l.id,l.sms_record_id,l.agent_id,l.payment_type,l.amount,l.status,l.earned_at,l.cycle_key,l.eligible_at, COALESCE(u.username,\'\') AS agent_name FROM payment_ledger l LEFT JOIN users u ON u.id=l.agent_id WHERE '+filter+' ORDER BY l.earned_at DESC, l.id DESC LIMIT ? OFFSET ?',
+      [...params, limit, (page-1)*limit]);
+    const byStatus={}; let totalAmount='0';
+    for(const r of db.all('SELECT l.status, l.amount FROM payment_ledger l WHERE '+filter, params)){
+      const st=String(r.status||'open');
+      if(!byStatus[st]) byStatus[st]={count:0, amount:'0'};
+      byStatus[st].count++;
+      byStatus[st].amount=decAddStr(byStatus[st].amount, r.amount);
+      totalAmount=decAddStr(totalAmount, r.amount);
+    }
+    res.json({client_id:clientId, total, page, limit, totalPages, rows, by_status:byStatus, total_amount:totalAmount});
+  }catch(e){res.status(e.status||400).json({error:e.message||'Unable to read payouts'});}
+});
+
 app.get('/api/payment-v2/admin/audit-logs', authRequired, requireRole('admin'), (req,res)=>res.json(db.all('SELECT * FROM payment_audit_logs ORDER BY id DESC LIMIT 1000')));
 
 

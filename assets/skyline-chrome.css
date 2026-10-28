@@ -329,3 +329,44 @@ html body.ams-panel :is(.topbar,.tb1,.appbar,.appbar-top,.mgr-topbar) [data-tip]
 html body.ams-panel.ams-ui:is(.ams-light,.ams-dark) :is(.sb-logo,.brand .logo,.rail > .brand > .logo,.sb-brand .logo,.brand-logo .logo,.rail .logo){
   background:transparent!important;border:0!important;box-shadow:none!important;
 }
+
+/* --------------------------------------------------------------------------
+   §9.5 / §19.1 — "Show Records" and "Search" must share one aligned row.
+   .table-controls already centres its children, but .tc-left packs a label, a
+   select AND the .exp-btns icon row, so its content box is taller than
+   .tc-right's. The two columns therefore sit on different baselines and the
+   Search field/label look raised or dropped relative to Show Records.
+   Fix: give the label the same control height (.sd-trigger is 34px) and keep
+   every child vertically centred, in both themes and when the row wraps.
+   -------------------------------------------------------------------------- */
+body.ams-panel .table-controls{align-items:center}
+body.ams-panel :is(.tc-left,.tc-right){align-items:center;gap:8px}
+body.ams-panel :is(.tc-left,.tc-right) > label{
+  margin:0;height:34px;line-height:34px;display:inline-flex;align-items:center;white-space:nowrap;
+}
+body.ams-panel :is(.tc-left,.tc-right) :is(select,input[type=text]){height:34px;margin:0}
+body.ams-panel .tc-left .exp-btns{margin:0}
+@media(max-width:820px){
+  body.ams-panel .table-controls{align-items:stretch}
+  body.ams-panel :is(.tc-left,.tc-right){width:100%;justify-content:flex-start}
+}
+
+/* --------------------------------------------------------------------------
+   §9.3 / §9.4 — Manager / Agent allocation-state toggle in the column header.
+   Small, unobtrusive; turns solid when a filter is active so the state is
+   visually obvious. Works in Light and Dark.
+   -------------------------------------------------------------------------- */
+th .alloc-toggle{
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-left:4px;padding:0 6px;height:18px;min-width:18px;
+  font-size:10px;line-height:1;font-weight:700;
+  border:1px solid rgba(127,127,140,.45);border-radius:5px;
+  background:transparent;color:inherit;opacity:.55;cursor:pointer;
+  transition:opacity .15s,background .15s,border-color .15s;
+}
+th .alloc-toggle:hover{opacity:1}
+th .alloc-toggle.on{
+  opacity:1;background:#3256df;border-color:#3256df;color:#fff;
+}
+html body.ams-panel.ams-ui.ams-dark th .alloc-toggle{border-color:#334059;color:#c7ccdc}
+html body.ams-panel.ams-ui.ams-dark th .alloc-toggle.on{background:#5b7cff;border-color:#5b7cff;color:#fff}
