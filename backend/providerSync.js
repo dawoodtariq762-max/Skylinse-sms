@@ -1,11 +1,11 @@
 /**
- * AMS SMS — Background Provider Sync Service
+ * Skyline SMS — Background Provider Sync Service
  * ---------------------------------------------------------------------------
  * Architecture
  *
  *   Provider API  ->  Background Sync Service  ->  Local Database
  *                                                        |
- *                                          AMS SMS Backend (/api/*)
+ *                                          Skyline SMS Backend (/api/*)
  *                                                        |
  *                            Admin / Manager / Agent / Client panels
  *
@@ -192,7 +192,7 @@ const CONNECTORS = {
     // normal one; it can be overridden per provider if a provider requires it.
     const headers = {
       'Accept': 'application/json',
-      'User-Agent': String(cfg.user_agent || 'Mozilla/5.0 (compatible; AMS-SMS-Sync/1.0)'),
+      'User-Agent': String(cfg.user_agent || 'Mozilla/5.0 (compatible; Skyline-SMS-Sync/1.0)'),
     };
     const params = new URLSearchParams();
 
@@ -416,7 +416,7 @@ function logSync(providerId, status, fetched, inserted, duplicates, failed, ms, 
  *     cycle 2 -> fetched=31  duplicates=31  (only the overlap window)
  *     cycle 3 -> fetched=31  duplicates=31
  *     ------------------------------------------------
- *     provider had 500 | AMS SMS ingested 200 | 300 PERMANENTLY MISSING
+ *     provider had 500 | Skyline SMS ingested 200 | 300 PERMANENTLY MISSING
  *
  * 300 real SMS lost, with every log line saying "ok". That is the worst kind
  * of failure: invisible.
@@ -550,7 +550,7 @@ async function syncProvider(provider, deps, opts = {}) {
           // so allocation, payout, OTP extraction and limits behave identically.
           let ok = false;
           try {
-            // Provider payout is an INDICATOR only. AMS SMS always calculates the
+            // Provider payout is an INDICATOR only. Skyline SMS always calculates the
             // displayed payout from its own rate cards - EXCEPT when the
             // provider explicitly reports 0, which marks the SMS non-payable.
             const providerPayout = rec.payoutRaw;

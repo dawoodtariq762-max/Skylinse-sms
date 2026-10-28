@@ -1,5 +1,5 @@
 /**
- * AMS SMS — SMPP Connection Service
+ * Skyline SMS — SMPP Connection Service
  * ---------------------------------------------------------------------------
  * ADDITIONAL channel. It does not touch the existing HTTP integrations.
  *
@@ -8,8 +8,8 @@
  *     HTTP pull  : providerSync.js -> provider REST API every N seconds
  *
  *   Added here:
- *     SMPP client : AMS SMS binds OUT to a provider's SMPP server (ESME)
- *     SMPP server : AMS SMS LISTENS, the carrier binds IN to us
+ *     SMPP client : Skyline SMS binds OUT to a provider's SMPP server (ESME)
+ *     SMPP server : Skyline SMS LISTENS, the carrier binds IN to us
  *
  * All three converge on the SAME ingestion function that the carrier webhook
  * already uses (processIncomingSmsPayload), so allocation, rate cards, OTP
@@ -321,7 +321,7 @@ function ingest(conn, st, pdu, peer) {
 }
 
 /* ------------------------------------------------------------------ *
- * CLIENT mode — AMS SMS binds OUT to the provider
+ * CLIENT mode — Skyline SMS binds OUT to the provider
  * ------------------------------------------------------------------ */
 
 function scheduleReconnect(conn) {
@@ -579,7 +579,7 @@ function startEnquireLink(conn, session) {
 }
 
 /* ------------------------------------------------------------------ *
- * SERVER mode — the carrier binds IN to AMS SMS
+ * SERVER mode — the carrier binds IN to Skyline SMS
  * ------------------------------------------------------------------ */
 
 function ipAllowed(conn, ip) {
@@ -679,7 +679,7 @@ function onPeerSession(conn, session) {
         setTimeout(() => { try { session.close(); } catch (_) {} }, 50);
         return;
       }
-      session.send(pdu.response({ system_id: 'AMS SMS' }));  /* brand string in bind_resp (<=15 chars, informational) */
+      session.send(pdu.response({ system_id: 'Skyline SMS' }));  /* brand string in bind_resp (<=15 chars, informational) */
       st.sessions.add(session);
       markConnection(conn.id, { status: 'bound', last_error: '', last_connected_at: nowSql(), last_activity_at: nowSql(), consecutive_failures: 0 });
       logEvent(conn, 'bind', 'info', `peer bound as ${kind} (system_id=${okId})`, peer);

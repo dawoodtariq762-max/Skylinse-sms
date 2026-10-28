@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="en" class="ams-light">
-<head><script src="/assets/ams-storage.js?v=ams-20261026-fullrebrand-final"></script>
+<head><script src="/assets/skyline-storage.js?v=skyline-20261026-fullrebrand-final"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png?v=ams-20261009"  data-brand-favicon />
-<title>Galaxy SMS — Test Panel</title>
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-20261009"  data-brand-favicon />
+<title>Skyline SMS — Test Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}</style>
 <script>
 (function(){try{const t=sessionStorage.getItem('ams_token')||localStorage.getItem('ams_token'),r=sessionStorage.getItem('ams_role')||localStorage.getItem('ams_role');if(!t||r!=='test'){location.replace('/test-login');return;}fetch('/api/me',{headers:{Authorization:'Bearer '+t}}).then(x=>{if(!x.ok)throw 0;return x.json()}).then(u=>{if(!u||u.role!=='test')throw 0;document.documentElement.style.visibility='visible';}).catch(()=>{sessionStorage.clear();['ams_token','ams_role','ams_user','ams_name'].forEach(k=>localStorage.removeItem(k));location.replace('/test-login')});}catch(e){sessionStorage.clear();['ams_token','ams_role','ams_user','ams_name'].forEach(k=>localStorage.removeItem(k));location.replace('/test-login')}})();
 </script>
 <style>*{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Inter,Segoe UI,system-ui,sans-serif;font-size:14px;}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;border-right:1px solid #ddd;z-index:60;transition:transform .22s ease;overflow:auto;}
-.brand{display:flex;align-items:center;gap:12px;padding:16px 14px;border-bottom:1px solid #ddd;}
-.logo{width:46px;height:46px;border-radius:14px;overflow:hidden;border:1px solid #ddd;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;border-right:1px solid #cfd2d8;z-index:60;transition:transform .22s ease;overflow:auto;}
+.brand{display:flex;align-items:center;gap:12px;padding:16px 14px;border-bottom:1px solid #cfd2d8;}
+.logo{width:46px;height:46px;border-radius:14px;overflow:hidden;border:1px solid #cfd2d8;}
 .logo img{width:100%;height:100%;object-fit:cover;}
 .brand h1{font-size:16px;}
 .brand small{font-size:11px;}
@@ -39,12 +39,12 @@ body{font-family:Inter,Segoe UI,system-ui,sans-serif;font-size:14px;}
 .metric p{text-transform:uppercase;font-size:12px;font-weight:900;opacity:.9;}
 .grid2{display:grid;grid-template-columns:1fr 1.4fr;gap:16px;}
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
-.input,select,input{border:1px solid #ddd;border-radius:12px;padding:10px 12px;min-height:42px;}
+.input,select,input{border:1px solid #cfd2d8;border-radius:12px;padding:10px 12px;min-height:42px;}
 button.btn{border:0;border-radius:12px;padding:11px 14px;font-weight:900;cursor:pointer;}
 .table-wrap{border:1px solid var(--border);border-radius:16px;overflow:hidden;}
 .tscroll{overflow:auto;}
 table{width:100%;border-collapse:separate;border-spacing:0;}
-th,td{padding:12px 14px;border-bottom:1px solid #ddd;text-align:left;vertical-align:top;}
+th,td{padding:12px 14px;border-bottom:1px solid #cfd2d8;text-align:left;vertical-align:top;}
 th{font-size:12px;text-transform:uppercase;}
 .mono{font-family:Consolas,monospace;}
 .otp{font-size:18px;font-weight:950;}
@@ -57,22 +57,22 @@ th{font-size:12px;text-transform:uppercase;}
 .content{padding:20px 14px;}
 .grid2{grid-template-columns:1fr;}
 .topbar{padding:0 12px;}}
-.table-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid #ddd}
+.table-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid #cfd2d8}
 .pager{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.pager button{min-width:34px;height:34px;border:1px solid #ddd;border-radius:10px;background:#fff;cursor:pointer;font-weight:800}
-.pager button.active{background:#2563eb;color:#fff;border-color:#2563eb}
+.pager button{min-width:34px;height:34px;border:1px solid #cfd2d8;border-radius:10px;background:#fff;cursor:pointer;font-weight:800}
+.pager button.active{background:#3256df;color:#fff;border-color:#3256df}
 .pager button:disabled{opacity:.45;cursor:not-allowed}
 .pager .pinfo{font-size:12px;font-weight:700;opacity:.75;padding:0 4px}
 @media(max-width:600px){.pager button{min-width:32px;height:32px}}</style>
 
 
 
-<link rel="stylesheet" href="/assets/ams.css?v=ams-20261026-fullrebrand-final"/><script src="/assets/ams.js?v=ams-20261026-fullrebrand-final" defer></script>
-<link rel="stylesheet" href="/assets/ams-light.css?v=ams-20261026-fullrebrand-final"/>
-<link rel="stylesheet" href="/branding/runtime.css"/><script src="/branding/runtime.js" defer></script><link rel="stylesheet" href="/assets/ams-panel.css?v=ams-20261026-fullrebrand-final"/><link rel="stylesheet" href="/assets/ams-unify.css?v=ams-20261026-unify1"/><script src="/assets/ams-cli-search.js?v=ams-20261026-fullrebrand-final" defer></script><link rel="stylesheet" href="/assets/galaxy-theme.css?v=20261028-fixes"/></head>
+<link rel="stylesheet" href="/assets/skyline.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/assets/skyline-light.css?v=skyline-20261026-fullrebrand-final"/>
+<link rel="stylesheet" href="/branding/runtime.css"/><script src="/branding/runtime.js" defer></script><link rel="stylesheet" href="/assets/skyline-panel.css?v=skyline-20261026-fullrebrand-final"/><link rel="stylesheet" href="/assets/skyline-unify.css?v=skyline-20261026-unify1"/><script src="/assets/skyline-cli-search.js?v=skyline-20261026-fullrebrand-final" defer></script></head>
 <body class="ams-light ams-panel">
 <aside class="sidebar" id="sidebar">
-  <div class="brand"><div class="logo"><img data-brand-logo src="/assets/galaxy-logo.png?v=20261027" alt="Galaxy SMS"></div><div><h1 data-brand="name">Galaxy SMS</h1><small>Test Panel</small></div></div>
+  <div class="brand"><div class="logo"><img data-brand-logo src="/assets/skyline-logo-square.png?v=skyline-20261009" alt="Skyline SMS"></div><div><h1 data-brand="name">Skyline SMS</h1><small>Test Panel</small></div></div>
   <div class="nav">
     <div class="sec">Main</div>
     <div class="item active" data-page="dashboard">▦ Dashboard</div>
@@ -107,7 +107,7 @@ th{font-size:12px;text-transform:uppercase;}
     </section>
   </main>
 </div>
-<script src="/api.js?v=ams-20261026-fullrebrand-final"></script>
+<script src="/api.js?v=skyline-20261026-fullrebrand-final"></script>
 <script>
 API.guard('test');
 let ranges=[], testNumbers=[], selectedNumber='', pollTimer=null;

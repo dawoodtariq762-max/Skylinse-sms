@@ -112,7 +112,7 @@
       b.setAttribute('aria-pressed', on?'true':'false');
     });
     const lbl=document.getElementById('msThemeLabel');
-    if(lbl) lbl.textContent = 'Appearance: '+(dark?'Dark':'Light')+' \u00b7 Galaxy SMS';
+    if(lbl) lbl.textContent = 'Appearance: '+(dark?'Dark':'Light')+' \u00b7 Skyline SMS';
     /* FINAL POLISH 2B: every theme control in the page (the top-nav sun/moon toggle,
        any [data-theme-btn]) repaints from this one event, so the switch is instant and
        stays in sync no matter who triggered it (toggle, settings panel, stored value). */
@@ -127,7 +127,7 @@
     panel.id='msSettingsPanel'; panel.className='ms-notif-panel'; panel.style.top='68px';
     panel.innerHTML=`<div class="ms-notif-head"><b>Panel Settings</b><div class="ms-notif-actions"><button id="msCloseSettings">×</button></div></div>
       <div class="ms-notif-list" style="padding:14px 16px">
-        <div class="ms-switch" id="msThemeLabel">Appearance: Light · Galaxy SMS</div>
+        <div class="ms-switch" id="msThemeLabel">Appearance: Light · Skyline SMS</div>
         <div class="ms-theme-row" role="group" aria-label="Appearance">
           <button type="button" class="ms-theme-btn" data-theme-btn="light">Light</button>
           <button type="button" class="ms-theme-btn" data-theme-btn="dark">Dark</button>
@@ -145,10 +145,10 @@
     if(document.getElementById('msThemeCss')) return;
     const st=document.createElement('style');st.id='msThemeCss';
     st.textContent=`
-      /* Galaxy SMS runtime motion and widgets; palette in ams.css. */
+      /* Skyline SMS runtime motion and widgets; palette in ams.css. */
       .page.active{animation:msPageFade .24s cubic-bezier(.22,.9,.3,1) both}.card,.table-wrap,.toolbar,.stat-card{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background-color .18s ease}button,.btn,.tb-btn,.nav-item,.sub-item,.tab,.ritem,.rsubitem,.navtab,.dropitem{transition:transform .14s ease,box-shadow .14s ease,background-color .14s ease,color .14s ease,opacity .14s ease}button:active,.btn:active{transform:translateY(1px) scale(.99)}tbody tr{transition:background-color .14s ease}@keyframes msPageFade{from{opacity:.55;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-      .ms-progress{position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#007acc,#6db9df,#0054b8);z-index:20000;transform-origin:left;animation:msProgress .7s ease both}.ms-working{box-shadow:0 0 0 4px rgba(0,122,204,.20)!important;filter:brightness(1.04)}@keyframes msProgress{0%{transform:scaleX(0)}70%{transform:scaleX(.82)}100%{transform:scaleX(1);opacity:0}}
-      .ms-toast{position:fixed;right:22px;bottom:22px;background:linear-gradient(96deg,#eef8ff,#ffffff);border:1px solid rgba(0,122,204,.34);color:#333;border-radius:12px;padding:11px 14px;font-weight:700;font-size:13px;box-shadow:0 20px 50px rgba(0,70,110,.14);z-index:20001;opacity:0;transform:translateY(8px);animation:msToast .95s ease both}@keyframes msToast{15%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(8px)}}
+      .ms-progress{position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#3256df,#7fa9f7,#2748c4);z-index:20000;transform-origin:left;animation:msProgress .7s ease both}.ms-working{box-shadow:0 0 0 4px rgba(0,122,204,.20)!important;filter:brightness(1.04)}@keyframes msProgress{0%{transform:scaleX(0)}70%{transform:scaleX(.82)}100%{transform:scaleX(1);opacity:0}}
+      .ms-toast{position:fixed;right:22px;bottom:22px;background:linear-gradient(96deg,#f0f4fe,#ffffff);border:1px solid rgba(0,122,204,.34);color:#2d2e33;border-radius:12px;padding:11px 14px;font-weight:700;font-size:13px;box-shadow:0 20px 50px rgba(0,70,110,.14);z-index:20001;opacity:0;transform:translateY(8px);animation:msToast .95s ease both}@keyframes msToast{15%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(8px)}}
       [data-page]{position:relative}.ms-page-link-overlay{position:absolute;inset:0;z-index:3;background:transparent!important;color:inherit!important;text-decoration:none!important}.ms-page-link-overlay:focus{outline:2px solid rgba(232,21,26,.55);outline-offset:2px;border-radius:inherit}
     `
     document.head.appendChild(st);
@@ -180,18 +180,18 @@
     if(document.getElementById('msProfileMenu')) return;
     const css=document.createElement('style');
     css.textContent=`
-      .ms-profile-menu{position:fixed;right:24px;top:60px;background:#fff;border:1px solid #E2E8F0;border-radius:14px;box-shadow:0 18px 48px rgba(15,23,42,.16);z-index:10000;display:none;min-width:190px;overflow:hidden}.ms-profile-menu.show{display:block}.ms-profile-item{padding:12px 14px;cursor:pointer;font-weight:700;color:#1E293B;border-bottom:1px solid #F1F5F9}.ms-profile-item:hover{background:#F8FAFC}.ms-profile-item:last-child{border-bottom:0}
-      .ms-modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10001;display:none;align-items:center;justify-content:center;padding:18px}.ms-modal-backdrop.show{display:flex}.ms-modal{width:min(720px,96vw);max-height:86vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #E2E8F0;box-shadow:0 28px 80px rgba(15,23,42,.22)}.ms-modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #E2E8F0}.ms-modal-head h3{margin:0;color:#1E293B}.ms-modal-body{padding:18px}.ms-modal-foot{padding:14px 18px;border-top:1px solid #E2E8F0;display:flex;justify-content:flex-end;gap:10px}.ms-x{border:0;background:#F1F5F9;border-radius:9px;width:32px;height:32px;cursor:pointer}.ms-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ms-field{margin-bottom:14px}.ms-field label{display:block;font-weight:800;font-size:13px;color:#334155;margin-bottom:7px}.ms-field input{width:100%;height:42px;border:1px solid #CBD5E1;border-radius:10px;padding:0 12px}.ms-btn{border:0;border-radius:10px;min-height:38px;padding:8px 14px;font-weight:800;cursor:pointer}.ms-btn.primary{background:linear-gradient(135deg,#2563EB,#06B6D4);color:white}.ms-btn.ghost{background:#fff;color:#334155;border:1px solid #CBD5E1}.ms-activity-table{width:100%;border-collapse:separate;border-spacing:0 4px}.ms-activity-table th{background:#F1F5F9;color:#334155;text-align:left;padding:10px;font-size:12px}.ms-activity-table td{background:#fff;border-bottom:1px solid #F1F5F9;padding:10px;color:#1E293B;font-size:13px}`;
+      .ms-profile-menu{position:fixed;right:24px;top:60px;background:#fff;border:1px solid #e4e6ea;border-radius:14px;box-shadow:0 18px 48px rgba(25,26,31,.16);z-index:10000;display:none;min-width:190px;overflow:hidden}.ms-profile-menu.show{display:block}.ms-profile-item{padding:12px 14px;cursor:pointer;font-weight:700;color:#2d2e33;border-bottom:1px solid #f0f2f6}.ms-profile-item:hover{background:#f6f7f9}.ms-profile-item:last-child{border-bottom:0}
+      .ms-modal-backdrop{position:fixed;inset:0;background:rgba(25,26,31,.45);z-index:10001;display:none;align-items:center;justify-content:center;padding:18px}.ms-modal-backdrop.show{display:flex}.ms-modal{width:min(720px,96vw);max-height:86vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #e4e6ea;box-shadow:0 28px 80px rgba(25,26,31,.22)}.ms-modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #e4e6ea}.ms-modal-head h3{margin:0;color:#2d2e33}.ms-modal-body{padding:18px}.ms-modal-foot{padding:14px 18px;border-top:1px solid #e4e6ea;display:flex;justify-content:flex-end;gap:10px}.ms-x{border:0;background:#f0f2f6;border-radius:9px;width:32px;height:32px;cursor:pointer}.ms-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ms-field{margin-bottom:14px}.ms-field label{display:block;font-weight:800;font-size:13px;color:#424449;margin-bottom:7px}.ms-field input{width:100%;height:42px;border:1px solid #cfd2d8;border-radius:10px;padding:0 12px}.ms-btn{border:0;border-radius:10px;min-height:38px;padding:8px 14px;font-weight:800;cursor:pointer}.ms-btn.primary{background:linear-gradient(135deg,#4064e6,#10968f);color:white}.ms-btn.ghost{background:#fff;color:#424449;border:1px solid #cfd2d8}.ms-activity-table{width:100%;border-collapse:separate;border-spacing:0 4px}.ms-activity-table th{background:#f0f2f6;color:#424449;text-align:left;padding:10px;font-size:12px}.ms-activity-table td{background:#fff;border-bottom:1px solid #f0f2f6;padding:10px;color:#2d2e33;font-size:13px}`;
     document.head.appendChild(css);
     const menu=document.createElement('div');menu.id='msProfileMenu';menu.className='ms-profile-menu';menu.innerHTML=`<div class="ms-profile-item" id="msOpenProfile">Profile</div><div class="ms-profile-item" id="msOpenActivity">Activity Log</div>`;document.body.appendChild(menu);
-    const modal=document.createElement('div');modal.id='msProfileModal';modal.className='ms-modal-backdrop';modal.innerHTML=`<div class="ms-modal"><div class="ms-modal-head"><h3>Profile</h3><button class="ms-x" id="msCloseProfile">×</button></div><div class="ms-modal-body"><div class="ms-form-grid"><div class="ms-field"><label>Username</label><input id="msProfileUsername"></div><div class="ms-field"><label>Current Password</label><input type="password" id="msProfileCurrent" placeholder="Required for password change"></div><div class="ms-field"><label>New Password</label><input type="password" id="msProfileNew"></div><div class="ms-field"><label>Confirm New Password</label><input type="password" id="msProfileConfirm"></div><div class="ms-field ms-admin-only"><label>Admin Security Code</label><input type="password" id="msProfileAdminCode" placeholder="Required for admin password change"></div></div><div id="msSecurityCodeBox" class="ms-admin-only" style="margin-top:16px;padding-top:14px;border-top:1px solid #E2E8F0"><h4 style="margin:0 0 10px;color:#1E293B">Change Admin Security Code</h4><div class="ms-form-grid"><div class="ms-field"><label>Old Security Code</label><input type="password" id="msOldSecCode"></div><div class="ms-field"><label>New Security Code</label><input type="password" id="msNewSecCode"></div><div class="ms-field"><label>Confirm New Security Code</label><input type="password" id="msConfirmSecCode"></div></div><button class="ms-btn primary" id="msChangeSecCode" type="button">Change Security Code</button></div><div id="msProfileMsg" style="font-size:13px;color:#64748B;margin-top:10px"></div></div><div class="ms-modal-foot"><button class="ms-btn ghost" id="msProfileCancel">Cancel</button><button class="ms-btn primary" id="msProfileSave">Save Profile</button></div></div>`;document.body.appendChild(modal);
+    const modal=document.createElement('div');modal.id='msProfileModal';modal.className='ms-modal-backdrop';modal.innerHTML=`<div class="ms-modal"><div class="ms-modal-head"><h3>Profile</h3><button class="ms-x" id="msCloseProfile">×</button></div><div class="ms-modal-body"><div class="ms-form-grid"><div class="ms-field"><label>Username</label><input id="msProfileUsername"></div><div class="ms-field"><label>Current Password</label><input type="password" id="msProfileCurrent" placeholder="Required for password change"></div><div class="ms-field"><label>New Password</label><input type="password" id="msProfileNew"></div><div class="ms-field"><label>Confirm New Password</label><input type="password" id="msProfileConfirm"></div><div class="ms-field ms-admin-only"><label>Admin Security Code</label><input type="password" id="msProfileAdminCode" placeholder="Required for admin password change"></div></div><div id="msSecurityCodeBox" class="ms-admin-only" style="margin-top:16px;padding-top:14px;border-top:1px solid #e4e6ea"><h4 style="margin:0 0 10px;color:#2d2e33">Change Admin Security Code</h4><div class="ms-form-grid"><div class="ms-field"><label>Old Security Code</label><input type="password" id="msOldSecCode"></div><div class="ms-field"><label>New Security Code</label><input type="password" id="msNewSecCode"></div><div class="ms-field"><label>Confirm New Security Code</label><input type="password" id="msConfirmSecCode"></div></div><button class="ms-btn primary" id="msChangeSecCode" type="button">Change Security Code</button></div><div id="msProfileMsg" style="font-size:13px;color:#8b8a8e;margin-top:10px"></div></div><div class="ms-modal-foot"><button class="ms-btn ghost" id="msProfileCancel">Cancel</button><button class="ms-btn primary" id="msProfileSave">Save Profile</button></div></div>`;document.body.appendChild(modal);
     const act=document.createElement('div');act.id='msActivityModal';act.className='ms-modal-backdrop';act.innerHTML=`<div class="ms-modal"><div class="ms-modal-head"><h3>Activity Log</h3><button class="ms-x" id="msCloseActivity">×</button></div><div class="ms-modal-body" id="msActivityBody">Loading...</div><div class="ms-modal-foot"><button class="ms-btn ghost" id="msActivityClose">Close</button></div></div>`;document.body.appendChild(act);
     document.getElementById('msOpenProfile').onclick=()=>{menu.classList.remove('show');openProfileModal();};
     document.getElementById('msOpenActivity').onclick=()=>{menu.classList.remove('show');openActivityModal();};
     document.getElementById('msCloseProfile').onclick=document.getElementById('msProfileCancel').onclick=()=>modal.classList.remove('show');
     document.getElementById('msCloseActivity').onclick=document.getElementById('msActivityClose').onclick=()=>act.classList.remove('show');
     const secBox=document.getElementById('msSecurityCodeBox');
-    if(secBox && !document.getElementById('msCarrierLockBox')) secBox.insertAdjacentHTML('afterend', `<div id="msCarrierLockBox" class="ms-admin-only" style="margin-top:16px;padding-top:14px;border-top:1px solid #E2E8F0"><h4 style="margin:0 0 10px;color:#1E293B">Change Carrier Integration Password</h4><div class="ms-form-grid"><div class="ms-field"><label>Admin Security Code</label><input type="password" id="msCarrierSecCode"></div><div class="ms-field"><label>New Carrier Password</label><input type="password" id="msCarrierNewPass"></div><div class="ms-field"><label>Confirm Carrier Password</label><input type="password" id="msCarrierConfirmPass"></div></div><button class="ms-btn primary" id="msChangeCarrierPass" type="button">Change Carrier Password</button></div>`);
+    if(secBox && !document.getElementById('msCarrierLockBox')) secBox.insertAdjacentHTML('afterend', `<div id="msCarrierLockBox" class="ms-admin-only" style="margin-top:16px;padding-top:14px;border-top:1px solid #e4e6ea"><h4 style="margin:0 0 10px;color:#2d2e33">Change Carrier Integration Password</h4><div class="ms-form-grid"><div class="ms-field"><label>Admin Security Code</label><input type="password" id="msCarrierSecCode"></div><div class="ms-field"><label>New Carrier Password</label><input type="password" id="msCarrierNewPass"></div><div class="ms-field"><label>Confirm Carrier Password</label><input type="password" id="msCarrierConfirmPass"></div></div><button class="ms-btn primary" id="msChangeCarrierPass" type="button">Change Carrier Password</button></div>`);
     document.getElementById('msProfileSave').onclick=saveOwnProfile;
     document.getElementById('msChangeSecCode').onclick=changeAdminSecurityCode;
     document.getElementById('msChangeCarrierPass').onclick=changeCarrierLockPassword;
@@ -234,7 +234,7 @@
     }catch(e){document.getElementById('msProfileMsg').textContent='Error: '+e.message;}
   }
   function renderActivityTable(title, rows){
-    return `<h4 style="margin:14px 0 8px;color:#1E293B">${title}</h4><table class="ms-activity-table"><thead><tr><th>Date</th><th>User</th><th>Role</th><th>Action</th><th>IP</th></tr></thead><tbody>${(rows||[]).map(r=>`<tr><td>${(r.created_at||'').slice(0,19)}</td><td>${r.username||'—'}</td><td>${r.role||'—'}</td><td><b>${r.action}</b></td><td>${r.ip||'—'}</td></tr>`).join('')||'<tr><td colspan="5">No activity found</td></tr>'}</tbody></table>`;
+    return `<h4 style="margin:14px 0 8px;color:#2d2e33">${title}</h4><table class="ms-activity-table"><thead><tr><th>Date</th><th>User</th><th>Role</th><th>Action</th><th>IP</th></tr></thead><tbody>${(rows||[]).map(r=>`<tr><td>${(r.created_at||'').slice(0,19)}</td><td>${r.username||'—'}</td><td>${r.role||'—'}</td><td><b>${r.action}</b></td><td>${r.ip||'—'}</td></tr>`).join('')||'<tr><td colspan="5">No activity found</td></tr>'}</tbody></table>`;
   }
   async function openActivityModal(){
     if(ROLE()==='client') return;
@@ -426,7 +426,7 @@
   function exportTable(btn, mode){
     const table=findExportTable(btn); if(!table){ alert('No table found to export.'); return; }
     const data=tableToMatrix(table); if(!data.length){ alert('No rows to export.'); return; }
-    const title=(document.querySelector('.page.active h2')?.textContent||document.title||'ams-sms-export').trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'') || 'ams-sms-export';
+    const title=(document.querySelector('.page.active h2')?.textContent||document.title||'skyline-sms-export').trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'') || 'skyline-sms-export';
     const csv=data.map(r=>r.map(csvEscape).join(',')).join('\n');
     if(mode==='copy'){
       const copyText=data.map(r=>r.join('\t')).join('\n');
@@ -455,7 +455,7 @@
     const w=window.open('','_blank');
     if(!w){ alert('Popup blocked. Please allow popups.'); return; }
     const safeTitle=title.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
-    w.document.write('<!doctype html><html><head><title>'+safeTitle+'</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h2{margin:0 0 14px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #ccc;padding:7px;text-align:left;vertical-align:top}th{background:#f1f5f9}</style></head><body><h2>'+safeTitle+'</h2>'+table.outerHTML+'</body></html>');
+    w.document.write('<!doctype html><html><head><title>'+safeTitle+'</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h2{margin:0 0 14px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #cfd2d8;padding:7px;text-align:left;vertical-align:top}th{background:#f0f2f6}</style></head><body><h2>'+safeTitle+'</h2>'+table.outerHTML+'</body></html>');
     w.document.close(); w.focus(); setTimeout(()=>w.print(),300);
   }
   async function waitNumberJob(jobId, initial={}){
@@ -873,7 +873,7 @@
    * had a gear (Agent, Client) get the identical button injected next to Fullscreen.
    * Theme = Light by default, instant, persisted per user in localStorage under the
    * existing ams_theme key, and applied to html+body so the shared dark layer in
-   * ams.css and the shared geometry in ams-layout.css both follow it.
+   * skyline.css and the shared geometry in skyline-layout.css both follow it.
    * API.openSettings and the Light/Dark buttons inside that panel are left in place,
    * so no legitimate Settings entry point is removed.
    * ========================================================================= */
@@ -955,7 +955,7 @@
   /* ===== P18 legal gate, restyled by FINAL POLISH §2E =====
    * One shared "Terms and Conditions" dialog for every panel (Admin, Manager, Agent,
    * Client and the Provider Management console all load api.js), styled by
-   * assets/ams-chrome.css so Light and Dark both read well.
+   * assets/skyline-chrome.css so Light and Dark both read well.
    *
    * Behaviour and records are unchanged: GET /legal/status decides whether the dialog
    * is required for the current policy version, POST /legal/accept stores
@@ -965,13 +965,13 @@
   const AMS_LEGAL_HTML = ''
     + '<div class="ams-ui-legal-card" role="document">'
     +   '<div class="ams-ui-legal-head">'
-    +     '<div class="ams-ui-legal-eyebrow">Galaxy SMS</div>'
+    +     '<div class="ams-ui-legal-eyebrow">Skyline SMS</div>'
     +     '<h2 class="ams-ui-legal-title" id="amsLegalTitle">Terms and Conditions</h2>'
     +   '</div>'
     +   '<div class="ams-ui-legal-body">'
-    +     '<p><b>About this panel.</b> Galaxy SMS provides SMS numbers, messaging, allocation and reporting services to authorized users.</p>'
+    +     '<p><b>About this panel.</b> Skyline SMS provides SMS numbers, messaging, allocation and reporting services to authorized users.</p>'
     +     '<p><b>Your responsibility.</b> By continuing you confirm that you will use these services only for lawful and legitimate purposes, and that you will comply with the laws that apply to you and the rules of the services you use.</p>'
-    +     '<p><b>You must not use Galaxy SMS numbers or messages for:</b></p>'
+    +     '<p><b>You must not use Skyline SMS numbers or messages for:</b></p>'
     +     '<ul>'
     +       '<li>fake accounts, fraud or scams;</li>'
     +       '<li>spam or unsolicited bulk messaging;</li>'

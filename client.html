@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="en" class="ams-light">
-<head><script src="/assets/ams-storage.js?v=ams-20261026-fullrebrand-final"></script>
+<head><script src="/assets/skyline-storage.js?v=skyline-20261026-fullrebrand-final"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png?v=ams-20261009"  data-brand-favicon />
-<title>Galaxy SMS — Client Panel</title>
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-20261009"  data-brand-favicon />
+<title>Skyline SMS — Client Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
-.copy-otp-btn{border:1px solid #ddd;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
-.otp-code{font-family:"SFMono-Regular",Consolas,monospace;font-weight:800;border:1px solid #ddd;border-radius:8px;padding:5px 9px;display:inline-block;}
+.copy-otp-btn{border:1px solid #cfd2d8;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.otp-code{font-family:"SFMono-Regular",Consolas,monospace;font-weight:800;border:1px solid #cfd2d8;border-radius:8px;padding:5px 9px;display:inline-block;}
 .otp-empty{font-weight:600;}
 .last-sms{font-weight:700;}
 .client-welcome-overlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;}
-.client-welcome-card{width:min(420px,96vw);border:1px solid #ddd;border-radius:20px;padding:22px;}
+.client-welcome-card{width:min(420px,96vw);border:1px solid #cfd2d8;border-radius:20px;padding:22px;}
 .client-welcome-card h3{font-size:22px;margin-bottom:8px;}
 .client-welcome-card p{margin-bottom:14px;}
-.welcome-step{display:flex;gap:10px;align-items:flex-start;border:1px solid #ddd;border-radius:12px;padding:11px;margin-bottom:9px;}
+.welcome-step{display:flex;gap:10px;align-items:flex-start;border:1px solid #cfd2d8;border-radius:12px;padding:11px;margin-bottom:9px;}
 .welcome-step b:first-child{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto;}
-.page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
+.page-head{border-bottom:1px solid #cfd2d8!important;padding-bottom:14px!important;}
 .page > .toolbar,.page > .table-wrap,.page > .card,.page > .grid2{position:relative!important;}
 .page > .toolbar:not(:first-child)::before,.page > .table-wrap:not(:first-child)::before,.page > .card:not(:first-child)::before,.page > .grid2:not(:first-child)::before{content:"";position:absolute;left:0;right:0;top:-10px;height:1px;opacity:.95;}
 .table-wrap + .table-wrap{margin-top:18px!important;}
@@ -35,7 +35,7 @@
   }catch(e){ sessionStorage.clear(); ['ams_token','ams_role','ams_user','ams_name'].forEach(k=>localStorage.removeItem(k)); location.replace('/panel-login'); }
 })();
 </script>
-<style>tfoot.ams-tot td{position:sticky;bottom:0;border-top:2px solid #ddd;font-weight:700;}
+<style>tfoot.ams-tot td{position:sticky;bottom:0;border-top:2px solid #cfd2d8;font-weight:700;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:.1px;}
 ::-webkit-scrollbar{width:9px;height:9px;}
@@ -44,7 +44,7 @@ body{font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;font-size
 .sidebar{width:236px;flex-shrink:0;border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;z-index:50;display:flex;flex-direction:column;transition:transform .25s ease;}
 .sb-brand{display:flex;align-items:center;gap:11px;padding:18px 20px;border-bottom:1px solid var(--border);}
 .sb-brand .logo{width:42px;height:42px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.sb-brand .logo svg{width:22px;height:22px;stroke:#1a0d10;}
+.sb-brand .logo svg{width:22px;height:22px;stroke:#2a1414;}
 .sb-brand h1{font-size:15px;font-weight:700;}
 .sb-brand small{display:block;font-size:11px;margin-top:1px;}
 .sb-nav{flex:1;overflow-y:auto;padding:14px 12px;}
@@ -87,10 +87,10 @@ to{opacity:1;transform:translateY(0);}}
 .stat-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;}
 .si{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .si svg{width:22px;height:22px;}
-.si.ro svg{stroke:#fda4af;}
-.si.am svg{stroke:#fbbf24;}
-.si.bl svg{stroke:#93c5fd;}
-.si.gr svg{stroke:#6ee7b7;}
+.si.ro svg{stroke:#f1c2c0;}
+.si.am svg{stroke:#f4cf94;}
+.si.bl svg{stroke:#b4dafb;}
+.si.gr svg{stroke:#4ad0a8;}
 .stat-info h3{font-size:24px;font-weight:700;line-height:1;}
 .stat-info p{font-size:12.5px;margin-top:6px;}
 .stat-info .trend{font-size:11.5px;margin-top:5px;}
@@ -145,7 +145,7 @@ tbody tr:last-child td{border-bottom:none;}
 .table-foot .info{font-size:12.5px;}
 .pagination{display:flex;gap:5px;}
 .pagination button{border:1px solid var(--border2);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12.5px;}
-.masknote{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid #ddd;}
+.masknote{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid #cfd2d8;}
 .dash-metrics{grid-template-columns:repeat(4,minmax(210px,1fr))!important;gap:20px!important;margin-bottom:20px!important;}
 @media(max-width:1100px){.dash-metrics{grid-template-columns:repeat(2,minmax(210px,1fr))!important;}}
 @media(max-width:620px){.dash-metrics{grid-template-columns:1fr!important;}}
@@ -156,49 +156,49 @@ tbody tr:last-child td{border-bottom:none;}
 .stat-card.dash-metric .stat-info p{text-transform:uppercase!important;font-size:10.5px!important;font-weight:800!important;letter-spacing:.42px!important;margin:0 0 9px!important;}
 .stat-card.dash-metric .stat-info h3{font-size:22px!important;font-weight:850!important;margin:0!important;letter-spacing:.2px;}
 .stat-card.dash-metric .stat-info span{font-size:11px!important;display:block!important;margin-top:2px!important;}
-.dash-go{width:24px;height:24px;border-radius:50%;border:1px solid #ddd;display:grid;place-items:center;font-size:12px;font-weight:900;position:relative;z-index:1;}
+.dash-go{width:24px;height:24px;border-radius:50%;border:1px solid #cfd2d8;display:grid;place-items:center;font-size:12px;font-weight:900;position:relative;z-index:1;}
 .dash-note-card{padding:18px!important;border-radius:18px!important;}
 .dash-note-card .card-head{margin-bottom:12px!important;}
 .bar{border-radius:9px 9px 0 0!important;}
-.tag-mgr{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-agt{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-cli,.tag-client{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-blue{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-green{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-amber{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-red{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-gray{border:1px solid #ddd!important;font-weight:800!important;}
+.tag-mgr{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-agt{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-cli,.tag-client{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-blue{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-green{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-amber{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-red{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-gray{border:1px solid #cfd2d8!important;font-weight:800!important;}
 body{font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif!important;font-size:14px!important;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
 table{font-size:13.5px!important;line-height:1.6!important;border-collapse:separate!important;border-spacing:0 3px!important;}
 thead th{font-weight:600!important;letter-spacing:.25px!important;}
 table td{font-weight:500!important;}
 .page-head h2{font-weight:600!important;}
 .card-head h3{font-weight:600!important;}
-.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #ddd!important;border-radius:8px!important;padding:5px 10px!important;font-weight:600!important;font-size:12px!important;line-height:1.15!important;letter-spacing:0!important;display:inline-flex;align-items:center;gap:4px;}
+.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #cfd2d8!important;border-radius:8px!important;padding:5px 10px!important;font-weight:600!important;font-size:12px!important;line-height:1.15!important;letter-spacing:0!important;display:inline-flex;align-items:center;gap:4px;}
 .cell-money{font-weight:700!important;}
 .payout-rate,.rate-cell{font-weight:700!important;}
 .msg-body{line-height:1.6!important;}
 .mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace!important;font-weight:600!important;}
 .filter-row label{font-weight:600;font-size:13px;}
 body{font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif!important;}
-.sidebar,.rail{border-right:1px solid #ddd!important;}
-.topbar,.tb1,.navshell{border-bottom:1px solid #ddd!important;}
+.sidebar,.rail{border-right:1px solid #cfd2d8!important;}
+.topbar,.tb1,.navshell{border-bottom:1px solid #cfd2d8!important;}
 .sidebar::before,.rail::before,.topbar::before,.tb1::before,.navshell::before{display:none!important;}
-.sb-brand,.rail-brand{border-bottom:1px solid #ddd!important;}
+.sb-brand,.rail-brand{border-bottom:1px solid #cfd2d8!important;}
 .sb-section,.sb-sec{font-weight:700!important;letter-spacing:.08em!important;}
 .nav-item svg,.tab svg,.ritem svg,.navtab svg,.sub-item svg,.rsubitem svg{stroke:currentColor!important;}
 .nav-item.active svg,.tab.active svg,.ritem.active svg{stroke:#FFFFFF!important;}
 .sub-item.active,.rsubitem.active{font-weight:700!important;}
 .page-head h2,.card-head h3{font-weight:700!important;}
 table{border-collapse:separate!important;border-spacing:0 3px!important;}
-thead th{font-weight:700!important;border-top:1px solid #ddd!important;border-bottom:1px solid #ddd!important;}
-tbody tr td{border-bottom:1px solid #ddd!important;}
+thead th{font-weight:700!important;border-top:1px solid #cfd2d8!important;border-bottom:1px solid #cfd2d8!important;}
+tbody tr td{border-bottom:1px solid #cfd2d8!important;}
 .dash-metric{border-radius:16px!important;}
 .btn{border-radius:10px!important;min-height:38px!important;font-weight:700!important;display:inline-flex;align-items:center;justify-content:center;gap:6px;line-height:1.1!important;}
-.btn-ghost{border:1px solid #ddd!important;}
+.btn-ghost{border:1px solid #cfd2d8!important;}
 .btn:hover{transform:translateY(-1px);}
-.avatar,.who .av{border:2px solid #ddd!important;}
-.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #ddd!important;border-radius:8px!important;font-weight:600!important;}
+.avatar,.who .av{border:2px solid #cfd2d8!important;}
+.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #cfd2d8!important;border-radius:8px!important;font-weight:600!important;}
 .cell-money{font-weight:700!important;}
 .payout-rate,.rate-cell{font-weight:700!important;}
 body{font-family:Inter,Roboto,"Segoe UI",Arial,sans-serif!important;letter-spacing:0!important;font-size:14px!important;}
@@ -235,32 +235,32 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 .content{padding:20px 14px!important;}}
 .sb-logo svg,.brand .logo svg,.rail .logo svg,.sb-brand .logo svg,.brand-logo .logo svg{stroke:#fff!important;}
 .sb-brand h1,.brand h1,.brand-text h1,.brand-logo h1{font-weight:700!important;letter-spacing:-.01em!important;}
-.ams-sms-logo-img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;border-radius:inherit!important;}
-.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo,.brand-logo .logo{padding:0!important;overflow:hidden!important;border:1px solid #ddd!important;}
+.skyline-sms-logo-img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;border-radius:inherit!important;}
+.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo,.brand-logo .logo{padding:0!important;overflow:hidden!important;border:1px solid #cfd2d8!important;}
 .brand-logo .logo{width:92px!important;height:92px!important;border-radius:22px!important;margin-bottom:16px!important;}
 .sb-logo{width:44px!important;height:44px!important;border-radius:13px!important;}
 .brand .logo,.sb-brand .logo{width:46px!important;height:46px!important;border-radius:13px!important;}
 .rail .logo{width:50px!important;height:50px!important;border-radius:14px!important;}
 .brand-panel .brand-logo{align-items:flex-start!important;}
 .brand-panel .brand-logo h1{font-size:24px!important;}
-.sidebar,.rail{border-right:1px solid #ddd!important;}
-.sb-brand,.rail-brand,.brand-text{border-bottom:1px solid #ddd!important;}
+.sidebar,.rail{border-right:1px solid #cfd2d8!important;}
+.sb-brand,.rail-brand,.brand-text{border-bottom:1px solid #cfd2d8!important;}
 .nav-item svg,.sub-item svg,.ritem svg,.rsubitem svg{stroke:currentColor!important;}
-.nav-item.active svg,.ritem.active svg,.tab.active svg{stroke:#0F172A!important;}
-.appbar{border-bottom:1px solid #ddd!important;}
-.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo{border:1px solid #ddd!important;}
-.topbar,.tb1{border-bottom:1px solid #ddd!important;}
-.copy-otp-btn{border:1px solid #ddd;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
-.otp-code{font-family:"SFMono-Regular",Consolas,monospace;font-weight:800;border:1px solid #ddd;border-radius:8px;padding:5px 9px;display:inline-block;}
+.nav-item.active svg,.ritem.active svg,.tab.active svg{stroke:#191a1f!important;}
+.appbar{border-bottom:1px solid #cfd2d8!important;}
+.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo{border:1px solid #cfd2d8!important;}
+.topbar,.tb1{border-bottom:1px solid #cfd2d8!important;}
+.copy-otp-btn{border:1px solid #cfd2d8;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.otp-code{font-family:"SFMono-Regular",Consolas,monospace;font-weight:800;border:1px solid #cfd2d8;border-radius:8px;padding:5px 9px;display:inline-block;}
 .otp-empty{font-weight:600;}
 .last-sms{font-weight:700;}
 .client-welcome-overlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;}
-.client-welcome-card{width:min(420px,96vw);border:1px solid #ddd;border-radius:20px;padding:22px;}
+.client-welcome-card{width:min(420px,96vw);border:1px solid #cfd2d8;border-radius:20px;padding:22px;}
 .client-welcome-card h3{font-size:22px;margin-bottom:8px;}
 .client-welcome-card p{margin-bottom:14px;}
-.welcome-step{display:flex;gap:10px;align-items:flex-start;border:1px solid #ddd;border-radius:12px;padding:11px;margin-bottom:9px;}
+.welcome-step{display:flex;gap:10px;align-items:flex-start;border:1px solid #cfd2d8;border-radius:12px;padding:11px;margin-bottom:9px;}
 .welcome-step b:first-child{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto;}
-.page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
+.page-head{border-bottom:1px solid #cfd2d8!important;padding-bottom:14px!important;}
 .page > .toolbar,.page > .table-wrap,.page > .card,.page > .grid2{position:relative!important;}
 .page > .toolbar:not(:first-child)::before,.page > .table-wrap:not(:first-child)::before,.page > .card:not(:first-child)::before,.page > .grid2:not(:first-child)::before{content:"";position:absolute;left:0;right:0;top:-10px;height:1px;opacity:.95;}
 .table-wrap + .table-wrap{margin-top:18px!important;}
@@ -269,11 +269,11 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
    The shared sheet hides .sb-brand h1 outright and forces the logo to
    150x92 inside a 210px rail, which left the title with no room at all.
    Here the title is restored and stacked under the logo.
-   NOTE on specificity: assets/ams-layout.css:95/98 wrap their arguments
+   NOTE on specificity: assets/skyline-layout.css:95/98 wrap their arguments
    in :is(), and :is() takes the specificity of its MOST SPECIFIC argument
    (.rail > .brand > .logo = 0,3,0), so those rules are 0,4,1 / 0,3,2.
    These selectors are 0,4,2 / 0,3,3 and must stay at least that strong. */
-/* .sb-brand.sb-brand (0,5,2) is deliberate: assets/ams-ds.css:127 pins
+/* .sb-brand.sb-brand (0,5,2) is deliberate: assets/skyline-ds.css:127 pins
    flex-direction:row at 0,4,2, so a plain 0,4,2 selector would tie and lose
    on order. Repeating the class is the smallest reliable bump. */
 html body.ams-panel.ams-ui:is(.ams-light,.ams-dark) .sb-brand.sb-brand{flex-direction:column!important;align-items:flex-start!important;justify-content:flex-start!important;gap:10px!important;}
@@ -281,7 +281,7 @@ html body.ams-panel:is(.ams-light,.ams-dark) .sb-brand.sb-brand{flex-direction:c
 html body.ams-panel:is(.ams-light,.ams-dark) .sb-brand .logo{width:58px!important;height:58px!important;flex:0 0 auto!important;border-radius:12px!important;}
 html body.ams-panel:is(.ams-light,.ams-dark) .sb-brand > div:not(.logo){width:100%!important;min-width:0!important;}
 html body.ams-panel:is(.ams-light,.ams-dark) .sb-brand h1{display:block!important;font-size:15.5px!important;line-height:1.22!important;color:#fff!important;white-space:normal!important;overflow-wrap:anywhere!important;margin:0!important;}
-html body.ams-panel:is(.ams-light,.ams-dark) .sb-brand small{display:block!important;color:#8fa1c4!important;font-size:11px!important;}
+html body.ams-panel:is(.ams-light,.ams-dark) .sb-brand small{display:block!important;color:#8b8a8e!important;font-size:11px!important;}
 /* ---- Client panel: top-right toolbar ------------------------------
    .tb1 was sizing to its content, so the controls sat mid-bar instead of
    flush right. It now fills the bar and .sp pushes them to the edge. */
@@ -294,37 +294,38 @@ html body.ams-panel:is(.ams-light,.ams-dark) .tb1 .tb-btn{flex:0 0 auto!importan
 
 
 
-<link rel="stylesheet" href="/assets/ams.css?v=ams-20261026-fullrebrand-final"/><script src="/assets/ams.js?v=ams-20261026-fullrebrand-final" defer></script>
-<link rel="stylesheet" href="/assets/ams-light.css?v=ams-20261026-fullrebrand-final"/>
+<link rel="stylesheet" href="/assets/skyline.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/assets/skyline-light.css?v=skyline-20261026-fullrebrand-final"/>
 <!-- FINAL POLISH 2C: shared theme-neutral geometry. Loaded LAST so Light and Dark
      share exactly one layout (sizes, spacing, flex/grid, font metrics) while each
      theme keeps painting its own colours. Generated by scripts/split-theme-geometry.py. -->
-<link rel="stylesheet" href="/assets/ams-layout.css?v=ams-20261026-fullrebrand-final"/>
+<link rel="stylesheet" href="/assets/skyline-layout.css?v=skyline-20261026-fullrebrand-final"/>
 <!-- FINAL POLISH 2A/2B/2C/2D/2E: shared panel chrome (hamburger + sidebar,
      sun/moon theme toggle, filter alignment contract, heading contrast,
      Terms and Conditions dialog, dark dropdown paint). Loaded last. -->
-<link rel="stylesheet" href="/assets/ams-chrome.css?v=ams-20261027-three-fixes1"/>
-<link rel="stylesheet" href="/assets/ams-ds.css?v=ams-20261026-fullrebrand-final"/>
-<script src="/assets/ams-ds.js?v=ams-20261026-fullrebrand-final" defer></script>
-<script src="/assets/dashboard-ui.js?v=galaxy-20261027"></script>
+<link rel="stylesheet" href="/assets/skyline-chrome.css?v=skyline-20261027-three-fixes1"/>
+<link rel="stylesheet" href="/assets/skyline-ds.css?v=skyline-20261026-fullrebrand-final"/>
+<script src="/assets/skyline-ds.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<script src="/assets/dashboard-ui.js?v=skyline-20261026-fullrebrand-final"></script>
 
-<script src="/assets/number-copy.js?v=ams-20261026-fullrebrand-final"></script>
-<link rel="stylesheet" href="/assets/ams-sidebar-unify.css?v=ams-20261026-fullrebrand-final"/>
-<link rel="stylesheet" href="/assets/ams-motion.css?v=ams-20261026-fullrebrand-final"/><script src="/assets/ams-motion.js?v=ams-20261026-fullrebrand-final" defer></script>
-<link rel="stylesheet" href="/branding/runtime.css"/><script src="/branding/runtime.js" defer></script><link rel="stylesheet" href="/assets/ams-panel.css?v=ams-20261026-fullrebrand-final"/><link rel="stylesheet" href="/assets/ams-unify.css?v=ams-20261026-unify2"/><link rel="stylesheet" href="/assets/galaxy-theme.css?v=20261028-fixes"/></head>
+<script src="/assets/number-copy.js?v=skyline-20261026-fullrebrand-final"></script>
+<link rel="stylesheet" href="/assets/skyline-sidebar-unify.css?v=skyline-20261026-fullrebrand-final"/>
+<link rel="stylesheet" href="/assets/skyline-motion.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline-motion.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/branding/runtime.css"/><script src="/branding/runtime.js" defer></script><link rel="stylesheet" href="/assets/skyline-panel.css?v=skyline-20261026-fullrebrand-final"/><link rel="stylesheet" href="/assets/skyline-unify.css?v=skyline-20261026-unify2"/></head>
 <body class="ams-light ams-panel ams-ui">
 <div class="layout">
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="logo"><img class="ams-sms-logo-img" data-brand-logo src="/assets/galaxy-logo.png?v=20261027" alt="Galaxy SMS" /></div>
-      <div><h1 data-brand="name">Galaxy SMS</h1><small>Client Panel</small></div>
+      <div class="logo"><img class="skyline-sms-logo-img" data-brand-logo src="/assets/skyline-logo-square.png?v=skyline-20261009" alt="Skyline SMS" /></div>
+      <div><h1 data-brand="name">Skyline SMS</h1><small>Client Panel</small></div>
     </div>
     <nav class="sb-nav" id="tabs">
       <div class="sb-sec">Menu</div>
       <div class="tab active" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</div>
       <div class="tab" data-page="numbers"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>SMS Numbers</div>
       <div class="tab" data-page="stats"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>SMS Detailed Report</div>
+            <div class="tab" data-page="payouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/></svg>Payouts</div>
             <div class="tab" data-page="test"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18v-6a3 3 0 0 1 6 0v6"/><rect x="4" y="18" width="16" height="3"/><path d="M12 3v3"/></svg>SMS Test Panel</div>
     </nav>
   </aside>
@@ -347,7 +348,7 @@ html body.ams-panel:is(.ams-light,.ams-dark) .tb1 .tb-btn{flex:0 0 auto!importan
     <!-- DASHBOARD -->
 <section class="page active" id="page-dashboard">
       <div class="page-head"><div><h2>Dashboard</h2><div class="breadcrumb"><b>Home</b> » Dashboard</div></div></div>
-      <!-- AMS-style dashboard top (client scope; money cards are this client's dashboard payout sums) -->
+      <!-- Skyline-style dashboard top (client scope; money cards are this client's dashboard payout sums) -->
       <div class="ams-panel-dash-meta-row"><span class="ams-panel-meta" id="amsDashMeta" style="display:none"></span></div>
       <div id="amsKpis"></div>
       <div class="ams-panel-middle"><div id="amsVolume"></div><aside id="amsRail"></aside></div>
@@ -359,7 +360,7 @@ html body.ams-panel:is(.ams-light,.ams-dark) .tb1 .tb-btn{flex:0 0 auto!importan
 
     <!-- SMS NUMBERS (assigned, view only) -->
     <section class="page" id="page-numbers">
-      <div class="page-head"><div><h2>SMS Numbers <span class="ams-num-page-badge" style="font-size:14px;font-weight:600;color:var(--text,#0f172a);background:var(--u-soft,#eef2f7);padding:3px 9px;border-radius:6px;margin-left:10px;vertical-align:middle;display:inline-flex;align-items:center;gap:6px">Numbers: <span id="numPageCount">0</span> </span></h2><div class="breadcrumb"><b>My Panel</b> › Allocated Numbers</div></div>
+      <div class="page-head"><div><h2>SMS Numbers <span class="ams-num-page-badge" style="font-size:14px;font-weight:600;color:var(--text,#191a1f);background:var(--u-soft,#f0f2f6);padding:3px 9px;border-radius:6px;margin-left:10px;vertical-align:middle;display:inline-flex;align-items:center;gap:6px">Numbers: <span id="numPageCount">0</span> </span></h2><div class="breadcrumb"><b>My Panel</b> › Allocated Numbers</div></div>
         <div class="head-actions"><span class="masknote">Only numbers allocated to you</span></div></div>
       <div class="toolbar"><div class="filter-row">
         <div id="numRangeContainer" style="display:inline-block;min-width:180px"><select class="sel-lg" id="numRange"><option value="">Select Range</option></select></div>
@@ -371,9 +372,28 @@ html body.ams-panel:is(.ams-light,.ams-dark) .tb1 .tb-btn{flex:0 0 auto!importan
         <div class="exp-btns"><button type="button" class="ams-btn ams-blue" onclick="copyCurrentPageNumbers(this)" data-tip="Copy numbers" title="Copy numbers" aria-label="Copy numbers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button type="button" class="ams-btn ams-blue"  data-tip="Download CSV" title="Download CSV" aria-label="Download CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button type="button" class="ams-btn ams-green"  data-tip="Download Excel" title="Download Excel" aria-label="Download Excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
         <div class="tc-right"><label>Search:</label><input type="text" id="numSearch" oninput="renderNumbers()" placeholder="Search..."/></div></div></div>
       <div class="table-wrap"><div class="tscroll"><table>
-        <thead><tr><th><input type="checkbox" aria-label="Select all visible numbers" onchange="document.querySelectorAll('#numBody .return-number').forEach(c=>c.checked=this.checked)"></th><th class="sortable" onclick="sortNum('range')">Range <span class="sort">⇅</span></th><th class="sortable" onclick="sortNum('number')">Number <span class="sort" id="nSortHint">⇅</span></th><th>Payterm</th><th>Status</th><th>Payout</th><th>Last SMS Time</th><th>Limits</th></tr></thead>
+        <thead><tr><th class="sortable" onclick="sortNum('range')">Range <span class="sort">⇅</span></th><th class="sortable" onclick="sortNum('number')">Number <span class="sort" id="nSortHint">⇅</span></th><th>Payterm</th><th>Status</th><th>Payout</th><th>Last SMS Time</th><th>Limits</th></tr></thead>
         <tbody id="numBody"></tbody></table></div>
         <div class="table-foot"><div class="info" id="numInfo"></div><div class="pagination"><button>‹</button><button class="active">1</button><button>2</button><button>›</button></div></div></div>
+    </section>
+
+    <!-- PAYOUTS: Agent payouts belonging to this Client (non-zero only) -->
+    <section class="page" id="page-payouts">
+      <div class="page-head"><div><h2>Payouts</h2><div class="breadcrumb"><b>My Panel</b> &rsaquo; Agent Payouts</div></div>
+        <div class="head-actions"><span class="masknote">Only payouts on numbers allocated to you</span></div></div>
+      <div class="toolbar"><div class="filter-row">
+        <label>From<input type="date" id="payFrom" onchange="loadPayouts()"></label>
+        <label>To<input type="date" id="payTo" onchange="loadPayouts()"></label>
+        <label>Type<select id="payType" onchange="loadPayouts()"><option value="">All</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly_30x45">Monthly</option></select></label>
+        <label>Status<select id="payStatus" onchange="loadPayouts()"><option value="">All</option><option value="open">Open</option><option value="requested">Requested</option><option value="paid">Paid</option><option value="rejected">Rejected</option></select></label>
+        <button type="button" class="ams-btn" onclick="resetPayoutFilters()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      </div></div>
+      <div id="paySummary" style="display:flex;flex-wrap:wrap;gap:10px;margin:0 2px 12px"></div>
+      <div class="table-wrap"><div class="tscroll"><table>
+        <thead><tr><th>Date</th><th>Agent</th><th>Term</th><th>Cycle</th><th>Amount</th><th>Status</th><th>Eligible At</th></tr></thead>
+        <tbody id="payBody"></tbody></table></div>
+        <div class="table-foot"><div class="info" id="payInfo">Loading payouts&hellip;</div>
+          <div class="pagination"><button id="payPrev" type="button" onclick="payGo(-1)">&lsaquo;</button><button id="payNext" type="button" onclick="payGo(1)">&rsaquo;</button></div></div></div>
     </section>
 
     <!-- SMS STATS (received SMS / OTP records, full CLI + message) -->
@@ -444,7 +464,7 @@ html body.ams-panel:is(.ams-light,.ams-dark) .tb1 .tb-btn{flex:0 0 auto!importan
 
 <div class="client-welcome-overlay" id="clientWelcome" style="display:none">
   <div class="client-welcome-card">
-    <h3><span data-brand-replace="name">Welcome to Galaxy SMS</span></h3>
+    <h3><span data-brand-replace="name">Welcome to Skyline SMS</span></h3>
     <p>Here is the simple workflow:</p>
     <div class="welcome-step"><b>1</b><span>View your allocated numbers in <b>SMS Numbers</b>.</span></div>
     <div class="welcome-step"><b>2</b><span>Open <b>SMS Detailed Report</b> to see your latest OTP messages.</span></div>
@@ -453,7 +473,7 @@ html body.ams-panel:is(.ams-light,.ams-dark) .tb1 .tb-btn{flex:0 0 auto!importan
   </div>
 </div>
 
-<script src="/api.js?v=ams-20261027-three-fixes1"></script>
+<script src="/api.js?v=skyline-20261027-three-fixes1"></script>
 <script>
 if(window.API){ API.guard('client'); }
 /* NAV */
@@ -507,7 +527,7 @@ function copyText(value){
 }
 function showCopyToast(msg){
   let el=document.getElementById('copyToast');
-  if(!el){el=document.createElement('div');el.id='copyToast';el.style.cssText='position:fixed;right:18px;bottom:18px;background:#1E293B;color:white;padding:10px 14px;border-radius:10px;z-index:99999;font-weight:700;box-shadow:0 12px 28px rgba(10,10,11,.24)';document.body.appendChild(el);}
+  if(!el){el=document.createElement('div');el.id='copyToast';el.style.cssText='position:fixed;right:18px;bottom:18px;background:#191a1f;color:white;padding:10px 14px;border-radius:10px;z-index:99999;font-weight:700;box-shadow:0 12px 28px rgba(10,10,11,.24)';document.body.appendChild(el);}
   el.textContent=msg;el.style.display='block';clearTimeout(window.__copyToastTimer);window.__copyToastTimer=setTimeout(()=>el.style.display='none',1400);
 }
 function lastSmsForNumber(number){
@@ -533,13 +553,13 @@ function closeClientWelcome(){
 /* P19c FIX#2: Client ko apne number par AGENT ka assigned EXACT payout dikhna hai
    (numbers.payout — agent allocation se set hota hai). Koi range-rate / global-rate
    fallback NAHI: 0 => $0.00, 1 => $1.00, 2 => $2.00, 0.013 => $0.013 (exact). */
-function cliPay(v){const s=String(v==null?'':v).trim();return '$'+(/^\d+(?:\.\d+)?$/.test(s)&&Number(s)>0?s:'0.00');}
-async function loadNumbers(){ try{ numData=(await API.get('/numbers')).map(r=>({id:r.id,range:r.range_name||'',number:r.number,payterm:r.payterm||'Weekly',status:'Active',payout:r.effective_rate,sd:r.sd_limit||0,sw:r.sw_limit||0})); }catch(e){ numData=[]; } renderNumbers(); }
+function cliPay(v){const s=String(v==null?'':v).trim();if(s==='')return'$0.00';const dp=(s.split('.')[1]||'').length;const n=Number(s);return (Number.isFinite(n)&&dp<=2)?'$'+n.toFixed(2):'$'+s;}
+async function loadNumbers(){ try{ numData=(await API.get('/numbers')).map(r=>({range:r.range_name||'',number:r.number,payterm:r.payterm||'Weekly',status:'Active',payout:r.payout,sd:r.sd_limit||0,sw:r.sw_limit||0})); }catch(e){ numData=[]; } renderNumbers(); }
 function renderNumbers(){const rf=document.getElementById('numRange').value,len=document.getElementById('numLen').value,q=(document.getElementById('numSearch').value||'').toLowerCase();
   let rows=numData.filter(r=>(!rf||r.range===rf)&&[r.range,r.number].join(' ').toLowerCase().includes(q));
   if(nSort.k)rows.sort((a,b)=>((a[nSort.k]||'')+'').localeCompare((b[nSort.k]||'')+'',undefined,{numeric:true})*nSort.d);
   const pag=API.paginateRows('cliNumbers',rows,len,'numInfo',renderNumbers);const t=pag.total;rows=pag.rows;
-  document.getElementById('numBody').innerHTML=rows.map(r=>`<tr><td><input type="checkbox" class="return-number" data-id="${r.id}" aria-label="Select ${r.number}"></td><td data-label="Range">${r.range}</td><td data-label="Number" class="ams-num"><b>${r.number}</b></td><td data-label="Pay"><span class="tag tag-gray">${(window.AMSCore&&AMSCore.payterm?AMSCore.payterm(r.payterm):r.payterm)||'—'}</span></td><td data-label="Status"><span class="tag tag-green">${r.status}</span></td><td data-label="Payout"><b>${cliPay(r.payout)}</b></td><td data-label="Last SMS"><span class="last-sms">${lastSmsForNumber(r.number)}</span></td><td data-label="Limits" class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No allocated numbers found</td></tr>`;
+  document.getElementById('numBody').innerHTML=rows.map(r=>`<tr><td data-label="Range">${r.range}</td><td data-label="Number" class="ams-num"><b>${r.number}</b></td><td data-label="Pay"><span class="tag tag-gray">${(window.AMSCore&&AMSCore.payterm?AMSCore.payterm(r.payterm):r.payterm)||'—'}</span></td><td data-label="Status"><span class="tag tag-green">${r.status}</span></td><td data-label="Payout"><b>${cliPay(r.payout)}</b></td><td data-label="Last SMS"><span class="last-sms">${lastSmsForNumber(r.number)}</span></td><td data-label="Limits" class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No allocated numbers found</td></tr>`;
   document.getElementById('numInfo').textContent=`Showing ${rows.length} of ${t} numbers`;}
 
 /* SMS STATS (API) */
@@ -658,7 +678,7 @@ async function loadProfile(){try{const me=await API.get('/me');CLIENT=me.name||m
 async function loadDashboard(){
   const d=await API.get('/dashboard').catch(e=>{window.AMSDashboardCore && AMSDashboardCore.error();throw e;});
   const spark=(d.daily7||[]).map(x=>x.count||0);
-  /* AMS dashboard top (2026-10-24, client scope): SMS counts from
+  /* Skyline dashboard top (2026-10-24, client scope): SMS counts from
      /dashboard; money cards are the client's existing payout sums
      (payout_today / payout_month) — labelled Payout, not ledger earnings
      (clients have no payment_ledger earnings). Values unchanged. */
@@ -681,7 +701,7 @@ async function loadDashboard(){
     ]);
   }
   void spark;
-  window.AMSDashboard.areaChart('amsSmsChart',{title:'SMS Last 7 Days',series:'SMS',color:'#6d5df6',rows:d.daily7,valueKey:'count',ariaLabel:'Received OTP per day for the last seven UK reporting days'});
+  window.AMSDashboard.areaChart('amsSmsChart',{title:'SMS Last 7 Days',series:'SMS',color:'#5b4bd8',rows:d.daily7,valueKey:'count',ariaLabel:'Received OTP per day for the last seven UK reporting days'});
   window.AMSDashboardCore.refreshExtras('client');
   if(window.amsRenderClientRecent) amsRenderClientRecent((d&&d.recent)||[]);
 }
@@ -732,10 +752,78 @@ async function loadClientPageData(page){
     if(page==='numbers'){ loadRanges(); return loadNumbers(); }
     if(page==='stats'){ await loadRanges(); return renderStats(true); }
     if(page==='test'){ await loadRanges(); await loadTestNumbers(); renderTestRangeSelect(); return renderTest(); }
+    if(page==='payouts'){ return loadPayouts(); }
   }catch(e){console.warn('loadClientPageData failed',page,e);}
 }
 
 
+
+
+/* ==========================================================================
+   AGENT PAYOUTS (Client scope)
+   Reads /api/payment-v2/client/payouts, scoped server-side to the authenticated
+   client (payment_ledger.client_id = session user id). Zero-value rows are
+   already excluded by the server, so an empty 0.00 payout is never presented as
+   an eligible payout. Statuses render EXACTLY as stored. Historical payouts are
+   included because client_id is backfilled on boot.
+   ========================================================================== */
+let payPage=1, payTotalPages=1, paySeq=0;
+function resetPayoutFilters(){
+  const f=document.getElementById('payFrom'), t=document.getElementById('payTo'),
+        ty=document.getElementById('payType'), st=document.getElementById('payStatus');
+  if(f)f.value=''; if(t)t.value=''; if(ty)ty.value=''; if(st)st.value='';
+  payPage=1; loadPayouts();
+}
+function payGo(d){
+  const n=payPage+d; if(n<1||n>payTotalPages) return;
+  payPage=n; loadPayouts();
+}
+const PAY_TERM={daily:'Daily',weekly:'Weekly',monthly_30x45:'Monthly'};
+const PAY_TAG={paid:'tag-green',requested:'tag-blue',open:'tag-amber',rejected:'tag-red'};
+function payEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function loadPayouts(){
+  const body=document.getElementById('payBody'); if(!body) return;
+  const own=++paySeq;
+  const info=document.getElementById('payInfo'); if(info) info.textContent='Loading payouts\u2026';
+  try{
+    const q=new URLSearchParams({page:String(payPage),limit:'50'});
+    const f=document.getElementById('payFrom'), t=document.getElementById('payTo'),
+          ty=document.getElementById('payType'), st=document.getElementById('payStatus');
+    if(f&&f.value)q.set('from',f.value);
+    if(t&&t.value)q.set('to',t.value);
+    if(ty&&ty.value)q.set('payment_type',ty.value);
+    if(st&&st.value)q.set('status',st.value);
+    const d=await API.get('/payment-v2/client/payouts?'+q.toString());
+    if(own!==paySeq) return;                       /* ignore stale responses */
+    const rows=d.rows||[]; payPage=d.page||1; payTotalPages=d.totalPages||1;
+    body.innerHTML=rows.map(r=>`<tr>
+        <td data-label="Date">${payEsc((r.earned_at||'').slice(0,19))}</td>
+        <td data-label="Agent">${payEsc(r.agent_name||('Agent #'+r.agent_id))}</td>
+        <td data-label="Term">${payEsc(PAY_TERM[r.payment_type]||r.payment_type)}</td>
+        <td data-label="Cycle">${payEsc(r.cycle_key||'\u2014')}</td>
+        <td data-label="Amount" class="amount"><b>${payEsc(r.amount)}</b></td>
+        <td data-label="Status"><span class="tag ${PAY_TAG[r.status]||'tag-gray'}">${payEsc(String(r.status||'open'))}</span></td>
+        <td data-label="Eligible At">${payEsc((r.eligible_at||'').slice(0,19)||'\u2014')}</td>
+      </tr>`).join('')||'<tr><td colspan="7" class="muted" style="text-align:center;padding:26px">No payouts found.</td></tr>';
+    if(info) info.textContent = d.total
+      ? ('Showing '+rows.length+' of '+d.total+' payout(s) \u00b7 Page '+payPage+' of '+payTotalPages)
+      : 'No payouts found.';
+    const prev=document.getElementById('payPrev'), next=document.getElementById('payNext');
+    if(prev)prev.disabled=payPage<=1; if(next)next.disabled=payPage>=payTotalPages;
+    const sum=document.getElementById('paySummary');
+    if(sum){
+      const bs=d.by_status||{}; const keys=Object.keys(bs);
+      sum.innerHTML = keys.length
+        ? '<span class="ams-chip"><b>Total</b> '+payEsc(d.total_amount||'0')+'</span>'
+          + keys.map(k=>'<span class="ams-chip"><b>'+payEsc(k)+'</b> '+payEsc(bs[k].amount||'0')+' ('+bs[k].count+')</span>').join('')
+        : '<span class="muted" style="font-size:12px">No payout records yet.</span>';
+    }
+  }catch(e){
+    if(own!==paySeq) return;
+    body.innerHTML='<tr><td colspan="7" class="muted" style="text-align:center;padding:26px">Unable to load payouts.</td></tr>';
+    if(info) info.textContent=(e&&e.message)||'Unable to load payouts';
+  }
+}
 
 /* FAST SERVER-SIDE CLIENT NUMBERS */
 let cliNumSeq=0;function cliState(key){window.__cliFast=window.__cliFast||{};if(!window.__cliFast[key])window.__cliFast[key]={page:1,totalPages:1,signature:''};return window.__cliFast[key];}
@@ -747,8 +835,8 @@ async function renderNumbers(){
   const params=new URLSearchParams({paged:'1',page:String(state.page),limit:len,last_sms:'1'});if(rf)params.set('range',rf);if(q)params.set('search',q);if(nSort.k){params.set('sort',nSort.k);params.set('dir',nSort.d===-1?'desc':'asc');}
   const seq=++cliNumSeq;let data={rows:[],total:0,page:1,limit:25,totalPages:1};try{data=await API.get('/numbers?'+params.toString())}catch(e){console.warn(e)}if(seq!==cliNumSeq)return;
   state.page=data.page||1;state.totalPages=data.totalPages||1;
-  numData=(data.rows||[]).map(r=>({id:r.id,range:r.range_name||'',number:r.number,payterm:r.payterm||'Weekly',status:'Active',payout:r.effective_rate,last_sms_at:r.last_sms_at||'',sd:r.sd_limit||0,sw:r.sw_limit||0}));
-  body.innerHTML=numData.map(r=>`<tr><td><input type="checkbox" class="return-number" data-id="${r.id}" aria-label="Select ${r.number}"></td><td>${r.range}</td><td><b>${r.number}</b></td><td><span class="tag tag-gray">${r.payterm}</span></td><td><span class="tag tag-green">${r.status}</span></td><td data-label="Payout"><b>${cliPay(r.payout)}</b></td><td><span class="last-sms">${r.last_sms_at||'—'}</span></td><td class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No allocated numbers found</td></tr>`;
+  numData=(data.rows||[]).map(r=>({range:r.range_name||'',number:r.number,payterm:r.payterm||'Weekly',status:'Active',payout:r.payout,last_sms_at:r.last_sms_at||'',sd:r.sd_limit||0,sw:r.sw_limit||0}));
+  body.innerHTML=numData.map(r=>`<tr><td>${r.range}</td><td><b>${r.number}</b></td><td><span class="tag tag-gray">${r.payterm}</span></td><td><span class="tag tag-green">${r.status}</span></td><td data-label="Payout"><b>${cliPay(r.payout)}</b></td><td><span class="last-sms">${r.last_sms_at||'—'}</span></td><td class="muted">SD : ${r.sd} | SW : ${r.sw}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No allocated numbers found</td></tr>`;
   const currentNumbers = (numData || []).map(r => String(r.number || '').trim()).filter(Boolean);
   const countEl = document.getElementById('numPageCount');
   if(countEl) countEl.textContent = currentNumbers.length.toLocaleString();
@@ -779,7 +867,7 @@ async function copyCurrentPageNumbers(btn){
     const target = btn || null;
     if (target) {
       const origHtml = target.innerHTML;
-      target.innerHTML = '<span style="font-size:12px;color:#047857;font-weight:600">Copied ✓</span>';
+      target.innerHTML = '<span style="font-size:12px;color:#0e7a57;font-weight:600">Copied ✓</span>';
       setTimeout(() => { target.innerHTML = origHtml; }, 1500);
     }
   } catch (err) {
@@ -896,5 +984,5 @@ setTimeout(async()=>{try{await loadRanges();await Promise.allSettled([loadNumber
 setTimeout(showClientWelcome,700);
 </script>
 
-<script src="/assets/number-return.js?v=20261028" defer></script></body>
+</body>
 </html>

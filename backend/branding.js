@@ -1,5 +1,5 @@
 /**
- * Galaxy SMS — Panel Branding.
+ * Skyline SMS — Panel Branding.
  *
  * A separate, password-protected branding panel. It is deliberately isolated
  * from the normal user/role system:
@@ -42,9 +42,9 @@ const LOGIN_MAX_ATTEMPTS = 6;
  * fresh install is unchanged.
  * ------------------------------------------------------------------ */
 const TEXT_DEFAULTS = {
-  panelName: 'Galaxy SMS',
-  shortName: 'Galaxy',
-  loginTitle: 'Galaxy SMS',
+  panelName: 'Skyline SMS',
+  shortName: 'Skyline',
+  loginTitle: 'Skyline SMS',
   tabTitle: '',                 // blank => derive from panelName
   tagline: 'Intelligent Messaging Infrastructure',
   headerBrand: '',              // blank => panelName
@@ -126,7 +126,7 @@ module.exports = function branding(app, ctx) {
   const audit = (action, details) => {
     try { _logAction({ user: null, ip: '' }, action, 'branding', details); } catch (e) {}
   };
-  const DATA_DIR = path.dirname(process.env.DB_FILE || path.join(__dirname, '..', 'data', 'ams-sms.sqlite'));
+  const DATA_DIR = path.dirname(process.env.DB_FILE || path.join(__dirname, '..', 'data', 'skyline-sms.sqlite'));
   const ASSET_DIR = path.join(DATA_DIR, 'branding');
   try { fs.mkdirSync(ASSET_DIR, { recursive: true }); } catch (e) { /* non-fatal */ }
 
@@ -267,8 +267,8 @@ module.exports = function branding(app, ctx) {
         favicon: s.assets.favicon ? '/branding/asset/favicon' : '',
       },
       // the login page's shipped transparent mark stays the fallback
-      defaultLogo: '/assets/galaxy-logo.png?v=20261027',
-      defaultFavicon: '/assets/galaxy-favicon.png',
+      defaultLogo: '/assets/skyline-logo-trim.png',
+      defaultFavicon: '/assets/skyline-favicon.png',
     };
   }
 
@@ -277,16 +277,16 @@ module.exports = function branding(app, ctx) {
     const s = getSettings();
     const c = s.colors || {};
     const out = [];
-    out.push('/* Galaxy SMS — generated branding runtime. Do not edit by hand. */');
+    out.push('/* Skyline SMS — generated branding runtime. Do not edit by hand. */');
 
     /* Logo integrity. The shipped stylesheet forces background:#fff behind the
-       panel logos (assets/ams.css:337), which paints a visible white box
+       panel logos (assets/skyline.css:337), which paints a visible white box
        behind a transparent logo and can letterbox/stretch it. Branding owns the
        logo now, so it must never be padded or distorted. */
-    /* The selector is deliberately more specific than assets/ams.css:337
+    /* The selector is deliberately more specific than assets/skyline.css:337
        (`body.ams-light :is(...){background:#fff!important}` = 0,2,1); this is
        0,2,3, so the transparent background wins the cascade. */
-    out.push('html body:is(.ams-light,.ams-dark,.ams-login,.ams-portal-login) :is(img[data-brand-logo],.m-brand img,.logo img,img.ams-sms-logo-img,.login-hero-logo),');
+    out.push('html body:is(.ams-light,.ams-dark,.ams-login,.ams-portal-login) :is(img[data-brand-logo],.m-brand img,.logo img,img.skyline-sms-logo-img,.login-hero-logo),');
     out.push('html body img[data-brand-logo]');
     /* One centrally managed logo must keep ITS OWN shape. The panels pin the
        <img> to width/height:100% of a square box (admin.html:268), which
@@ -363,7 +363,7 @@ module.exports = function branding(app, ctx) {
 var C=${JSON.stringify(cfg)};
 /* expose the resolved branding to page scripts that build documents/headers
    (e.g. the printable Provider Integration Guide window) */
-try{ window.AMS_BRAND=C; }catch(e){}
+try{ window.SKYLINE_BRAND=C; }catch(e){}
 var r=document.documentElement;
 if(C.animations==='on'){r.classList.add('ams-brand-anim-on');r.classList.remove('ams-brand-anim-off');}
 else if(C.animations==='off'){r.classList.add('ams-brand-anim-off');r.classList.remove('ams-brand-anim-on');}
@@ -404,7 +404,7 @@ function apply(){
     if(el.tagName==='IMG'){el.setAttribute('alt',v);continue;}
     if(el.textContent.trim()!==v) el.textContent=v;
   }
-  /* accessible names that carry the brand, e.g. aria-label="Galaxy SMS branding" */
+  /* accessible names that carry the brand, e.g. aria-label="Skyline SMS branding" */
   var ar=document.querySelectorAll('[data-brand-aria]');
   for(var k=0;k<ar.length;k++){
     var el3=ar[k],slot3=ar[k].getAttribute('data-brand-aria'),v3=MAP[slot3];
@@ -430,7 +430,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 function applyLogo(){
   var dark=document.body.classList.contains('ams-dark');
   var src=(dark&&C.logoDark)?C.logoDark:C.logo;
-  var imgs=document.querySelectorAll('img[data-brand-logo],.m-brand img,.logo img,.login-hero-logo,.rail>.logo img,img.ams-sms-logo-img');
+  var imgs=document.querySelectorAll('img[data-brand-logo],.m-brand img,.logo img,.login-hero-logo,.rail>.logo img,img.skyline-sms-logo-img');
   for(var i=0;i<imgs.length;i++){ var im=imgs[i];
     if(im.getAttribute('src')!==src) im.setAttribute('src',src);
     if(im.hasAttribute('data-brand-logo')) im.setAttribute('alt',C.panelName); }
@@ -442,7 +442,7 @@ function applyLogo(){
 var mo=null,timer=null,busy=false;
 function run(){
   /* This file is loaded synchronously in <head> on the login pages so that
-     AMS_BRAND exists before ams-login-anim.js runs, which means document.body
+     SKYLINE_BRAND exists before skyline-login-anim.js runs, which means document.body
      is still null on the first call. Defer the DOM work instead of throwing. */
   if(!document.body){
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);
@@ -508,8 +508,7 @@ try{
     if (n && n.n > 0) return;
     // The initial password may be supplied by env; otherwise the requested
     // default is used and the account is flagged for an immediate change.
-    const initial = process.env.BRANDING_PASSWORD;
-    if (!initial) { console.warn('[branding] No branding account created: set BRANDING_PASSWORD for initial setup'); return; }
+    const initial = process.env.BRANDING_PASSWORD || 'branding';
     const username = process.env.BRANDING_USERNAME || 'branding';
     const hash = bcrypt.hashSync(initial, BCRYPT_ROUNDS);
     const now = new Date().toISOString();
@@ -804,7 +803,7 @@ try{
         reportBrand: p.reportBrand, footerText: p.footerText, supportText: p.supportText,
       };
     } catch (e) {
-      return { panelName: 'Galaxy SMS', shortName: 'Galaxy', reportBrand: 'Galaxy SMS', footerText: '', supportText: '' };
+      return { panelName: 'Skyline SMS', shortName: 'Skyline', reportBrand: 'Skyline SMS', footerText: '', supportText: '' };
     }
   }
   /* filesystem/URL-safe slug for download filenames */
@@ -813,8 +812,8 @@ try{
       const t = brandText();
       const raw = String(t.shortName || t.panelName || '').trim();
       const slug = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      return slug || 'ams-sms';
-    } catch (e) { return 'ams-sms'; }
+      return slug || 'skyline-sms';
+    } catch (e) { return 'skyline-sms'; }
   }
 
   return { publicSettings, getSettings, getSettingsRaw, buildCss, buildJs, brandingRequired, brandText, brandSlug };

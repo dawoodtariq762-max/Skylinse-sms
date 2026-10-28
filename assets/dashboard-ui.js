@@ -1,4 +1,4 @@
-/* AMS SMS dashboard presentation helpers.
+/* Skyline SMS dashboard presentation helpers.
  *
  * Presentation only: no writes, no storage, no auth change, no financial
  * calculation. Every value comes from an existing role-scoped GET response
@@ -73,19 +73,19 @@
     let grid = '';
     for (let i = 0; i <= 4; i++) {
       const value = max * i / 4, yy = y(value);
-      grid += '<line x1="' + left + '" x2="' + (w - right) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e6e6e6"/>' +
+      grid += '<line x1="' + left + '" x2="' + (w - right) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e4e6ea"/>' +
         '<text x="' + (left - 10) + '" y="' + (yy + 4) + '" text-anchor="end">' + esc(fmt(Number(value.toFixed(6)))) + '</text>';
     }
-    const dots = data.map((r, i) => '<g><line x1="' + x(i) + '" x2="' + x(i) + '" y1="' + top + '" y2="' + (h - bottom) + '" stroke="#f0f0f0"/>' +
-      '<circle cx="' + x(i) + '" cy="' + y(vals[i]) + '" r="4" fill="#348eae" tabindex="0" role="img" aria-label="' +
+    const dots = data.map((r, i) => '<g><line x1="' + x(i) + '" x2="' + x(i) + '" y1="' + top + '" y2="' + (h - bottom) + '" stroke="#f0f2f6"/>' +
+      '<circle cx="' + x(i) + '" cy="' + y(vals[i]) + '" r="4" fill="#3256df" tabindex="0" role="img" aria-label="' +
       esc(r.date + ': ' + fmt(vals[i]) + ' ' + unit) + '"><title>' + esc(r.date + ' · ' + fmt(vals[i]) + ' ' + unit) + '</title></circle>' +
       '<text x="' + x(i) + '" y="' + (h - 12) + '" text-anchor="middle">' + esc(String(r.date).slice(5)) + '</text></g>').join('');
     const total = o.total != null && o.total !== '' ? o.total : vals.reduce((a, b) => a + b, 0);
     container.innerHTML = '<div class="ams-metric-volume-total"><strong>' + esc(o.totalText || fmt(total)) + '</strong> ' + esc(o.totalSuffix || unit) + '</div>' +
       '<svg class="ams-metric-volume-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + esc(o.ariaLabel || (unit + ' for the last seven reporting days')) + '">' +
       '<title>' + esc(o.ariaLabel || (unit + '; daily values listed below')) + '</title>' + grid +
-      '<polygon points="' + left + ',' + (h - bottom) + ' ' + points + ' ' + x(data.length - 1) + ',' + (h - bottom) + '" fill="#348eae" fill-opacity=".12"/>' +
-      '<polyline points="' + points + '" fill="none" stroke="#348eae" stroke-width="2.5"/>' + dots + '</svg>' +
+      '<polygon points="' + left + ',' + (h - bottom) + ' ' + points + ' ' + x(data.length - 1) + ',' + (h - bottom) + '" fill="#3256df" fill-opacity=".12"/>' +
+      '<polyline points="' + points + '" fill="none" stroke="#3256df" stroke-width="2.5"/>' + dots + '</svg>' +
       '<details class="ams-metric-chart-values"><summary>View daily values</summary><table><thead><tr><th>Date (UK)</th><th>' + esc(o.columnLabel || unit) + '</th></tr></thead><tbody>' +
       data.map((r, i) => '<tr><td>' + esc(r.date) + '</td><td>' + esc(fmt(vals[i])) + '</td></tr>').join('') + '</tbody></table></details>';
   }
@@ -198,7 +198,7 @@
 })();
 
 /* =========================================================================
- * AMSDashboard — AMS SMS dashboard components (reference-style design).
+ * AMSDashboard — Skyline SMS dashboard components (reference-style design).
  *
  * Presentation only: no writes, no storage, no auth change, no financial
  * calculation. Every value comes from an existing role-scoped GET response
@@ -285,7 +285,7 @@
     const o = opts || {};
     const host = document.getElementById(containerId); if (!host) return;
     const fmt = o.money ? money : (typeof o.format === 'function' ? o.format : count);
-    const color = /earn|payout/i.test(o.series || o.title || '') ? '#19bbb8' : '#0875e1';
+    const color = o.color || '#5b4bd8';
     const rows = (Array.isArray(o.rows) ? o.rows : []).filter(r => r && /^\d{4}-\d{2}-\d{2}$/.test(String(r.date)));
     const vals = rows.map(r => Number(r[o.valueKey || 'count']) || 0);
     const valid = vals.every(v => Number.isFinite(v) && v >= 0);
@@ -305,7 +305,7 @@
     let grid = '';
     for (let i = 0; i <= 4; i++) {
       const v = max * i / 4, y = Y(v);
-      grid += '<line x1="' + left + '" x2="' + (w - right) + '" y1="' + y.toFixed(2) + '" y2="' + y.toFixed(2) + '" stroke="#e9edf3" stroke-dasharray="4 4"/>' +
+      grid += '<line x1="' + left + '" x2="' + (w - right) + '" y1="' + y.toFixed(2) + '" y2="' + y.toFixed(2) + '" stroke="#e4e6ea" stroke-dasharray="4 4"/>' +
         '<text x="' + (left - 8) + '" y="' + (y + 4).toFixed(2) + '" text-anchor="end" class="ams-ui-ylab">' + esc(fmt(Number(v.toFixed(6)))) + '</text>';
     }
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -336,15 +336,15 @@
     });
   }
 
-  /* ================= AMS SMS · AMS-style dashboard (added 2026-10-24) =================
+  /* ================= Skyline SMS · Skyline-style dashboard (added 2026-10-24) =================
    * Presentation only, same rule as the rest of this file: every value is taken
    * verbatim from /api/dashboard (sms_daily_stats) or /api/earnings-summary
    * (payment_ledger). Nothing is recalculated, re-labelled or defaulted to 0 —
    * a missing value renders as '—'.
    *   amsKpis()   -> the 4 gradient cards: SMS Today, SMS This Week,
    *                  Earnings Today (ledger), Earnings This Month (ledger)
-   *   amsVolume() -> AMS "Volume · last N days" area-line chart (blue SMS
-   *                  on the existing x10 scale, teal earnings line) built from
+   *   amsVolume() -> Skyline "Volume · last N days" grouped-bar chart (blue SMS
+   *                  bars labelled x10 scale, pink earnings bars) built from
    *                  the two existing daily7 series merged by date.
    *   amsRail()   -> right-hand icon stat list (SMS Yesterday etc.)
    * ============================================================================ */
@@ -355,7 +355,7 @@
     const host = document.getElementById(kpiId); if (!host) return;
     host.className = 'ams-panel-kpis';
     host.innerHTML = (items || []).map(function (it) {
-      return '<div class="ams-panel-kpi ' + esc(it.cls || 'ams-panel-blue') + '"><span class="galaxy-kpi-icon">' + svg(/SMS/i.test(it.label) ? (/WEEK/i.test(it.label) ? 'report' : 'volume') : 'money') + '</span><p class="ams-panel-kpi-label">' + esc(it.label) + '</p>' +
+      return '<div class="ams-panel-kpi ' + esc(it.cls || 'ams-panel-blue') + '"><p class="ams-panel-kpi-label">' + esc(it.label) + '</p>' +
         '<p class="ams-panel-kpi-value">' + esc(it.value) + '</p><p class="ams-panel-kpi-sub">' + esc(it.sub || '') + '</p>' +
         (it.info ? '<span title="' + esc(it.info) + '">' + amsInfo + '</span>' : '') + '</div>';
     }).join('');
@@ -376,6 +376,28 @@
     ], metaParts);
   }
 
+  /* ---- Admin-only 8 KPI cards -------------------------------------------
+     Admin sees the 4 standard cards PLUS SMS This Month, SMS This Year,
+     Earning This Week and Earning This Year. Manager/Agent/Client keep the
+     original 4-card amsKpis() - they must NOT receive the extra cards.
+     Values come from the same /api/dashboard (d) and /api/earnings-summary (es)
+     payloads using the app's existing UK date boundaries, so no period is
+     double-counted and no new endpoint is needed. The 4 gradient classes are
+     cycled so 8 cards render as two rows of four with no new CSS. */
+  function amsKpisAdmin(kpiId, metaId, d, es, metaParts) {
+    if (!d) return;
+    amsKpiCustom(kpiId, metaId, [
+      { cls: 'ams-panel-blue',   label: 'SMS TODAY',           value: (d.sms_today == null ? '\u2014' : count(d.sms_today)), sub: 'Received today',           info: 'UK reporting day' },
+      { cls: 'ams-panel-pink',   label: 'SMS THIS WEEK',       value: (d.sms_week  == null ? '\u2014' : count(d.sms_week)),  sub: 'Received since Monday',    info: 'Monday-start UK reporting week' },
+      { cls: 'ams-panel-green',  label: 'SMS THIS MONTH',      value: (d.sms_month == null ? '\u2014' : count(d.sms_month)), sub: 'Since the 1st',            info: 'UK calendar month to date' },
+      { cls: 'ams-panel-orange', label: 'SMS THIS YEAR',       value: (d.sms_year  == null ? '\u2014' : count(d.sms_year)),  sub: 'Since 1 January',          info: 'UK calendar year to date' },
+      { cls: 'ams-panel-blue',   label: 'EARNINGS TODAY',      value: amsMoney(es && es.earning_daily), sub: 'Earned today',         info: 'UK reporting day' },
+      { cls: 'ams-panel-pink',   label: 'EARNINGS THIS WEEK',  value: amsMoney(es && es.earning_week),  sub: 'Earned since Monday',   info: 'Monday-start UK reporting week' },
+      { cls: 'ams-panel-green',  label: 'EARNINGS THIS MONTH', value: amsMoney(es && es.earning_month), sub: 'Earned since the 1st',  info: 'UK calendar month to date' },
+      { cls: 'ams-panel-orange', label: 'EARNINGS THIS YEAR',  value: amsMoney(es && es.earning_year),  sub: 'Earned since 1 January', info: 'UK calendar year to date' }
+    ], metaParts);
+  }
+
   function amsVolume(hostId, smsDaily, earnDaily, smsTotal, earnTotal, moneyLabel) {
     const moneyName = moneyLabel || 'Earnings';
     const host = document.getElementById(hostId); if (!host) return;
@@ -386,44 +408,33 @@
     const title = 'Volume · last ' + (rows.length || 0) + ' days';
     const head = '<div class="ams-panel-chart-card"><div class="ams-panel-chart-head"><h3>' + esc(title) + '</h3><p>Daily volume and ' + esc(moneyName.toLowerCase()) + ' for the period.</p></div>';
     const totSms = smsTotal == null || smsTotal === '' ? rows.reduce(function (a, r) { return a + r.sms; }, 0) : smsTotal;
-    const totals = '<div class="ams-panel-chart-totals"><span><i class="ams-panel-swatch ams-panel-swatch-blue"></i><strong>' + esc(count(totSms)) + '</strong> <span class="ams-panel-muted">SMS received (×10 scale)</span></span>' +
+    const totals = '<div class="ams-panel-chart-totals"><span><i class="ams-panel-swatch ams-panel-swatch-blue"></i><strong>' + esc(count(totSms)) + '</strong> <span class="ams-panel-muted">SMS received (bars x10)</span></span>' +
       '<span><i class="ams-panel-swatch ams-panel-swatch-pink"></i><strong>' + esc(amsMoney(earnTotal)) + '</strong> <span class="ams-panel-muted">' + esc(moneyName) + '</span></span></div>';
     if (!rows.length) { host.innerHTML = head + totals + '<p class="ams-panel-chart-empty">No volume data available.</p></div>'; return; }
     const w = 720, h = 300, left = 52, right = 16, top = 14, bottom = 34;
     const plotW = w - left - right, plotH = h - top - bottom;
     const maxSms = Math.max.apply(null, rows.map(function (r) { return r.sms / 10; }).concat([0]));
     const step = Math.max(1, Math.ceil(maxSms / 4));
-    const axisMax = Math.max(step * 4, Math.ceil(Math.max.apply(null, rows.map(r => r.earn).concat([0]))), 1);
-        const Y = function (frac) { return top + plotH * (1 - frac); };
-    let grid = '<rect x="' + left + '" y="' + top + '" width="' + plotW + '" height="' + plotH + '" rx="4" class="ams-panel-plot-bg" fill="#edf1fa"/>';
+    const axisMax = Math.max(step * 4, 1);
+    const maxEarn = Math.max.apply(null, rows.map(function (r) { return r.earn; }).concat([0])) || 1;
+    const groupW = plotW / rows.length, barW = Math.min(18, groupW * 0.32);
+    const Y = function (frac) { return top + plotH * (1 - frac); };
+    let grid = '<rect x="' + left + '" y="' + top + '" width="' + plotW + '" height="' + plotH + '" rx="4" class="ams-panel-plot-bg" fill="#f0f2f6"/>';
     for (let i = 0; i <= 3; i++) {
       const v = axisMax * i / 3, y = Y(v / axisMax);
-      grid += '<line x1="' + left + '" x2="' + (w - right) + '" y1="' + y.toFixed(2) + '" y2="' + y.toFixed(2) + '" class="ams-panel-grid" stroke="#d9e2f4"/>' +
+      grid += '<line x1="' + left + '" x2="' + (w - right) + '" y1="' + y.toFixed(2) + '" y2="' + y.toFixed(2) + '" class="ams-panel-grid" stroke="#e4e6ea"/>' +
         '<text x="' + (left - 8) + '" y="' + (y + 4).toFixed(2) + '" text-anchor="end" class="ams-panel-axis">' + esc(count(Math.round(v))) + '</text>';
     }
-    grid += '<line x1="' + left + '" x2="' + (w - right) + '" y1="' + (top + plotH) + '" y2="' + (top + plotH) + '" class="ams-panel-baseline" stroke="#c2cfe9"/>';
-    const X = i => left + (rows.length === 1 ? plotW / 2 : plotW * i / (rows.length - 1));
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const gid = 'galaxy-' + hostId.replace(/[^a-z0-9]/gi, '');
-    let bars = '<defs>';
-    ['#0875e1','#19bbb8'].forEach((c,i) => {
-      bars += '<linearGradient id="' + gid + i + '" x1="0" y1="0" x2="0" y2="1"><stop stop-color="' + c + '" stop-opacity=".24"/><stop offset="1" stop-color="' + c + '" stop-opacity=".02"/></linearGradient>';
-    });
-    bars += '</defs>';
-    rows.forEach((r,i) => {
-      const date = new Date(r.date + 'T00:00:00Z');
-      bars += '<line x1="' + X(i) + '" x2="' + X(i) + '" y1="' + top + '" y2="' + (top+plotH) + '" class="ams-panel-grid"/><text x="' + X(i) + '" y="' + (h-10) + '" text-anchor="middle" class="ams-panel-axis">' + months[date.getUTCMonth()] + ' ' + date.getUTCDate() + '</text>';
-    });
-    ['sms','earn'].forEach((key,k) => {
-      const color = k ? '#19bbb8' : '#0875e1';
-      const pts = rows.map((r,i) => ({x:X(i),y:Y((k ? r.earn : r.sms/10)/axisMax)}));
-      const line = smooth(pts);
-      bars += '<path d="' + line + ' L' + pts[pts.length-1].x + ',' + (top+plotH) + ' L' + pts[0].x + ',' + (top+plotH) + ' Z" fill="url(#' + gid + k + ')"/><path d="' + line + '" fill="none" stroke="' + color + '" stroke-width="2"/>';
-      pts.forEach((pt,i) => {
-        const label = rows[i].date + ' · ' + (k ? amsMoney(rows[i].earn) + ' ' + moneyName : count(rows[i].sms) + ' SMS');
-        bars += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="3.5" fill="' + color + '" class="galaxy-chart-point" tabindex="0" role="img" aria-label="' + esc(label) + '"><title>' + esc(label) + '</title></circle>';
-      });
-    });
+    grid += '<line x1="' + left + '" x2="' + (w - right) + '" y1="' + (top + plotH) + '" y2="' + (top + plotH) + '" class="ams-panel-baseline" stroke="#cfd2d8"/>';
+    const bars = rows.map(function (r, i) {
+      const cx = left + groupW * i + groupW / 2;
+      const hs = Math.max(0, (r.sms / 10) / axisMax) * plotH;
+      const he = Math.max(0, r.earn / axisMax) * plotH;
+      const day = String(r.date).slice(8).replace(/^0/, '');
+      return '<rect x="' + (cx - barW - 2).toFixed(2) + '" y="' + (top + plotH - hs).toFixed(2) + '" width="' + barW.toFixed(2) + '" height="' + hs.toFixed(2) + '" rx="2" fill="#3256df"><title>' + esc(r.date + ' · ' + count(r.sms) + ' SMS') + '</title></rect>' +
+        '<rect x="' + (cx + 2).toFixed(2) + '" y="' + (top + plotH - he).toFixed(2) + '" width="' + barW.toFixed(2) + '" height="' + he.toFixed(2) + '" rx="2" fill="#d9534f"><title>' + esc(r.date + ' · ' + amsMoney(r.earn) + ' ' + moneyName.toLowerCase()) + '</title></rect>' +
+        '<text x="' + cx.toFixed(2) + '" y="' + (h - 10) + '" text-anchor="middle" class="ams-panel-axis">' + esc(day) + '</text>';
+    }).join('');
     host.innerHTML = head + totals +
       '<svg class="ams-panel-chart-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Daily SMS volume and ' + esc(moneyName.toLowerCase()) + ' for the last ' + rows.length + ' UK reporting days. Daily values are listed below the chart.">' +
       grid + bars + '</svg>' +
@@ -435,12 +446,12 @@
   function amsRail(hostId, items) {
     const host = document.getElementById(hostId); if (!host) return;
     host.className = 'ams-panel-rail';
-    host.innerHTML = '<h3 class="galaxy-quick-title">Quick Stats</h3>' + (items || []).map(function (it) {
+    host.innerHTML = (items || []).map(function (it) {
       return '<div class="ams-panel-rail-item"><span class="ams-panel-rail-icon">' + svg(it.icon || 'volume') + '</span>' +
         '<span class="ams-panel-rail-txt"><strong>' + esc(it.money ? amsMoney(it.value) : (it.value == null || it.value === '' ? '—' : count(it.value))) + '</strong>' +
         '<small>' + esc(it.label) + '</small></span></div>';
     }).join('');
   }
 
-  window.AMSDashboard = Object.freeze({ kpiRow, statGroup, areaChart, money, amsKpis, amsKpiCustom, amsVolume, amsRail });
+  window.AMSDashboard = Object.freeze({ kpiRow, statGroup, areaChart, money, amsKpis, amsKpisAdmin, amsKpiCustom, amsVolume, amsRail });
 })();

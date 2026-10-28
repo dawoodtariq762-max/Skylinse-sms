@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="ams-light">
-<head><script src="/assets/ams-storage.js?v=ams-20261026-fullrebrand-final"></script>
+<head><script src="/assets/skyline-storage.js?v=skyline-20261026-fullrebrand-final"></script>
 <meta charset="UTF-8" />
 <!-- viewport-fit=cover lets the composer respect the iPhone home-indicator inset;
      interactive-widget=resizes-content makes Android Chrome shrink the layout
@@ -8,9 +8,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
 <meta name="color-scheme" content="light dark" />
 <meta name="theme-color" content="#ffffff" id="metaTheme" />
-<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png" data-brand-favicon />
-<link rel="stylesheet" href="/assets/ams-chat-theme.css?v=ams-20261026-fullrebrand-final" />
-<title>Chat — Galaxy SMS</title>
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png" data-brand-favicon />
+<link rel="stylesheet" href="/assets/skyline-chat-theme.css?v=skyline-20261026-fullrebrand-final" />
+<title>Chat — Skyline SMS</title>
 <script>
 /* Auth guard — chat is for Admin / Manager / Agent only (spec 3A).
    Opening this URL directly without a valid session bounces to the login. */
@@ -39,27 +39,27 @@
 <script>
 /* Theme + motion pre-apply. Runs before first paint so a Dark user never sees a
    light flash. It writes nothing: the preference is still owned by AMSCore.theme
-   (assets/ams.js, localStorage 'ams_theme'), which applies the same classes
+   (assets/skyline.js, localStorage 'ams_theme'), which applies the same classes
    again once it loads. 'ds-lite' mirrors the shared "animations off" setting
    (localStorage 'ams_ds_anim') and Save-Data; reduced-motion is handled in CSS. */
 (function(){
   try{
     var h = document.documentElement, dark = localStorage.getItem('ams_theme') === 'dark';
     h.classList.toggle('ams-dark', dark); h.classList.toggle('ams-light', !dark);
-    var m = document.getElementById('metaTheme'); if(m) m.setAttribute('content', dark ? '#101a2e' : '#ffffff');
+    var m = document.getElementById('metaTheme'); if(m) m.setAttribute('content', dark ? '#151b29' : '#ffffff');
     var pref = localStorage.getItem('ams_ds_anim'), sd = navigator.connection && navigator.connection.saveData;
     if(pref === 'off' || (pref !== 'on' && sd)) h.classList.add('ds-lite');
   }catch(e){}
 })();
 </script>
 <style id="route-auth-hide">html{visibility:hidden;}</style>
-<link rel="stylesheet" href="/assets/galaxy-theme.css?v=20261028-fixes"/></head>
+</head>
 <body>
 <div class="app" id="app">
   <header class="topbar">
     <div class="brand">
-      <img src="/assets/galaxy-logo.png?v=20261027" alt="" data-brand-logo />
-      <div class="brand-text"><span data-brand="name">Galaxy SMS</span><small>Chat</small></div>
+      <img src="/assets/skyline-logo-trim.png" alt="" data-brand-logo />
+      <div class="brand-text"><span data-brand="name">Skyline SMS</span><small>Chat</small></div>
     </div>
     <div class="spacer"></div>
     <div class="tools" role="toolbar" aria-label="Chat tools">
@@ -162,7 +162,7 @@
   </div>
 </div>
 
-<script src="/assets/ams.js"></script>
+<script src="/assets/skyline.js"></script>
 <script src="/branding/runtime.js"></script>
 <script>
 (function(){
@@ -177,7 +177,7 @@ var presence = {};
 var listState = 'loading';            /* 'loading' | 'ready' | 'error' */
 var listError = '';
 var uiState = {};                     /* per-conversation view state, keyed by id */
-var BASE_TITLE = 'Chat \u2014 Galaxy SMS';
+var BASE_TITLE = 'Chat \u2014 Skyline SMS';
 var $ = function(id){ return document.getElementById(id); };
 var esc = function(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
   return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
@@ -251,7 +251,7 @@ function showErr(m){
 }
 
 /* ---------------- theme ----------------
- * Delegates to AMSCore.theme (assets/ams.js) — the same helper the Admin / Manager /
+ * Delegates to AMSCore.theme (assets/skyline.js) — the same helper the Admin / Manager /
  * Agent panels use: one source of truth, same storage key ('ams_theme'), classes
  * applied to both <html> and <body>, and the same ams:theme event. The panels'
  * theme behaviour is untouched. */
@@ -279,7 +279,7 @@ function initTheme(){
       b.title = label; b.setAttribute('aria-label', label);
       b.setAttribute('aria-pressed', mode === 'dark' ? 'true' : 'false');
     }
-    var m = $('metaTheme'); if(m) m.setAttribute('content', mode === 'dark' ? '#101a2e' : '#ffffff');
+    var m = $('metaTheme'); if(m) m.setAttribute('content', mode === 'dark' ? '#151b29' : '#ffffff');
   }
   var themeT = null;
   function smooth(){

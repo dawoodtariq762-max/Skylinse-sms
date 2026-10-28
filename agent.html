@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" class="ams-light">
-<head><script src="/assets/ams-storage.js?v=ams-20261026-fullrebrand-final"></script>
+<head><script src="/assets/skyline-storage.js?v=skyline-20261026-fullrebrand-final"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/png" href="/assets/galaxy-favicon.png?v=ams-20261009"  data-brand-favicon />
-<title>Galaxy SMS — Agent Panel</title>
+<link rel="icon" type="image/png" href="/assets/skyline-favicon.png?v=skyline-20261009"  data-brand-favicon />
+<title>Skyline SMS — Agent Panel</title>
 <style id="route-auth-hide">html{visibility:hidden;}
 .rail{width:76px!important;}
 .rail:hover{width:238px!important;}
@@ -12,7 +12,7 @@
 @media(max-width:900px){.main{margin-left:0!important;}
 .rail{transform:translateX(-100%);}
 .rail.show{transform:translateX(0);}}
-.page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
+.page-head{border-bottom:1px solid #cfd2d8!important;padding-bottom:14px!important;}
 .page > .toolbar,.page > .table-wrap,.page > .card,.page > .grid2{position:relative!important;}
 .page > .toolbar:not(:first-child)::before,.page > .table-wrap:not(:first-child)::before,.page > .card:not(:first-child)::before,.page > .grid2:not(:first-child)::before{content:"";position:absolute;left:0;right:0;top:-10px;height:1px;opacity:.95;}
 .table-wrap + .table-wrap{margin-top:18px!important;}
@@ -94,12 +94,12 @@ to{opacity:1;transform:translateY(0);}}
 .stat-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;}
 .si{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .si svg{width:22px;height:22px;}
-.si.bl svg{stroke:#93c5fd;}
-.si.in svg{stroke:#a5b4fc;}
-.si.sk svg{stroke:#7dd3fc;}
-.si.am svg{stroke:#fbbf24;}
-.si.gr svg{stroke:#86efac;}
-.si.rd svg{stroke:#fda4af;}
+.si.bl svg{stroke:#b4dafb;}
+.si.in svg{stroke:#b4dafb;}
+.si.sk svg{stroke:#7fc7fb;}
+.si.am svg{stroke:#f4cf94;}
+.si.gr svg{stroke:#4ad0a8;}
+.si.rd svg{stroke:#f1c2c0;}
 .stat-info h3{font-size:24px;font-weight:700;line-height:1;}
 .stat-info p{font-size:12.5px;margin-top:6px;}
 .stat-info .trend{font-size:11.5px;margin-top:5px;}
@@ -156,9 +156,9 @@ tbody tr:last-child td{border-bottom:none;}
 .mono{font-family:"Courier New",monospace;letter-spacing:.5px;}
 .msg-body{white-space:normal;max-width:340px;min-width:240px;line-height:1.55;font-size:13px;}
 .tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:600;}
-.tag-mgr{border:1px solid #ddd;}
-.tag-agt{border:1px solid #ddd;}
-.tag-cli{border:1px solid #ddd;}
+.tag-mgr{border:1px solid #cfd2d8;}
+.tag-agt{border:1px solid #cfd2d8;}
+.tag-cli{border:1px solid #cfd2d8;}
 .icon-btn{width:30px;height:30px;border-radius:7px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-right:4px;transition:.15s;}
 .icon-btn svg{width:15px;height:15px;stroke:#fff;}
 .table-foot{display:flex;align-items:center;justify-content:space-between;padding:13px 17px;flex-wrap:wrap;gap:10px;}
@@ -166,8 +166,8 @@ tbody tr:last-child td{border-bottom:none;}
 .pagination{display:flex;gap:5px;}
 .pagination button{border:1px solid var(--border2);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12.5px;}
 .allocate-num{width:80px !important;padding:7px 9px !important;}
-.readonly-note{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid #ddd;}
-.masknote{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid #ddd;}
+.readonly-note{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid #cfd2d8;}
+.masknote{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid #cfd2d8;}
 .modal-overlay{display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.show{display:flex;animation:fade .2s ease;}
 .modal{border:1px solid var(--border2);border-radius:16px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;}
@@ -192,49 +192,49 @@ tbody tr:last-child td{border-bottom:none;}
 .stat-card.dash-metric .stat-info p{text-transform:uppercase!important;font-size:10.5px!important;font-weight:800!important;letter-spacing:.42px!important;margin:0 0 9px!important;}
 .stat-card.dash-metric .stat-info h3{font-size:22px!important;font-weight:850!important;margin:0!important;letter-spacing:.2px;}
 .stat-card.dash-metric .stat-info span{font-size:11px!important;display:block!important;margin-top:2px!important;}
-.dash-go{width:24px;height:24px;border-radius:50%;border:1px solid #ddd;display:grid;place-items:center;font-size:12px;font-weight:900;position:relative;z-index:1;}
+.dash-go{width:24px;height:24px;border-radius:50%;border:1px solid #cfd2d8;display:grid;place-items:center;font-size:12px;font-weight:900;position:relative;z-index:1;}
 .dash-note-card{padding:18px!important;border-radius:18px!important;}
 .dash-note-card .card-head{margin-bottom:12px!important;}
 .bar{border-radius:9px 9px 0 0!important;}
-.tag-mgr{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-agt{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-cli,.tag-client{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-blue{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-green{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-amber{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-red{border:1px solid #ddd!important;font-weight:800!important;}
-.tag-gray{border:1px solid #ddd!important;font-weight:800!important;}
+.tag-mgr{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-agt{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-cli,.tag-client{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-blue{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-green{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-amber{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-red{border:1px solid #cfd2d8!important;font-weight:800!important;}
+.tag-gray{border:1px solid #cfd2d8!important;font-weight:800!important;}
 body{font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif!important;font-size:14px!important;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
 table{font-size:13.5px!important;line-height:1.6!important;border-collapse:separate!important;border-spacing:0 3px!important;}
 thead th{font-weight:600!important;letter-spacing:.25px!important;}
 table td{font-weight:500!important;}
 .page-head h2{font-weight:600!important;}
 .card-head h3{font-weight:600!important;}
-.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #ddd!important;border-radius:8px!important;padding:5px 10px!important;font-weight:600!important;font-size:12px!important;line-height:1.15!important;letter-spacing:0!important;display:inline-flex;align-items:center;gap:4px;}
+.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #cfd2d8!important;border-radius:8px!important;padding:5px 10px!important;font-weight:600!important;font-size:12px!important;line-height:1.15!important;letter-spacing:0!important;display:inline-flex;align-items:center;gap:4px;}
 .cell-money{font-weight:700!important;}
 .payout-rate,.rate-cell{font-weight:700!important;}
 .msg-body{line-height:1.6!important;}
 .mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace!important;font-weight:600!important;}
 .filter-row label{font-weight:600;font-size:13px;}
 body{font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif!important;}
-.sidebar,.rail{border-right:1px solid #ddd!important;}
-.topbar,.tb1,.navshell{border-bottom:1px solid #ddd!important;}
+.sidebar,.rail{border-right:1px solid #cfd2d8!important;}
+.topbar,.tb1,.navshell{border-bottom:1px solid #cfd2d8!important;}
 .sidebar::before,.rail::before,.topbar::before,.tb1::before,.navshell::before{display:none!important;}
-.sb-brand,.rail-brand{border-bottom:1px solid #ddd!important;}
+.sb-brand,.rail-brand{border-bottom:1px solid #cfd2d8!important;}
 .sb-section,.sb-sec{font-weight:700!important;letter-spacing:.08em!important;}
 .nav-item svg,.tab svg,.ritem svg,.navtab svg,.sub-item svg,.rsubitem svg{stroke:currentColor!important;}
 .nav-item.active svg,.tab.active svg,.ritem.active svg{stroke:#FFFFFF!important;}
 .sub-item.active,.rsubitem.active{font-weight:700!important;}
 .page-head h2,.card-head h3{font-weight:700!important;}
 table{border-collapse:separate!important;border-spacing:0 3px!important;}
-thead th{font-weight:700!important;border-top:1px solid #ddd!important;border-bottom:1px solid #ddd!important;}
-tbody tr td{border-bottom:1px solid #ddd!important;}
+thead th{font-weight:700!important;border-top:1px solid #cfd2d8!important;border-bottom:1px solid #cfd2d8!important;}
+tbody tr td{border-bottom:1px solid #cfd2d8!important;}
 .dash-metric{border-radius:16px!important;}
 .btn{border-radius:10px!important;min-height:38px!important;font-weight:700!important;display:inline-flex;align-items:center;justify-content:center;gap:6px;line-height:1.1!important;}
-.btn-ghost{border:1px solid #ddd!important;}
+.btn-ghost{border:1px solid #cfd2d8!important;}
 .btn:hover{transform:translateY(-1px);}
-.avatar,.who .av{border:2px solid #ddd!important;}
-.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #ddd!important;border-radius:8px!important;font-weight:600!important;}
+.avatar,.who .av{border:2px solid #cfd2d8!important;}
+.tag,.tag-mgr,.tag-agt,.tag-cli,.tag-client,.tag-blue,.tag-green,.tag-amber,.tag-red,.tag-gray{border:1px solid #cfd2d8!important;border-radius:8px!important;font-weight:600!important;}
 .cell-money{font-weight:700!important;}
 .payout-rate,.rate-cell{font-weight:700!important;}
 body{font-family:Inter,Roboto,"Segoe UI",Arial,sans-serif!important;letter-spacing:0!important;font-size:14px!important;}
@@ -271,28 +271,28 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 .content{padding:20px 14px!important;}}
 .sb-logo svg,.brand .logo svg,.rail .logo svg,.sb-brand .logo svg,.brand-logo .logo svg{stroke:#fff!important;}
 .sb-brand h1,.brand h1,.brand-text h1,.brand-logo h1{font-weight:700!important;letter-spacing:-.01em!important;}
-.ams-sms-logo-img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;border-radius:inherit!important;}
-.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo,.brand-logo .logo{padding:0!important;overflow:hidden!important;border:1px solid #ddd!important;}
+.skyline-sms-logo-img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;border-radius:inherit!important;}
+.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo,.brand-logo .logo{padding:0!important;overflow:hidden!important;border:1px solid #cfd2d8!important;}
 .brand-logo .logo{width:92px!important;height:92px!important;border-radius:22px!important;margin-bottom:16px!important;}
 .sb-logo{width:44px!important;height:44px!important;border-radius:13px!important;}
 .brand .logo,.sb-brand .logo{width:46px!important;height:46px!important;border-radius:13px!important;}
 .rail .logo{width:50px!important;height:50px!important;border-radius:14px!important;}
 .brand-panel .brand-logo{align-items:flex-start!important;}
 .brand-panel .brand-logo h1{font-size:24px!important;}
-.sidebar,.rail{border-right:1px solid #ddd!important;}
-.sb-brand,.rail-brand,.brand-text{border-bottom:1px solid #ddd!important;}
+.sidebar,.rail{border-right:1px solid #cfd2d8!important;}
+.sb-brand,.rail-brand,.brand-text{border-bottom:1px solid #cfd2d8!important;}
 .nav-item svg,.sub-item svg,.ritem svg,.rsubitem svg{stroke:currentColor!important;}
-.nav-item.active svg,.ritem.active svg,.tab.active svg{stroke:#0F172A!important;}
-.appbar{border-bottom:1px solid #ddd!important;}
-.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo{border:1px solid #ddd!important;}
-.topbar,.tb1{border-bottom:1px solid #ddd!important;}
+.nav-item.active svg,.ritem.active svg,.tab.active svg{stroke:#191a1f!important;}
+.appbar{border-bottom:1px solid #cfd2d8!important;}
+.sb-logo,.brand .logo,.rail .logo,.sb-brand .logo{border:1px solid #cfd2d8!important;}
+.topbar,.tb1{border-bottom:1px solid #cfd2d8!important;}
 .rail{width:76px!important;}
 .rail:hover{width:238px!important;}
 .main{margin-left:76px!important;}
 @media(max-width:900px){.main{margin-left:0!important;}
 .rail{transform:translateX(-100%);}
 .rail.show{transform:translateX(0);}}
-.page-head{border-bottom:1px solid #ddd!important;padding-bottom:14px!important;}
+.page-head{border-bottom:1px solid #cfd2d8!important;padding-bottom:14px!important;}
 .page > .toolbar,.page > .table-wrap,.page > .card,.page > .grid2{position:relative!important;}
 .page > .toolbar:not(:first-child)::before,.page > .table-wrap:not(:first-child)::before,.page > .card:not(:first-child)::before,.page > .grid2:not(:first-child)::before{content:"";position:absolute;left:0;right:0;top:-10px;height:1px;opacity:.95;}
 .table-wrap + .table-wrap{margin-top:18px!important;}
@@ -312,31 +312,31 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
 
 
-<link rel="stylesheet" href="/assets/ams.css?v=ams-20261026-fullrebrand-final"/><script src="/assets/ams.js?v=ams-20261026-fullrebrand-final" defer></script><script src="/assets/credit-notes.js?v=ams-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/assets/skyline.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline.js?v=skyline-20261026-fullrebrand-final" defer></script><script src="/assets/credit-notes.js?v=skyline-20261026-fullrebrand-final" defer></script>
 
-<link rel="stylesheet" href="/assets/ams-light.css?v=ams-20261026-fullrebrand-final"/>
+<link rel="stylesheet" href="/assets/skyline-light.css?v=skyline-20261026-fullrebrand-final"/>
 <!-- FINAL POLISH 2C: shared theme-neutral geometry. Loaded LAST so Light and Dark
      share exactly one layout (sizes, spacing, flex/grid, font metrics) while each
      theme keeps painting its own colours. Generated by scripts/split-theme-geometry.py. -->
-<link rel="stylesheet" href="/assets/ams-layout.css?v=ams-20261026-fullrebrand-final"/>
+<link rel="stylesheet" href="/assets/skyline-layout.css?v=skyline-20261026-fullrebrand-final"/>
 <!-- FINAL POLISH 2A/2B/2C/2D/2E: shared panel chrome (hamburger + sidebar,
      sun/moon theme toggle, filter alignment contract, heading contrast,
      Terms and Conditions dialog, dark dropdown paint). Loaded last. -->
-<link rel="stylesheet" href="/assets/ams-chrome.css?v=ams-20261027-three-fixes1"/>
-<link rel="stylesheet" href="/assets/ams-ds.css?v=ams-20261026-fullrebrand-final"/>
-  <link rel="stylesheet" href="/assets/ams-sidebar-unify.css?v=ams-20261026-fullrebrand-final"/>
-<script src="/assets/ams-ds.js?v=ams-20261026-fullrebrand-final" defer></script>
-<script src="/assets/dashboard-ui.js?v=galaxy-20261027"></script>
+<link rel="stylesheet" href="/assets/skyline-chrome.css?v=skyline-20261027-three-fixes1"/>
+<link rel="stylesheet" href="/assets/skyline-ds.css?v=skyline-20261026-fullrebrand-final"/>
+  <link rel="stylesheet" href="/assets/skyline-sidebar-unify.css?v=skyline-20261026-fullrebrand-final"/>
+<script src="/assets/skyline-ds.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<script src="/assets/dashboard-ui.js?v=skyline-20261026-fullrebrand-final"></script>
 
-<script src="/assets/number-copy.js?v=ams-20261026-fullrebrand-final"></script>
-<link rel="stylesheet" href="/assets/ams-motion.css?v=ams-20261026-fullrebrand-final"/><script src="/assets/ams-motion.js?v=ams-20261026-fullrebrand-final" defer></script>
-<link rel="stylesheet" href="/branding/runtime.css"/><script src="/branding/runtime.js" defer></script><link rel="stylesheet" href="/assets/ams-panel.css?v=ams-20261026-fullrebrand-final"/><link rel="stylesheet" href="/assets/ams-unify.css?v=ams-20261026-unify2"/><script src="/assets/ams-cli-search.js?v=ams-20261026-fullrebrand-final" defer></script><link rel="stylesheet" href="/assets/galaxy-theme.css?v=20261028-fixes"/></head>
+<script src="/assets/number-copy.js?v=skyline-20261026-fullrebrand-final"></script>
+<link rel="stylesheet" href="/assets/skyline-motion.css?v=skyline-20261026-fullrebrand-final"/><script src="/assets/skyline-motion.js?v=skyline-20261026-fullrebrand-final" defer></script>
+<link rel="stylesheet" href="/branding/runtime.css"/><script src="/branding/runtime.js" defer></script><link rel="stylesheet" href="/assets/skyline-panel.css?v=skyline-20261026-fullrebrand-final"/><link rel="stylesheet" href="/assets/skyline-unify.css?v=skyline-20261026-unify2"/><script src="/assets/skyline-cli-search.js?v=skyline-20261026-fullrebrand-final" defer></script></head>
 <body class="ams-light ams-panel ams-ui">
 <div class="layout">
   <!-- ===== ICON RAIL ===== -->
   <aside class="rail" id="rail">
-    <div class="logo"><img class="ams-sms-logo-img" data-brand-logo src="/assets/galaxy-logo.png?v=20261027" alt="Galaxy SMS" /></div>
-    <div class="brand-text"><h1 data-brand="name">Galaxy SMS</h1><small>Agent Panel</small></div>
+    <div class="logo"><img class="skyline-sms-logo-img" data-brand-logo src="/assets/skyline-logo-square.png?v=skyline-20261009" alt="Skyline SMS" /></div>
+    <div class="brand-text"><h1 data-brand="name">Skyline SMS</h1><small>Agent Panel</small></div>
     <nav class="rail-nav sb-nav">
       <div class="ritem active nav-item" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg><span class="lbl">Dashboard</span></div>
       <div class="ritem nav-item" data-page="extapi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg><span class="lbl">REST API</span></div>
@@ -382,7 +382,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       <!-- DASHBOARD -->
 <section class="page active" id="page-dashboard">
       <div class="page-head"><div><h2>Dashboard</h2><div class="breadcrumb"><b>Home</b> » Dashboard</div></div></div>
-      <!-- AMS-style dashboard: meta pill, 4 KPI cards, Volume chart + right rail (real /dashboard + /earnings-summary data) -->
+      <!-- Skyline-style dashboard: meta pill, 4 KPI cards, Volume chart + right rail (real /dashboard + /earnings-summary data) -->
       <div class="ams-panel-dash-meta-row"><span class="ams-panel-meta" id="amsDashMeta" style="display:none"></span></div>
       <div id="amsKpis"></div>
       <div class="ams-panel-middle"><div id="amsVolume"></div><aside id="amsRail"></aside></div>
@@ -422,11 +422,11 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       </section>
 
 
-      <!-- AMS-style CLI Search (ranges running a CLI, last 24h; separate from Test Panel masking) -->
+      <!-- Skyline-style CLI Search (ranges running a CLI, last 24h; separate from Test Panel masking) -->
       <section class="page" id="page-cliRunning">
         <div class="page-head"><div><h2>CLI Search</h2><div class="breadcrumb"><b>SMS Numbers</b> › CLI Search</div></div></div>
         
-    <!-- AMS-style CLI Search — ranges running this CLI in the last 24 hours (separate from CLI Analytics below and from Test Panel masking) -->
+    <!-- Skyline-style CLI Search — ranges running this CLI in the last 24 hours (separate from CLI Analytics below and from Test Panel masking) -->
     <p class="muted" style="margin:2px 0 14px">See which ranges a sender has been running on in the last 24 hours. Type the sender in full, exactly as it appears. Capital letters do not matter.</p>
     <div class="toolbar"><div class="ams-panel-cli-fields">
       <div class="ams-panel-field"><label for="amsCliSender">Sender (CLI)</label><input type="text" id="amsCliSender" placeholder="The full sender, e.g. facebook" autocomplete="off" onkeydown="if(event.key==='Enter')searchAmsCli()"/></div>
@@ -443,7 +443,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
 
       <!-- SMS NUMBERS -->
       <section class="page" id="page-numbers">
-        <div class="page-head"><div><h2>SMS Numbers <span class="ams-num-page-badge" style="font-size:14px;font-weight:600;color:var(--text,#0f172a);background:var(--u-soft,#eef2f7);padding:3px 9px;border-radius:6px;margin-left:10px;vertical-align:middle;display:inline-flex;align-items:center;gap:6px">Numbers: <span id="numPageCount">0</span> </span></h2><div class="breadcrumb"><b>SMS Numbers</b> › My Numbers</div></div>
+        <div class="page-head"><div><h2>SMS Numbers <span class="ams-num-page-badge" style="font-size:14px;font-weight:600;color:var(--text,#191a1f);background:var(--u-soft,#f0f2f6);padding:3px 9px;border-radius:6px;margin-left:10px;vertical-align:middle;display:inline-flex;align-items:center;gap:6px">Numbers: <span id="numPageCount">0</span> </span></h2><div class="breadcrumb"><b>SMS Numbers</b> › My Numbers</div></div>
           <div class="head-actions">
             <button type="button" class="ams-btn ams-green"  onclick="openAllocAll()" data-tip="Allocate Selected" title="Allocate Selected" aria-label="Allocate Selected"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button>
             <button type="button" class="ams-btn danger" data-tip="Unallocate Selected" aria-label="Unallocate Selected" onclick="unallocSel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="11" x2="23" y2="11"/></svg></button>
@@ -456,7 +456,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
             <div id="numClientContainer" style="display:inline-block;min-width:180px"><select class="sel-lg" id="numClient"><option value="">Select Client</option></select></div>
             <button type="button" class="ams-btn ams-blue"  onclick="renderNumbers()" data-tip="Filters" title="Filters" aria-label="Filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></button>
             <button type="button" class="ams-btn"  onclick="resetNum()" data-tip="Reset" title="Reset" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-            <div class="ams-numbers-count-badge" style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px;color:var(--text,#0f172a);background:var(--u-soft,#eef2f7);padding:6px 12px;border-radius:8px;border:1px solid var(--border,#e2e8f0)">
+            <div class="ams-numbers-count-badge" style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px;color:var(--text,#191a1f);background:var(--u-soft,#f0f2f6);padding:6px 12px;border-radius:8px;border:1px solid var(--border,#e4e6ea)">
               <span>Numbers: <span id="numBadgeCount">0</span></span>
               
             </div>
@@ -489,7 +489,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
             <div id="baRangeDropdownContainer"></div>
             <div id="baClientDropdownContainer"></div>
             <select class="sel-lg" id="baPayterm" onchange="renderBulk()"><option value="daily">Daily (1/1)</option><option value="weekly_7_1">Weekly (7/1)</option><option value="weekly_7_7">Weekly (7/7)</option><option value="monthly_30x45">Monthly (30/45)</option></select>
-            <input type="number" style="width:130px" placeholder="Qty" id="baQty"/><input type="number" id="baClientRate" aria-label="Client payout per SMS" placeholder="Client payout (0.00)" min="0" step="0.000001"/>
+            <input type="number" style="width:130px" placeholder="Qty" id="baQty"/>
             <button class="btn btn-blue" onclick="doBulk()">Allocate to Client</button>
           </div>
         </div>
@@ -518,7 +518,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
             <p style="color:var(--muted);font-size:12.5px;margin:0 0 18px">Enter your Security PIN to view balances, Binance UID and payment requests.</p>
             <div style="max-width:300px;margin:0 auto">
               <input type="password" id="paymentPinInput" placeholder="Security PIN" maxlength="32" autocomplete="off" style="width:100%;text-align:center;font-size:16px;letter-spacing:4px;padding:11px 12px" onkeydown="if(event.key==='Enter')unlockSectionWithPin('payment')">
-              <div id="paymentPinErr" style="color:#b42318;font-size:12.5px;margin-top:8px;min-height:18px;display:none"></div>
+              <div id="paymentPinErr" style="color:#a82e2a;font-size:12.5px;margin-top:8px;min-height:18px;display:none"></div>
               <button class="btn btn-blue" id="btnUnlockPayment" style="width:100%;margin-top:12px" onclick="unlockSectionWithPin('payment')">Unlock</button>
             </div>
           </div>
@@ -533,7 +533,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
           <div class="stat-card dash-metric d-orange"><div class="stat-info"><p>Monthly Balance</p><h3 id="agtMonthlyBal">$ 0</h3><span id="agtMonthlyMin">Minimum $ 0</span></div><div class="dash-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M7 14h3M14 14h3M7 18h3M14 18h3"/></svg></div></div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><div><h3>Binance UID</h3><div class="sub">Payouts are sent to the Binance UID saved here.</div></div><button class="btn btn-blue btn-sm" onclick="openWalletHelp()">Help</button></div><div class="form-group"><label>Binance UID</label><input id="agtWallet" placeholder="Enter your Binance UID" inputmode="numeric" autocomplete="off"></div><div class="hint" id="agtWalletHint" style="color:#c83732">Check the UID before saving — payouts go to the saved UID and it is locked once saved.</div><button class="btn btn-blue" id="btnSaveAgtWallet" style="margin-top:12px" onclick="saveAgentWallet()">Save Binance UID</button></div>
+          <div class="card"><div class="card-head"><div><h3>Binance UID</h3><div class="sub">Payouts are sent to the Binance UID saved here.</div></div><button class="btn btn-blue btn-sm" onclick="openWalletHelp()">Help</button></div><div class="form-group"><label>Binance UID</label><input id="agtWallet" placeholder="Enter your Binance UID" inputmode="numeric" autocomplete="off"></div><div class="hint" id="agtWalletHint" style="color:#b93834">Check the UID before saving — payouts go to the saved UID and it is locked once saved.</div><button class="btn btn-blue" id="btnSaveAgtWallet" style="margin-top:12px" onclick="saveAgentWallet()">Save Binance UID</button></div>
           <div class="card"><div class="card-head"><div><h3>Request Payment</h3><div class="sub">Only eligible balances can be requested.</div></div></div><div id="agtRequestButtons" style="display:grid;gap:10px"></div><div id="agtPayNotifications" class="hint" style="margin-top:12px"></div></div>
         </div>
         <div class="table-wrap" style="padding:15px 17px;margin-top:16px"><div class="table-controls"><div class="tc-left"><label>Payment History</label></div><div class="tc-right"><button type="button" class="ams-btn ams-blue"  onclick="loadAgentPayment()" data-tip="Refresh" title="Refresh" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button></div></div></div>
@@ -576,7 +576,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
       <div class="form-grid">
         <div class="form-group">
           <label>Authorized Rate <span class="muted" style="font-weight:400">(Rate Management)</span></label>
-          <input type="text" id="saModalRate" readonly style="background:#f1f5f9;font-weight:700;color:#047857;cursor:default"/>
+          <input type="text" id="saModalRate" readonly style="background:#f0f2f6;font-weight:700;color:#0e7a57;cursor:default"/>
         </div>
         <div class="form-group">
           <label>Quantity to Allocate <span class="req">*</span></label>
@@ -584,7 +584,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
         </div>
       </div>
 
-      <div class="hint" id="saModalQuotaHint" style="margin-top:2px;font-size:12px;color:var(--text-2,#334155)"></div>
+      <div class="hint" id="saModalQuotaHint" style="margin-top:2px;font-size:12px;color:var(--text-2,#2d2e33)"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('selfAllocModal')">Cancel</button>
@@ -599,7 +599,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   <div class="modal-body">
     <div class="form-group"><label>Select Client <span class="req">*</span></label><div id="aaTargetDropdownWrap"></div></div>
     <div class="form-group"><label>Payterm</label><select id="aaPayterm"><option value="daily">Daily (1/1)</option><option value="weekly_7_1">Weekly (7/1)</option><option value="weekly_7_7">Weekly (7/7)</option><option value="monthly_30x45">Monthly (30/45)</option></select></div>
-    <div class="form-group"><label>Payout ($)</label><input type="number" id="aaPayout" step="0.000001" min="0" value="0" placeholder="0"/></div>
+    <div class="form-group"><label>Payout ($)</label><input type="number" id="aaPayout" step="0.001" value="0" placeholder="0"/></div>
     <div class="hint" id="aaCount"></div>
   </div>
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('allocAllModal')">Cancel</button><button class="btn btn-blue" onclick="confirmAllocAll()">Allocate</button></div>
@@ -614,7 +614,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
     <div class="form-group"><label>Select Clients <span class="req">*</span></label><div id="smClients" style="max-height:130px;overflow-y:auto;background:var(--row);border:1px solid var(--border2);border-radius:9px;padding:10px"></div></div>
     <div class="form-grid">
       <div class="form-group"><label>Numbers per Range <span class="req">*</span></label><input type="number" id="smQty" placeholder="e.g. 20"/></div>
-      <div class="form-group"><label>Client payout ($/SMS)</label><input id="smClientRate" type="number" min="0" step="0.000001" placeholder="0.00 (no default payout)"></div><div class="form-group"><label>Payterm</label><select id="smPayterm"><option value="daily">Daily (1/1)</option><option value="weekly_7_1">Weekly (7/1)</option><option value="weekly_7_7">Weekly (7/7)</option><option value="monthly_30x45">Monthly (30/45)</option></select></div>
+      <div class="form-group"><label>Payterm</label><select id="smPayterm"><option value="daily">Daily (1/1)</option><option value="weekly_7_1">Weekly (7/1)</option><option value="weekly_7_7">Weekly (7/7)</option><option value="monthly_30x45">Monthly (30/45)</option></select></div>
     </div>
   </div>
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('smartModal')">Cancel</button><button class="btn btn-blue" onclick="runSmartDivide()">Distribute</button></div>
@@ -643,16 +643,16 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   <div class="modal" style="max-width:440px;text-align:center">
     <div class="modal-head" style="justify-content:center;position:relative">
       <h3 id="chatLockModalTitle" style="display:flex;align-items:center;gap:8px;font-size:16px">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#30ABED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1f90f3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         <span id="chatLockModalTitleText">Security Verification</span>
       </h3>
       <button class="modal-close" style="position:absolute;right:18px" onclick="cancelChatLock()">×</button>
     </div>
     <div class="modal-body" style="padding:24px 22px">
-      <div style="width:56px;height:56px;border-radius:28px;background:rgba(48,171,237,.14);border:1px solid rgba(48,171,237,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#30ABED">
+      <div style="width:56px;height:56px;border-radius:28px;background:rgba(48,171,237,.14);border:1px solid rgba(48,171,237,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#1f90f3">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
       </div>
-      <p id="chatLockDesc" style="color:var(--text-2,#334155);font-size:13.5px;margin:0 0 18px;line-height:1.5">
+      <p id="chatLockDesc" style="color:var(--text-2,#2d2e33);font-size:13.5px;margin:0 0 18px;line-height:1.5">
         Enter your <b>Account Security PIN</b> to unlock this section.
       </p>
       <div class="form-group" style="text-align:left">
@@ -661,7 +661,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
           <input type="password" id="chatLockInput" placeholder="Enter 6-digit PIN" maxlength="32" autocomplete="off" style="font-size:18px;letter-spacing:4px;text-align:center;padding:12px 14px;width:100%" onkeydown="if(event.key==='Enter')submitChatLock()">
         </div>
       </div>
-      <div id="chatLockErr" style="color:#b42318;font-size:12.5px;margin-top:10px;min-height:18px;display:none"></div>
+      <div id="chatLockErr" style="color:#a82e2a;font-size:12.5px;margin-top:10px;min-height:18px;display:none"></div>
     </div>
     <div class="modal-foot" style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn btn-ghost" type="button" onclick="cancelChatLock()">Cancel</button>
@@ -670,7 +670,7 @@ thead th{font-size:11.5px!important;letter-spacing:.25px!important;}
   </div>
 </div>
 
-<script src="/api.js?v=ams-20261027-three-fixes1"></script>
+<script src="/api.js?v=skyline-20261027-three-fixes1"></script>
 <script>
 if(window.API){ API.guard('agent'); }
 /* P21: Security Lock for Chat and Payment */
@@ -1123,7 +1123,7 @@ async function openSmart(){const ranges=await API.get('/ranges');if(!clientsData
   document.getElementById('smQty').value='';document.getElementById('smartModal').classList.add('show');}
 async function runSmartDivide(){const range_ids=[...document.querySelectorAll('.smR:checked')].map(c=>+c.value);const target_ids=[...document.querySelectorAll('.smC:checked')].map(c=>+c.value);const qty=parseInt(document.getElementById('smQty').value);
   if(!range_ids.length){alert('Select range.');return;}if(!target_ids.length){alert('Select a client.');return;}if(!qty||qty<=0){alert('Enter quantity.');return;}
-  try{const r=await API.post('/numbers/smart-divide',{range_ids,target_ids,qty,rate:document.getElementById('smClientRate')?.value||'',payterm:document.getElementById('smPayterm')?.value});closeModal('smartModal');alert(r.message || `✅ Smart divide complete!\nTotal: ${r.total}`);loadNumbers();}catch(e){alert('❌ '+e.message);}}
+  try{const r=await API.post('/numbers/smart-divide',{range_ids,target_ids,qty});closeModal('smartModal');alert(r.message || `✅ Smart divide complete!\nTotal: ${r.total}`);loadNumbers();}catch(e){alert('❌ '+e.message);}}
 
 /* BULK ALLOC */
 function cycleRate(r,cycle){
@@ -1140,7 +1140,7 @@ function cycleRate(r,cycle){
 function renderBulk(){document.getElementById('baBody').innerHTML=baData.map((r,i)=>`<tr>
   <td><b>${r.range}</b></td><td><span class="tag tag-green">${r.avail}</span> <span class="muted">/ ${r.total}</span></td>
   <td><span class="tag tag-amber">${r.alloc}</span></td><td class="cell-money">${cycleRate(r)}</td>
-  <td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="bc${i}" style="width:auto;padding:7px 9px">${myClients.map(c=>`<option>${c}</option>`).join('')}</select><input type="number" class="allocate-num" placeholder="Qty" id="bq${i}"/><input type="number" class="allocate-num" placeholder="Client payout (0.00)" aria-label="Client payout" min="0" step="0.000001" id="br${i}"/><button type="button" class="ams-btn ams-green"  onclick="baRow(${i})" data-tip="Allocate" title="Allocate" aria-label="Allocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button></div></td>
+  <td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="bc${i}" style="width:auto;padding:7px 9px">${myClients.map(c=>`<option>${c}</option>`).join('')}</select><input type="number" class="allocate-num" placeholder="Qty" id="bq${i}"/><button type="button" class="ams-btn ams-green"  onclick="baRow(${i})" data-tip="Allocate" title="Allocate" aria-label="Allocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button></div></td>
   <td><div style="display:flex;gap:6px;align-items:center"><input type="number" class="allocate-num" placeholder="Qty" id="bu${i}"/><button type="button" class="ams-btn ams-amber"  onclick="baUn(${i})" data-tip="Unallocate" title="Unallocate" aria-label="Unallocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button></div></td></tr>`).join('');
   document.getElementById('baInfo').textContent=`${baData.length} ranges`;}
 function baRow(i){const q=parseInt(document.getElementById('bq'+i).value),c=document.getElementById('bc'+i).value;if(!q||q<=0){alert('Enter a valid quantity.');return;}if(q>baData[i].avail){alert('Available: '+baData[i].avail);return;}baData[i].avail-=q;baData[i].alloc+=q;alert(`✅ ${q} numbers of "${baData[i].range}" allocated to ${c}.`);renderBulk();}
@@ -1204,7 +1204,7 @@ function buildSmsDetail(){
   <style>.ams-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;margin:2px 6px 2px 0;}
 .ams-chip .x{cursor:pointer;font-weight:800;}
 .ams-gb-lab{font-weight:600;align-self:center;margin-right:2px;}
-tfoot.ams-tot td{position:sticky;bottom:0;border-top:2px solid #ddd;font-weight:700;}</style>
+tfoot.ams-tot td{position:sticky;bottom:0;border-top:2px solid #cfd2d8;font-weight:700;}</style>
   <div class="page-head"><div><h2>SMS Detailed Report</h2><div class="breadcrumb"><b>CDR Stats</b> › Detailed</div></div></div>
   <div class="toolbar">
     <div class="filter-row"><label><input type="checkbox" id="sdUseDate" checked style="width:auto" onchange="renderSmsDetail()"> Date</label><input type="date" id="sdDateFrom" title="From date" onchange="renderSmsDetail()" /> <span class="muted" style="align-self:center">to</span> <input type="date" id="sdDateTo" title="To date" onchange="renderSmsDetail()" />
@@ -1375,7 +1375,7 @@ function buildClientStats(){document.getElementById('page-clientStats').innerHTM
   renderClientStats();}
 function renderClientStats(){const len=document.getElementById('csLen').value,q=(document.getElementById('csSearch').value||'').toLowerCase();
   let list=myClients.map(c=>{const recs=cdr.filter(r=>r.client===c);return {name:c,recs,sms:recs.reduce((s,r)=>s+r.sms,0),pay:sumPay(recs),nums:numData.filter(n=>n.client===c).length};}).filter(x=>x.sms>0).filter(x=>x.name.toLowerCase().includes(q));const pag=API.paginateRows('agtClientStats',list,len,'csInfo',renderClientStats);const t=pag.total;list=pag.rows;
-  document.getElementById('csBody').innerHTML=list.map(x=>`<tr><td><span class="tag tag-cli">${x.name}</span></td><td><span class="tag tag-blue">${x.nums}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#047857">$ ${cleanDec(x.pay)}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">No clients with OTPs found</td></tr>`;
+  document.getElementById('csBody').innerHTML=list.map(x=>`<tr><td><span class="tag tag-cli">${x.name}</span></td><td><span class="tag tag-blue">${x.nums}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#0e7a57">$ ${cleanDec(x.pay)}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">No clients with OTPs found</td></tr>`;
   document.getElementById('csInfo').textContent=`Showing ${list.length} of ${t} clients`;}
 
 function csReset(){['csSearch'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});['csFrom','csTo'].forEach(id=>{const e=document.getElementById(id);if(e){e.value='';e.dataset.amsAuto='';}});renderClientStats();}
@@ -1400,7 +1400,7 @@ function renderDrill(kind){const len=document.getElementById(kind+'Len').value,q
   const key=kind==='range'?'range':'number';let recs=cdr.filter(r=>(!c||r.client===c));
   const map={};recs.forEach(r=>{const gk=r[key]+'|'+r.client;if(!map[gk])map[gk]={val:r[key],client:r.client,sms:0,pay:'0'};map[gk].sms+=r.sms;map[gk].pay=decAdd(map[gk].pay,r.pay);});
   let rows=Object.values(map).filter(x=>[x.val,x.client].join(' ').toLowerCase().includes(q));const pag=API.paginateRows('agtDrill'+kind,rows,len,kind+'Info',()=>renderDrill(kind));const t=pag.total;rows=pag.rows;
-  document.getElementById(kind+'Body').innerHTML=rows.map(x=>`<tr><td><b>${kind==='number'?'<span class="mono">'+x.val+'</span>':x.val}</b></td><td><span class="tag tag-cli">${x.client}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#047857">$ ${cleanDec(x.pay)}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
+  document.getElementById(kind+'Body').innerHTML=rows.map(x=>`<tr><td><b>${kind==='number'?'<span class="mono">'+x.val+'</span>':x.val}</b></td><td><span class="tag tag-cli">${x.client}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#0e7a57">$ ${cleanDec(x.pay)}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
   document.getElementById(kind+'Info').textContent=`Showing ${rows.length} of ${t} rows`;}
 
 /* TEST PANEL (masked CLI + masked SMS body; range filter only on test numbers) */
@@ -1424,7 +1424,7 @@ async function loadProfile(){try{const me=await API.get('/me');AGT=me.name||me.u
 async function loadDashboard(){
   const d=await API.get('/dashboard').catch(e=>{window.AMSDashboardCore && AMSDashboardCore.error();throw e;});
   const spark=(d.daily7||[]).map(x=>x.count||0);
-  /* AMS dashboard top: KPI cards = SMS Today / SMS This Week (/dashboard,
+  /* Skyline dashboard top: KPI cards = SMS Today / SMS This Week (/dashboard,
      sms_daily_stats) + Earnings Today / Earnings This Month (/earnings-summary,
      payment_ledger — the earnings source approved 2026-10-24). The earning
      fetch is failure-tolerant: KPI money cells render '—', never a fake 0. */
@@ -1441,7 +1441,7 @@ let _daily=null; try{ _daily=await API.get('/dashboard/daily?days=15'); }catch(e
       {label:'My Numbers', value:d.numbers, icon:'numbers'}
     ]);
   }
-  window.AMSDashboard.areaChart('amsSmsChart',{title:'SMS Last 7 Days',series:'SMS',color:'#6d5df6',rows:d.daily7,valueKey:'count',ariaLabel:'Received SMS per day for the last seven UK reporting days'});
+  window.AMSDashboard.areaChart('amsSmsChart',{title:'SMS Last 7 Days',series:'SMS',color:'#5b4bd8',rows:d.daily7,valueKey:'count',ariaLabel:'Received SMS per day for the last seven UK reporting days'});
   window.AMSDashboard.statGroup('amsScope','Account',[
     {label:'Number of Clients', value:d.clients||0, icon:'clients'},
     {label:'My Numbers', value:d.numbers||0, icon:'numbers'}
@@ -1462,7 +1462,7 @@ async function loadEarningCards(role){
       {label:'Earning This Month', value:es.earning_month, money:true, icon:'money'},
       {label:'Real Earning', value:es.earning_all, money:true, icon:'money'}
     ]);
-    window.AMSDashboard.areaChart('amsEarnChart',{title:'Earning Last 7 Days',series:'Earning',color:'#f59e0b',rows:es.daily7,valueKey:'amount',money:true,ariaLabel:'Recorded earning per day for the last seven UK reporting days'});
+    window.AMSDashboard.areaChart('amsEarnChart',{title:'Earning Last 7 Days',series:'Earning',color:'#d98b2b',rows:es.daily7,valueKey:'amount',money:true,ariaLabel:'Recorded earning per day for the last seven UK reporting days'});
   }catch(e){
     console.warn(e);
     const g=document.getElementById('amsEarnings');if(g)g.innerHTML='';
@@ -1505,10 +1505,10 @@ async function loadNumbers(){ refreshAgentNumbersFilters(); return renderNumbers
    one request instead of two. refreshClients()/refreshClientSelects() run inside the
    shared loader; the render stays here. */
 async function loadClients(){ try{ await agtEnsureClients(); }catch(e){ clientsData=clientsData||[]; } renderClients(); }
-async function loadSms(fresh){ try{ smsRecords=await API.get(fresh?('/sms?_amsr='+Date.now()):'/sms'); }catch(e){ smsRecords=[]; } cdr=(smsRecords||[]).map(smsToCdr); recentTests=(smsRecords||[]).slice(0,50).map(r=>({date:(r.received_at||'').slice(0,19),range:r.range_name||'—',num:r.number||'',cli:r.cli||'',msg:r.message||''})); refreshClients(); const byCli={};smsRecords.forEach(r=>{const c=r.client_name||'—';byCli[c]=(byCli[c]||0)+1;});const b=document.getElementById('clSumBody');if(b)b.innerHTML=Object.keys(byCli).map(c=>`<tr><td><span class="tag tag-cli">${c}</span></td><td class="cell-money">${byCli[c]}</td><td class="cell-money" style="color:#047857">$ ${sumPay((smsRecords||[]).filter(r=>r.client_name===c))}</td></tr>`).join('')||`<tr><td colspan="3" class="muted" style="text-align:center;padding:16px">No records found</td></tr>`; if(document.getElementById('srBody'))renderSmsReport();if(document.getElementById('sdBody'))renderSmsDetail();if(document.getElementById('csBody'))renderClientStats();['range','number'].forEach(k=>{if(document.getElementById(k+'Body')){renderDrill(k);}});}
-function baRow(i){const q=parseInt(document.getElementById('bq'+i).value),c=document.getElementById('bc'+i).value;if(!q||!c){alert('Select client and quantity.');return;}const row=baData[i],cl=(clientsData||[]).find(x=>x.username===c);if(!row||!cl)return;API.post('/numbers/smart-divide',{range_ids:[row.id],target_ids:[cl.id],qty:q,rate:document.getElementById('br'+i)?.value||'',payterm:(document.getElementById('baPayterm')?.value||'weekly_7_1')}).then(res=>{alert(`✅ ${res.total||0} numbers allocated.`);loadNumberSummaryForBulk();renderNumbers();}).catch(e=>alert('❌ '+e.message));}
+async function loadSms(fresh){ try{ smsRecords=await API.get(fresh?('/sms?_amsr='+Date.now()):'/sms'); }catch(e){ smsRecords=[]; } cdr=(smsRecords||[]).map(smsToCdr); recentTests=(smsRecords||[]).slice(0,50).map(r=>({date:(r.received_at||'').slice(0,19),range:r.range_name||'—',num:r.number||'',cli:r.cli||'',msg:r.message||''})); refreshClients(); const byCli={};smsRecords.forEach(r=>{const c=r.client_name||'—';byCli[c]=(byCli[c]||0)+1;});const b=document.getElementById('clSumBody');if(b)b.innerHTML=Object.keys(byCli).map(c=>`<tr><td><span class="tag tag-cli">${c}</span></td><td class="cell-money">${byCli[c]}</td><td class="cell-money" style="color:#0e7a57">$ ${sumPay((smsRecords||[]).filter(r=>r.client_name===c))}</td></tr>`).join('')||`<tr><td colspan="3" class="muted" style="text-align:center;padding:16px">No records found</td></tr>`; if(document.getElementById('srBody'))renderSmsReport();if(document.getElementById('sdBody'))renderSmsDetail();if(document.getElementById('csBody'))renderClientStats();['range','number'].forEach(k=>{if(document.getElementById(k+'Body')){renderDrill(k);}});}
+function baRow(i){const q=parseInt(document.getElementById('bq'+i).value),c=document.getElementById('bc'+i).value;if(!q||!c){alert('Select client and quantity.');return;}const row=baData[i],cl=(clientsData||[]).find(x=>x.username===c);if(!row||!cl)return;API.post('/numbers/smart-divide',{range_ids:[row.id],target_ids:[cl.id],qty:q,payterm:(document.getElementById('baPayterm')?.value||'weekly_7_1')}).then(res=>{alert(`✅ ${res.total||0} numbers allocated.`);loadNumberSummaryForBulk();renderNumbers();}).catch(e=>alert('❌ '+e.message));}
 function baUn(i){const q=parseInt(document.getElementById('bu'+i).value),row=baData[i];if(!q||!row){alert('Enter quantity.');return;}const ids=(numData||[]).filter(n=>n.range===row.range&&n.client).slice(0,q).map(n=>n.id);if(!ids.length){alert('Allocated numbers were not found.');return;}API.post('/numbers/unallocate',{ids}).then(()=>{alert(`✅ ${ids.length} numbers unallocated.`);loadNumbers();}).catch(e=>alert('❌ '+e.message));}
-function doBulk(){const r=document.getElementById('baRange').value,c=document.getElementById('baClient').value,q=parseInt(document.getElementById('baQty').value);if(!r||!c||!q){alert('Range, Select client and quantity.');return;}const row=(baData||[]).find(x=>x.range===r)|| (rateCard||[]).find(x=>x.range===r),cl=(clientsData||[]).find(x=>x.username===c);if(!row||!cl)return;API.post('/numbers/smart-divide',{range_ids:[row.id],target_ids:[cl.id],qty:q,rate:document.getElementById('baClientRate')?.value||'',payterm:(document.getElementById('baPayterm')?.value||'weekly_7_1')}).then(res=>{alert(`✅ ${res.total||0} numbers allocated.`);document.getElementById('baQty').value='';loadNumberSummaryForBulk();renderNumbers();}).catch(e=>alert('❌ '+e.message));}
+function doBulk(){const r=document.getElementById('baRange').value,c=document.getElementById('baClient').value,q=parseInt(document.getElementById('baQty').value);if(!r||!c||!q){alert('Range, Select client and quantity.');return;}const row=(baData||[]).find(x=>x.range===r)|| (rateCard||[]).find(x=>x.range===r),cl=(clientsData||[]).find(x=>x.username===c);if(!row||!cl)return;API.post('/numbers/smart-divide',{range_ids:[row.id],target_ids:[cl.id],qty:q,payterm:(document.getElementById('baPayterm')?.value||'weekly_7_1')}).then(res=>{alert(`✅ ${res.total||0} numbers allocated.`);document.getElementById('baQty').value='';loadNumberSummaryForBulk();renderNumbers();}).catch(e=>alert('❌ '+e.message));}
 
 /* PAYMENT V2 */
 function openWalletHelp(){document.getElementById('walletHelpModal').classList.add('show')}
@@ -1693,7 +1693,7 @@ async function renderSmsDetail(fresh){if(!document.getElementById('sdBody'))retu
     const rows=data.rows||[];
     sdBody.innerHTML=rows.map(r=>'<tr>'+groups.map(g=>`<td>${sdFmtDim(g,r.dims&&r.dims[g])}</td>`).join('')
       +`<td class="cell-money">${(r.sms||0).toLocaleString()}</td>`
-      +`<td class="cell-money" style="color:#047857">${money(r.my_payout||'0')}</td>`
+      +`<td class="cell-money" style="color:#0e7a57">${money(r.my_payout||'0')}</td>`
       +`<td class="cell-money">${money(r.client_payout||'0')}</td></tr>`).join('')||`<tr><td colspan="${groups.length+3}" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
     const tot=data.totals||{};
     sdFoot.innerHTML=`<tr><td colspan="${groups.length}"><b>Totals</b></td><td class="cell-money"><b>${(tot.sms||0).toLocaleString()}</b></td><td class="cell-money"><b>${money(tot.my_payout||'0')}</b></td><td class="cell-money"><b>${money(tot.client_payout||'0')}</b></td></tr>`;
@@ -1764,7 +1764,7 @@ async function copyCurrentPageNumbers(btn){
     const target = btn || null;
     if (target) {
       const origHtml = target.innerHTML;
-      target.innerHTML = '<span style="font-size:12px;color:#047857;font-weight:600">Copied ✓</span>';
+      target.innerHTML = '<span style="font-size:12px;color:#0e7a57;font-weight:600">Copied ✓</span>';
       setTimeout(() => { target.innerHTML = origHtml; }, 1500);
     }
   } catch (err) {
@@ -1829,7 +1829,7 @@ async function renderClientStats(){
   let data={rows:[],totalSms:0,totalPayment:'0'}; try{data=await API.get('/stats-summary/client?'+params.toString())}catch(e){console.warn(e)}
   let rows=(data.rows||[]).map(x=>({name:x.key||'—',sms:+(x.sms||0),pay:x.payment||'0',nums:(numData||[]).filter(n=>n.client===x.key).length})).filter(x=>x.name.toLowerCase().includes(q));
   const pag=API.paginateRows('agtFastClientStats',rows,len,'csInfo',renderClientStats);rows=pag.rows;
-  body.innerHTML=rows.map(x=>`<tr><td><span class="tag tag-cli">${x.name}</span></td><td><span class="tag tag-blue">${x.nums||'—'}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#047857">${money(x.pay)}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">No clients with OTPs found</td></tr>`;
+  body.innerHTML=rows.map(x=>`<tr><td><span class="tag tag-cli">${x.name}</span></td><td><span class="tag tag-blue">${x.nums||'—'}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#0e7a57">${money(x.pay)}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">No clients with OTPs found</td></tr>`;
   csInfo.textContent=`Showing ${rows.length} of ${pag.total} clients`;
 }
 async function renderDrill(kind){
@@ -1840,7 +1840,7 @@ async function renderDrill(kind){
   let data={rows:[],totalSms:0,totalPayment:'0'}; try{data=await API.get('/stats-summary/'+by+'?'+params.toString())}catch(e){console.warn(e)}
   let rows=(data.rows||[]).map(x=>({val:x.key||'—',sms:+(x.sms||0),pay:x.payment||'0'})).filter(x=>x.val.toLowerCase().includes(q));
   const pag=API.paginateRows('agtFastDrill'+kind,rows,len,kind+'Info',()=>renderDrill(kind));rows=pag.rows;
-  body.innerHTML=rows.map(x=>`<tr><td><b>${kind==='number'?'<span class="mono">'+x.val+'</span>':x.val}</b></td><td><span class="tag tag-cli">${c||'All'}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#047857">${money(x.pay)}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
+  body.innerHTML=rows.map(x=>`<tr><td><b>${kind==='number'?'<span class="mono">'+x.val+'</span>':x.val}</b></td><td><span class="tag tag-cli">${c||'All'}</span></td><td class="cell-money">${x.sms.toLocaleString()}</td><td class="cell-money" style="color:#0e7a57">${money(x.pay)}</td></tr>`).join('')||`<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">No records found</td></tr>`;
   document.getElementById(kind+'Info').textContent=`Showing ${rows.length} of ${pag.total} rows`;
 }
 
@@ -1897,8 +1897,8 @@ setTimeout(async()=>{try{await Promise.allSettled([loadRateCard(),loadClients()]
 
 </script>
 
-<script src="/assets/extapi-ui.js?v=ams-20261026-fullrebrand-final"></script>
-<script src="/assets/number-return.js?v=20261028" defer></script></body>
+<script src="/assets/extapi-ui.js?v=skyline-20261026-fullrebrand-final"></script>
+</body>
 </html>
 
 <script>
