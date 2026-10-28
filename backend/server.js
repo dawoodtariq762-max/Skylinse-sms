@@ -17,6 +17,7 @@ const { createTables } = require('./schema');
 const { seed } = require('./seed');
 const { sign, authRequired, chatAuthRequired, requireRole, descendantIds, SECRET } = require('./auth');
 const backup = require('./backup');
+const blockMonitor = require('./blockMonitor');
 const providerSync = require('./providerSync');
 const smsFts = require('./fts');
 const smppService = require('./smppService');
@@ -25,6 +26,9 @@ const app = express();
 app.set('trust proxy', true);
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
+/* Diagnostic only: records what is in flight so an event-loop freeze can be
+   attributed to a URL. Inert unless BLOCKMON=1. */
+app.use(blockMonitor.requestTracker);
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.text({ type: ['text/plain', 'text/*', 'application/xml', 'application/octet-stream'], limit: '2mb' }));
 const upload = multer();
@@ -5320,21 +5324,84 @@ app.get('/api/limit-management', authRequired, requireRole('admin'), (req,res)=>
   res.json(rows.map(r=>{ const used=dailyLimitUsage(r); const limit=Number(r.daily_limit||0); return {...r, used_today:used, remaining_today:Math.max(0,limit-used), reporting_timezone:'Europe/London'}; }));
 });
 app.get('/api/limit-management/overview', authRequired, requireRole('admin'), (req,res)=>{
-  const ranges=db.all('SELECT id,name FROM ranges ORDER BY name ASC').map(r=>{
-    const rangeRule=oneLimit('range','range_id=?',[r.id]);
-    const perRule=oneLimit('range_number','range_id=?',[r.id]);
-    const where='s.range_id=?', params=[r.id];
-    const today=countTodayUk(where,params);
-    return {range_id:r.id,range_name:r.name,daily_limit:rangeRule?Number(rangeRule.daily_limit||0):0,per_number_limit:perRule?Number(perRule.daily_limit||0):0,today_otps:today,paid:paidToday(where,params),zeroed:zeroedToday(where,params)};
+  /* ---- PERF FIX: N+1 -> set-based ---------------------------------------
+     This endpoint looped over up to 5,000 CLIs and, for EACH one, ran
+     countTodayUk() + paidToday() + zeroedToday(). Every one of those is a
+     COUNT(*) over sms_records with a non-indexable date() expression and a
+     LOWER(s.cli)=LOWER(?) predicate, i.e. a full table scan — up to 15,000
+     full scans of a production-sized table inside ONE request. better-sqlite3
+     is synchronous, so the entire Node event loop was blocked for the whole
+     time: the page hung, the reverse proxy returned HTTP 504, and every other
+     panel stopped responding.
+
+     Replaced with ONE indexed GROUP BY per dimension (ranges, CLIs) plus two
+     small lookups. The date window uses ukDayOffsetSql(), the indexable
+     half-open range helper that already exists in this file and yields an
+     identical result set. Numbers returned are unchanged.
+     --------------------------------------------------------------------- */
+  const todaySql = ukDayOffsetSql('s.received_at', 0);
+  const PAY_GT = "SUM(CASE WHEN CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) > 0 THEN 1 ELSE 0 END)";
+  const PAY_EQ = "SUM(CASE WHEN CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) = 0 THEN 1 ELSE 0 END)";
+
+  /* ---- ranges: one grouped scan instead of 4 queries per range ---- */
+  const rangeStats = new Map();
+  db.all(`SELECT s.range_id AS k, COUNT(*) c, ${PAY_GT} paid, ${PAY_EQ} zeroed
+            FROM sms_records s
+           WHERE COALESCE(s.is_test,0)=0 AND ${todaySql} AND s.range_id IS NOT NULL
+           GROUP BY s.range_id`)
+    .forEach(r => rangeStats.set(String(r.k), r));
+
+  const rangeRules = new Map();
+  db.all("SELECT * FROM daily_limit_rules WHERE active=1 AND limit_type IN ('range','range_number') ORDER BY id ASC")
+    .forEach(r => {
+      const k = String(r.range_id);
+      if (!rangeRules.has(k)) rangeRules.set(k, {});
+      const slot = rangeRules.get(k);
+      if (r.limit_type === 'range') slot.range = Number(r.daily_limit || 0);
+      else slot.per = Number(r.daily_limit || 0);
+    });
+
+  const ranges = db.all('SELECT id,name FROM ranges ORDER BY name ASC').map(r=>{
+    const st = rangeStats.get(String(r.id)) || {};
+    const rl = rangeRules.get(String(r.id)) || {};
+    return {
+      range_id: r.id,
+      range_name: r.name,
+      daily_limit: rl.range || 0,
+      per_number_limit: rl.per || 0,
+      today_otps: st.c || 0,
+      paid: st.paid || 0,
+      zeroed: st.zeroed || 0,
+    };
   });
-  const cliSet=new Set();
+
+  /* ---- CLIs: one grouped scan instead of 3 full scans per CLI ---- */
+  const cliStats = new Map();
+  db.all(`SELECT LOWER(s.cli) AS k, COUNT(*) c, ${PAY_GT} paid, ${PAY_EQ} zeroed
+            FROM sms_records s
+           WHERE COALESCE(s.is_test,0)=0 AND ${todaySql}
+             AND s.cli IS NOT NULL AND TRIM(s.cli) <> ''
+           GROUP BY LOWER(s.cli)`)
+    .forEach(r => cliStats.set(r.k, r));
+
+  /* Latest active rule wins, matching the old oneLimit() ORDER BY id DESC. */
+  const cliRules = new Map();
+  db.all("SELECT * FROM daily_limit_rules WHERE active=1 AND limit_type='cli' AND cli<>'' ORDER BY id ASC")
+    .forEach(r => cliRules.set(String(r.cli).toLowerCase(), Number(r.daily_limit || 0)));
+
+  const cliSet = new Set();
   db.all("SELECT DISTINCT cli FROM sms_records WHERE cli IS NOT NULL AND cli<>'' ORDER BY cli ASC LIMIT 5000").forEach(x=>cliSet.add(String(x.cli)));
   db.all("SELECT cli FROM daily_limit_rules WHERE limit_type='cli' AND cli<>''").forEach(x=>cliSet.add(String(x.cli)));
+
   const clis=[...cliSet].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(cli=>{
-    const rule=oneLimit('cli','LOWER(cli)=LOWER(?)',[cli]);
-    const where='LOWER(s.cli)=LOWER(?)', params=[cli];
-    const today=countTodayUk(where,params);
-    return {cli,daily_limit:rule?Number(rule.daily_limit||0):0,today_otps:today,paid:paidToday(where,params),zeroed:zeroedToday(where,params)};
+    const st = cliStats.get(String(cli).toLowerCase()) || {};
+    return {
+      cli,
+      daily_limit: cliRules.has(String(cli).toLowerCase()) ? cliRules.get(String(cli).toLowerCase()) : 0,
+      today_otps: st.c || 0,
+      paid: st.paid || 0,
+      zeroed: st.zeroed || 0,
+    };
   });
   res.json({reporting_timezone:'Europe/London',ranges,clis});
 });
@@ -6984,17 +7051,17 @@ app.get('/api/backups', authRequired, requireRole('admin'), (req, res) => {
     res.json({ backups: backup.listBackups(db), backup_dir: backup.getBackupDir(db), db_file: db.getDbFile ? db.getDbFile() : '' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.post('/api/backups/create', authRequired, requireRole('admin'), (req, res) => {
+app.post('/api/backups/create', authRequired, requireRole('admin'), async (req, res) => {
   try {
-    const b = backup.createBackup(db, 'manual');
+    const b = await backup.createBackup(db, 'manual');
     backup.cleanupOldBackups(db);
     logAction(req, 'create_database_backup', 'backup', b.file);
     res.json({ ok: true, backup: b });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.get('/api/backups/latest/download', authRequired, requireRole('admin'), (req, res) => {
+app.get('/api/backups/latest/download', authRequired, requireRole('admin'), async (req, res) => {
   try {
-    const latest = backup.getLatestBackup(db) || backup.createBackup(db, 'manual-latest');
+    const latest = backup.getLatestBackup(db) || await backup.createBackup(db, 'manual-latest');
     const filePath = backup.backupPath(db, latest.file);
     res.download(filePath, latest.file);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -7005,9 +7072,9 @@ app.get('/api/backups/:file/download', authRequired, requireRole('admin'), (req,
     res.download(filePath, req.params.file);
   } catch (e) { res.status(404).json({ error: e.message }); }
 });
-app.post('/api/backups/:file/restore', authRequired, requireRole('admin'), (req, res) => {
+app.post('/api/backups/:file/restore', authRequired, requireRole('admin'), async (req, res) => {
   try {
-    const result = backup.restoreBackup(db, req.params.file);
+    const result = await backup.restoreBackup(db, req.params.file);
     createTables();
     seed();
     syncRangeProviderLinks();
@@ -7201,7 +7268,9 @@ const PORT = process.env.PORT || 4000;
     console.log('• Payment ledger startup backfill disabled (new OTPs are recorded normally)');
   }
   console.log('• API Integration poller disabled (HTTP incoming only)');
-  app.listen(PORT, () => console.log(`\n✅ Skyline SMS backend running: http://localhost:${PORT}\n`));
+  try { blockMonitor.startLagMonitor(console); } catch (e) {}
+
+app.listen(PORT, () => console.log(`\n✅ Skyline SMS backend running: http://localhost:${PORT}\n`));
 
   /* ===== P19k #5: one-time startup stats reconciliation =====
      Owner report: purane deletes (pre-fix code) ke baad dashboard (SMS This Month /

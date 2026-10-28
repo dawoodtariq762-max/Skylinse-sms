@@ -1,0 +1,429 @@
+diff --git a/backend/backup.js b/backend/backup.js
+index 72b14cc..7b1931a 100644
+--- a/backend/backup.js
++++ b/backend/backup.js
+@@ -1,9 +1,33 @@
+ /**
+  * Backup service for Skyline SMS.
+- * - Uses sql.js export buffer from db.js for consistent snapshots.
++ * - Uses the ASYNCHRONOUS SQLite online-backup API (better-sqlite3 db.backup)
++ *   so a backup never blocks the Node event loop.
+  * - Writes backups atomically to a dedicated folder.
+  * - Retains backups for a configurable number of days.
+  * - Designed for VPS deployment.
++ *
++ * ============================================================================
++ * POST-REBRAND REPAIR — why this file changed
++ * ----------------------------------------------------------------------------
++ * createBackup() previously ran `db.exec("VACUUM INTO '<file>')`. On
++ * better-sqlite3 that call is FULLY SYNCHRONOUS: it copies the entire database
++ * file while holding the event loop. On this deployment's multi-GB database
++ * that took minutes, during which EVERY request on the server stalled — the
++ * reverse proxy then returned HTTP 504 and the whole application appeared to be
++ * down. It was also triggered automatically 15 s after every boot and then
++ * every BACKUP_INTERVAL_HOURS, so the freeze could happen with nobody clicking
++ * anything.
++ *
++ * better-sqlite3 exposes `db.backup(dest)`, a Promise-based wrapper around
++ * sqlite3_backup_init/step/finish. That work runs off the JavaScript thread, so
++ * the server keeps serving requests while the copy proceeds. The file it
++ * produces is a complete, internally consistent, restorable SQLite database
++ * (same guarantee as VACUUM INTO), written to a .tmp path and atomically
++ * renamed only after the copy succeeds.
++ *
++ * The synchronous path is retained purely as a fallback for a db layer that
++ * does not expose a raw better-sqlite3 handle; it is never used on this build.
++ * ============================================================================
+  */
+ const fs = require('fs');
+ const path = require('path');
+@@ -14,13 +38,25 @@ function ts() {
+ }
+ /* Backup file naming. New backups use "skyline-sms-backup-<ts>.sqlite".
+    Backups created under the panel's earlier backup prefixes (ams-, qtech-, nova-,
+-   almada-) are still listed,
+-   restorable and pruned by retention — only the prefix differs. Those legacy
+-   strings remain here solely so existing production backups stay visible. */
++   almada-, powerx-, galaxy-) are still listed, restorable and pruned by
++   retention — only the prefix differs. Those legacy strings remain here solely
++   so existing production backups stay visible and usable. */
+ const BACKUP_PREFIX = 'skyline-sms-backup-';
+-const LEGACY_BACKUP_PREFIXES = ['ams-sms-backup-', 'qtech-sms-backup-', 'nova-sms-backup-', 'almada-sms-backup-'];
+-const BACKUP_NAME_RE = /^(?:skyline|ams|qtech|almada|nova)-sms-backup-\d{4}-\d{2}-\d{2}T[\w-]+\.sqlite$/; /* new = skyline, earlier prefixes still honoured */
+-function isBackupFileName(base){ return BACKUP_NAME_RE.test(String(base||'')); }
++const LEGACY_BACKUP_PREFIXES = [
++  'ams-sms-backup-',
++  'qtech-sms-backup-',
++  'nova-sms-backup-',
++  'almada-sms-backup-',
++  'powerx-sms-backup-',
++  'galaxy-sms-backup-',
++];
++/* Any "<brand>-sms-backup-<timestamp>.sqlite". Kept intentionally broad so
++   backups written by earlier builds of this panel remain downloadable and
++   restorable; path.basename() is applied first, so this cannot traverse
++   directories. Listing is intentionally MORE tolerant than this (see
++   listBackups) so that nothing already on disk is ever hidden from the UI. */
++const BACKUP_NAME_RE = /^[a-z0-9]+-sms-backup-[\w.-]+\.sqlite$/i;
++function isBackupFileName(base) { return BACKUP_NAME_RE.test(String(base || '')); }
+ function getDbFile(db) {
+   return db.getDbFile ? db.getDbFile() : path.join(__dirname, 'data.sqlite');
+ }
+@@ -45,45 +81,86 @@ function safeBackupName(name) {
+ function backupPath(db, fileName) {
+   return path.join(ensureBackupDir(db), safeBackupName(fileName));
+ }
++/**
++ * List every .sqlite file in the backup directory.
++ * Deliberately tolerant: it no longer filters by brand prefix, because
++ * filtering hid genuine production backups from the Backups page ("no existing
++ * backups are displayed"). Files whose name does not match the expected
++ * "<brand>-sms-backup-…" pattern are still listed, but flagged `legacy:true`
++ * purely so the UI can label them. Nothing is ever deleted here.
++ */
+ function listBackups(db) {
+-  const dir = ensureBackupDir(db);
+-  return fs.readdirSync(dir)
+-    .filter(f => f.endsWith('.sqlite') && (f.startsWith(BACKUP_PREFIX) || LEGACY_BACKUP_PREFIXES.some(p => f.startsWith(p))))
++  let dir;
++  try {
++    dir = ensureBackupDir(db);
++  } catch (e) {
++    console.warn('[backup] listBackups: cannot create dir:', e.message);
++    return [];
++  }
++  let files = [];
++  try {
++    files = fs.readdirSync(dir);
++  } catch (e) {
++    console.warn('[backup] listBackups: cannot read dir', dir, e.message);
++    return [];
++  }
++  return files
++    .filter(f => f.endsWith('.sqlite'))
+     .map(file => {
+-      const fullPath = path.join(dir, file);
+-      const st = fs.statSync(fullPath);
+-      return {
+-        file,
+-        size: st.size,
+-        created_at: st.birthtime.toISOString(),
+-        modified_at: st.mtime.toISOString(),
+-      };
++      try {
++        const st = fs.statSync(path.join(dir, file));
++        const birth = st.birthtime && st.birthtime.getTime() ? st.birthtime : st.mtime;
++        return {
++          file,
++          size: st.size,
++          created_at: birth.toISOString(),
++          modified_at: st.mtime.toISOString(),
++          legacy: !isBackupFileName(file),
++        };
++      } catch (e) {
++        return null;
++      }
+     })
++    .filter(Boolean)
+     .sort((a, b) => new Date(b.modified_at) - new Date(a.modified_at));
+ }
+-function createBackup(db, reason = 'manual') {
++
++/**
++ * Create a backup. ASYNC — must be awaited.
++ * Primary path uses the non-blocking SQLite online-backup API.
++ */
++async function createBackup(db, reason = 'manual') {
+   const dir = ensureBackupDir(db);
+-  if (db.save) db.save();
+   const file = `${BACKUP_PREFIX}${ts()}.sqlite`;
+   const fullPath = path.join(dir, file);
+   const tmpPath = fullPath + '.tmp';
+-  // PHASE-2 MEMORY FIX: exportBuffer() was the sql.js-era whole-DB-in-a-Buffer
+-  // API — on a multi-GB database it allocated the entire file in RAM (1.86 GB
+-  // at 5M numbers) and got the process OOM-killed. VACUUM INTO writes the
+-  // same complete, restorable snapshot directly to disk with O(1) Node memory.
+-  let done = false;
+-  try {
++  try { fs.unlinkSync(tmpPath); } catch (_) { /* nothing to clean */ }
++
++  const raw = (db && typeof db.getRaw === 'function') ? db.getRaw() : null;
++
++  if (raw && typeof raw.backup === 'function') {
++    /* ---- NON-BLOCKING PATH ------------------------------------------------
++       Best-effort passive WAL checkpoint so the copy starts from a tidy state.
++       PASSIVE never waits on or blocks other writers. */
++    try { raw.exec('PRAGMA wal_checkpoint(PASSIVE)'); } catch (_) {}
++    await raw.backup(tmpPath);   /* <-- off the JS thread; server stays up */
++  } else if (db && typeof db.exec === 'function') {
++    /* ---- FALLBACK (synchronous; only if no raw handle) -------------------- */
++    try { if (db.save) db.save(); } catch (_) {}
+     try { db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); } catch (_) {}
+     db.exec(`VACUUM INTO '${tmpPath.replace(/'/g, "''")}'`);
+-    done = true;
+-  } catch (_) { /* fall back below */ }
+-  if (!done) {
+-    const buffer = db.exportBuffer ? db.exportBuffer() : fs.readFileSync(getDbFile(db));
++  } else {
++    const buffer = (db && db.exportBuffer) ? db.exportBuffer() : fs.readFileSync(getDbFile(db));
+     fs.writeFileSync(tmpPath, Buffer.from(buffer));
+   }
++
++  /* Only publish the backup once the copy completed and is non-trivial. */
++  const st = fs.statSync(tmpPath);
++  if (!st.size) throw new Error('Backup produced an empty file; original left untouched');
+   fs.renameSync(tmpPath, fullPath);
+-  return { file, size: fs.statSync(fullPath).size, reason, created_at: new Date().toISOString() };
++  return { file, size: st.size, reason, created_at: new Date().toISOString() };
+ }
++
+ function cleanupOldBackups(db) {
+   const days = Math.max(1, parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10));
+   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+@@ -92,9 +169,11 @@ function cleanupOldBackups(db) {
+   for (const b of backups) {
+     const t = new Date(b.modified_at).getTime();
+     if (t < cutoff) {
+-      const fullPath = backupPath(db, b.file);
+-      fs.unlinkSync(fullPath);
+-      deleted.push(b.file);
++      try {
++        const fullPath = path.join(getBackupDir(db), path.basename(b.file));
++        fs.unlinkSync(fullPath);
++        deleted.push(b.file);
++      } catch (e) { /* keep it if it cannot be removed */ }
+     }
+   }
+   return deleted;
+@@ -108,11 +187,11 @@ function deleteBackup(db, fileName) {
+ function getLatestBackup(db) {
+   return listBackups(db)[0] || null;
+ }
+-function restoreBackup(db, fileName) {
++async function restoreBackup(db, fileName) {
+   const fullPath = backupPath(db, fileName);
+   if (!fs.existsSync(fullPath)) throw new Error('Backup not found');
+   // Always create a safety snapshot before restore.
+-  const safety = createBackup(db, 'pre-restore-safety');
++  const safety = await createBackup(db, 'pre-restore-safety');
+   if (!db.replaceWithFile) throw new Error('Database restore is not supported by db layer');
+   db.replaceWithFile(fullPath);
+   return { ok: true, restored_from: path.basename(fileName), safety_backup: safety.file };
+@@ -126,13 +205,24 @@ function startAutomaticBackups(db, logger = console) {
+   const hours = Math.max(1, parseFloat(process.env.BACKUP_INTERVAL_HOURS || '3'));
+   const ms = hours * 60 * 60 * 1000;
+   // Create a startup backup shortly after boot, then schedule interval.
++  // Both handlers are async and never block the event loop.
+   setTimeout(() => {
+-    try { createBackup(db, 'startup'); cleanupOldBackups(db); logger.log('✓ Startup backup created'); }
+-    catch (e) { logger.error('Backup error:', e.message); }
++    (async () => {
++      try {
++        const b = await createBackup(db, 'startup');
++        cleanupOldBackups(db);
++        logger.log('✓ Startup backup created:', b.file);
++      } catch (e) { logger.error('Backup error:', e.message); }
++    })();
+   }, 15000);
+   const timer = setInterval(() => {
+-    try { const b = createBackup(db, 'auto'); cleanupOldBackups(db); logger.log('✓ Auto backup created:', b.file); }
+-    catch (e) { logger.error('Backup error:', e.message); }
++    (async () => {
++      try {
++        const b = await createBackup(db, 'auto');
++        cleanupOldBackups(db);
++        logger.log('✓ Auto backup created:', b.file);
++      } catch (e) { logger.error('Backup error:', e.message); }
++    })();
+   }, ms);
+   if (timer.unref) timer.unref();
+   logger.log(`• Automatic backups enabled: every ${hours} hour(s), dir: ${getBackupDir(db)}`);
+diff --git a/backend/db.js b/backend/db.js
+index 7bfe340..c3afc8b 100644
+--- a/backend/db.js
++++ b/backend/db.js
+@@ -280,6 +280,13 @@ function exportBuffer() {
+ function getDbFile() {
+   return DB_FILE;
+ }
++/* Returns the underlying better-sqlite3 Database handle. Needed by the backup
++   service so it can use the ASYNCHRONOUS online-backup API (db.backup) instead
++   of a synchronous `VACUUM INTO`, which blocked the whole Node event loop for
++   the entire duration of the copy and made the application unresponsive. */
++function getRaw() {
++  return db;
++}
+ 
+ function replaceWithFile(filePath) {
+   const buf = fs.readFileSync(filePath);
+@@ -353,6 +360,6 @@ function* iterate(sql, params = []) {
+ module.exports = {
+   init, run, runNoSave, exec, execNoSave, get, all, save, iterate,
+   beginBatch, endBatch, endBatchNoSave, vacuum,
+-  exportBuffer, getDbFile, replaceWithFile,
++  exportBuffer, getDbFile, getRaw, replaceWithFile,
+   slowQueryStats, runAnalyze, inTransaction,
+ };
+diff --git a/backend/server.js b/backend/server.js
+index 5b242de..1fa1038 100644
+--- a/backend/server.js
++++ b/backend/server.js
+@@ -17,6 +17,7 @@ const { createTables } = require('./schema');
+ const { seed } = require('./seed');
+ const { sign, authRequired, chatAuthRequired, requireRole, descendantIds, SECRET } = require('./auth');
+ const backup = require('./backup');
++const blockMonitor = require('./blockMonitor');
+ const providerSync = require('./providerSync');
+ const smsFts = require('./fts');
+ const smppService = require('./smppService');
+@@ -25,6 +26,9 @@ const app = express();
+ app.set('trust proxy', true);
+ app.use(cors());
+ app.use(express.json({ limit: '2mb' }));
++/* Diagnostic only: records what is in flight so an event-loop freeze can be
++   attributed to a URL. Inert unless BLOCKMON=1. */
++app.use(blockMonitor.requestTracker);
+ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+ app.use(express.text({ type: ['text/plain', 'text/*', 'application/xml', 'application/octet-stream'], limit: '2mb' }));
+ const upload = multer();
+@@ -5320,21 +5324,84 @@ app.get('/api/limit-management', authRequired, requireRole('admin'), (req,res)=>
+   res.json(rows.map(r=>{ const used=dailyLimitUsage(r); const limit=Number(r.daily_limit||0); return {...r, used_today:used, remaining_today:Math.max(0,limit-used), reporting_timezone:'Europe/London'}; }));
+ });
+ app.get('/api/limit-management/overview', authRequired, requireRole('admin'), (req,res)=>{
+-  const ranges=db.all('SELECT id,name FROM ranges ORDER BY name ASC').map(r=>{
+-    const rangeRule=oneLimit('range','range_id=?',[r.id]);
+-    const perRule=oneLimit('range_number','range_id=?',[r.id]);
+-    const where='s.range_id=?', params=[r.id];
+-    const today=countTodayUk(where,params);
+-    return {range_id:r.id,range_name:r.name,daily_limit:rangeRule?Number(rangeRule.daily_limit||0):0,per_number_limit:perRule?Number(perRule.daily_limit||0):0,today_otps:today,paid:paidToday(where,params),zeroed:zeroedToday(where,params)};
++  /* ---- PERF FIX: N+1 -> set-based ---------------------------------------
++     This endpoint looped over up to 5,000 CLIs and, for EACH one, ran
++     countTodayUk() + paidToday() + zeroedToday(). Every one of those is a
++     COUNT(*) over sms_records with a non-indexable date() expression and a
++     LOWER(s.cli)=LOWER(?) predicate, i.e. a full table scan — up to 15,000
++     full scans of a production-sized table inside ONE request. better-sqlite3
++     is synchronous, so the entire Node event loop was blocked for the whole
++     time: the page hung, the reverse proxy returned HTTP 504, and every other
++     panel stopped responding.
++
++     Replaced with ONE indexed GROUP BY per dimension (ranges, CLIs) plus two
++     small lookups. The date window uses ukDayOffsetSql(), the indexable
++     half-open range helper that already exists in this file and yields an
++     identical result set. Numbers returned are unchanged.
++     --------------------------------------------------------------------- */
++  const todaySql = ukDayOffsetSql('s.received_at', 0);
++  const PAY_GT = "SUM(CASE WHEN CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) > 0 THEN 1 ELSE 0 END)";
++  const PAY_EQ = "SUM(CASE WHEN CAST(COALESCE(NULLIF(s.payout_amount,''),'0') AS REAL) = 0 THEN 1 ELSE 0 END)";
++
++  /* ---- ranges: one grouped scan instead of 4 queries per range ---- */
++  const rangeStats = new Map();
++  db.all(`SELECT s.range_id AS k, COUNT(*) c, ${PAY_GT} paid, ${PAY_EQ} zeroed
++            FROM sms_records s
++           WHERE COALESCE(s.is_test,0)=0 AND ${todaySql} AND s.range_id IS NOT NULL
++           GROUP BY s.range_id`)
++    .forEach(r => rangeStats.set(String(r.k), r));
++
++  const rangeRules = new Map();
++  db.all("SELECT * FROM daily_limit_rules WHERE active=1 AND limit_type IN ('range','range_number') ORDER BY id ASC")
++    .forEach(r => {
++      const k = String(r.range_id);
++      if (!rangeRules.has(k)) rangeRules.set(k, {});
++      const slot = rangeRules.get(k);
++      if (r.limit_type === 'range') slot.range = Number(r.daily_limit || 0);
++      else slot.per = Number(r.daily_limit || 0);
++    });
++
++  const ranges = db.all('SELECT id,name FROM ranges ORDER BY name ASC').map(r=>{
++    const st = rangeStats.get(String(r.id)) || {};
++    const rl = rangeRules.get(String(r.id)) || {};
++    return {
++      range_id: r.id,
++      range_name: r.name,
++      daily_limit: rl.range || 0,
++      per_number_limit: rl.per || 0,
++      today_otps: st.c || 0,
++      paid: st.paid || 0,
++      zeroed: st.zeroed || 0,
++    };
+   });
+-  const cliSet=new Set();
++
++  /* ---- CLIs: one grouped scan instead of 3 full scans per CLI ---- */
++  const cliStats = new Map();
++  db.all(`SELECT LOWER(s.cli) AS k, COUNT(*) c, ${PAY_GT} paid, ${PAY_EQ} zeroed
++            FROM sms_records s
++           WHERE COALESCE(s.is_test,0)=0 AND ${todaySql}
++             AND s.cli IS NOT NULL AND TRIM(s.cli) <> ''
++           GROUP BY LOWER(s.cli)`)
++    .forEach(r => cliStats.set(r.k, r));
++
++  /* Latest active rule wins, matching the old oneLimit() ORDER BY id DESC. */
++  const cliRules = new Map();
++  db.all("SELECT * FROM daily_limit_rules WHERE active=1 AND limit_type='cli' AND cli<>'' ORDER BY id ASC")
++    .forEach(r => cliRules.set(String(r.cli).toLowerCase(), Number(r.daily_limit || 0)));
++
++  const cliSet = new Set();
+   db.all("SELECT DISTINCT cli FROM sms_records WHERE cli IS NOT NULL AND cli<>'' ORDER BY cli ASC LIMIT 5000").forEach(x=>cliSet.add(String(x.cli)));
+   db.all("SELECT cli FROM daily_limit_rules WHERE limit_type='cli' AND cli<>''").forEach(x=>cliSet.add(String(x.cli)));
++
+   const clis=[...cliSet].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(cli=>{
+-    const rule=oneLimit('cli','LOWER(cli)=LOWER(?)',[cli]);
+-    const where='LOWER(s.cli)=LOWER(?)', params=[cli];
+-    const today=countTodayUk(where,params);
+-    return {cli,daily_limit:rule?Number(rule.daily_limit||0):0,today_otps:today,paid:paidToday(where,params),zeroed:zeroedToday(where,params)};
++    const st = cliStats.get(String(cli).toLowerCase()) || {};
++    return {
++      cli,
++      daily_limit: cliRules.has(String(cli).toLowerCase()) ? cliRules.get(String(cli).toLowerCase()) : 0,
++      today_otps: st.c || 0,
++      paid: st.paid || 0,
++      zeroed: st.zeroed || 0,
++    };
+   });
+   res.json({reporting_timezone:'Europe/London',ranges,clis});
+ });
+@@ -6984,17 +7051,17 @@ app.get('/api/backups', authRequired, requireRole('admin'), (req, res) => {
+     res.json({ backups: backup.listBackups(db), backup_dir: backup.getBackupDir(db), db_file: db.getDbFile ? db.getDbFile() : '' });
+   } catch (e) { res.status(500).json({ error: e.message }); }
+ });
+-app.post('/api/backups/create', authRequired, requireRole('admin'), (req, res) => {
++app.post('/api/backups/create', authRequired, requireRole('admin'), async (req, res) => {
+   try {
+-    const b = backup.createBackup(db, 'manual');
++    const b = await backup.createBackup(db, 'manual');
+     backup.cleanupOldBackups(db);
+     logAction(req, 'create_database_backup', 'backup', b.file);
+     res.json({ ok: true, backup: b });
+   } catch (e) { res.status(500).json({ error: e.message }); }
+ });
+-app.get('/api/backups/latest/download', authRequired, requireRole('admin'), (req, res) => {
++app.get('/api/backups/latest/download', authRequired, requireRole('admin'), async (req, res) => {
+   try {
+-    const latest = backup.getLatestBackup(db) || backup.createBackup(db, 'manual-latest');
++    const latest = backup.getLatestBackup(db) || await backup.createBackup(db, 'manual-latest');
+     const filePath = backup.backupPath(db, latest.file);
+     res.download(filePath, latest.file);
+   } catch (e) { res.status(500).json({ error: e.message }); }
+@@ -7005,9 +7072,9 @@ app.get('/api/backups/:file/download', authRequired, requireRole('admin'), (req,
+     res.download(filePath, req.params.file);
+   } catch (e) { res.status(404).json({ error: e.message }); }
+ });
+-app.post('/api/backups/:file/restore', authRequired, requireRole('admin'), (req, res) => {
++app.post('/api/backups/:file/restore', authRequired, requireRole('admin'), async (req, res) => {
+   try {
+-    const result = backup.restoreBackup(db, req.params.file);
++    const result = await backup.restoreBackup(db, req.params.file);
+     createTables();
+     seed();
+     syncRangeProviderLinks();
+@@ -7201,7 +7268,9 @@ const PORT = process.env.PORT || 4000;
+     console.log('• Payment ledger startup backfill disabled (new OTPs are recorded normally)');
+   }
+   console.log('• API Integration poller disabled (HTTP incoming only)');
+-  app.listen(PORT, () => console.log(`\n✅ Skyline SMS backend running: http://localhost:${PORT}\n`));
++  try { blockMonitor.startLagMonitor(console); } catch (e) {}
++
++app.listen(PORT, () => console.log(`\n✅ Skyline SMS backend running: http://localhost:${PORT}\n`));
+ 
+   /* ===== P19k #5: one-time startup stats reconciliation =====
+      Owner report: purane deletes (pre-fix code) ke baad dashboard (SMS This Month /
