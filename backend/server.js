@@ -1170,7 +1170,7 @@ function smsRowsForScope(user, extraWhere='', extraParams=[], opts={}){
   if(extraWhere){ where.push(extraWhere); params.push(...extraParams); }
   const cap = Math.max(1, parseInt(opts.limit || SMS_SCOPE_ROW_CAP, 10));
   const rows=db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45,
-      n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
+      n.rate AS number_rate, n.payout AS number_payout, n.client_rate AS number_client_rate, n.payterm AS payterm, r.payment_type AS payment_type,
       cu.username AS client_name, COALESCE(su.panel_name, au.username) AS agent_name, au.username AS agent_username, su.panel_name AS sharing_panel_name, su.id AS sharing_user_id, mu.username AS manager_name
     FROM sms_records s
     LEFT JOIN numbers n ON n.id=s.number_id
@@ -2707,8 +2707,22 @@ function buildNumberQuery(user, q) {
      numbers. All three are LEFT JOINed on users, so a number that has BOTH a
      Manager and an Agent relationship is still returned exactly once — the
      joins cannot duplicate rows. */
-  if (q.manager && user && user.role === 'admin') { where.push('mu.username=?'); params.push(q.manager); need.users = true; }
-  if (q.agent   && user && user.role === 'admin') { where.push('au.username=?'); params.push(q.agent);   need.users = true; }
+  /* §6.5 — "allocated to" vs "merely associated with".
+     Allocating a number down the chain changes who HOLDS it, but the upper-tier
+     id is retained for hierarchy/reporting:
+        Admin -> Manager   : sets n.manager_id
+        Manager -> Agent   : sets n.agent_id  (n.manager_id STAYS SET)
+        Agent  -> Client   : sets n.client_id (n.manager_id / n.agent_id are cleared)
+     So a bare `mu.username = X` also matched numbers the Manager has already
+     handed to an Agent — rows that are merely ASSOCIATED with that Manager, not
+     allocated to them. The Manager filter must therefore require that no lower
+     tier currently holds the number. The Agent filter is symmetric: a number
+     further allocated to a Client is no longer the Agent's.
+     The Client filter is the leaf tier, so it needs no extra condition.
+     These are additional AND terms, so Provider / Range / search / allocation /
+     pagination and counts all compose exactly as before. */
+  if (q.manager && user && user.role === 'admin') { where.push('mu.username=? AND n.agent_id IS NULL AND n.client_id IS NULL'); params.push(q.manager); need.users = true; }
+  if (q.agent   && user && user.role === 'admin') { where.push('au.username=? AND n.client_id IS NULL'); params.push(q.agent);   need.users = true; }
   if (q.client  && user && user.role === 'admin') { where.push('cu.username=?'); params.push(q.client);  need.users = true; }
   if (q.allocation === 'unallocated') {
     // unqualified: lets the planner use idx_numbers_unallocated (measured @5M: 2.1 s → 250 ms)
@@ -4411,7 +4425,7 @@ app.get('/api/sms/paged', authRequired, (req, res, next) => {
     sendPagedStreaming(res,
       { total, page, limit, totalPages, totalPayment },
       `SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45,
-          n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
+          n.rate AS number_rate, n.payout AS number_payout, n.client_rate AS number_client_rate, n.payterm AS payterm, r.payment_type AS payment_type,
           r.currency AS range_currency, r.provider AS range_provider${provCols},
           cu.username AS client_name, COALESCE(su.panel_name, au.username) AS agent_name, au.username AS agent_username, su.panel_name AS sharing_panel_name, su.id AS sharing_user_id, mu.username AS manager_name
         ${built.baseSql}
@@ -4440,7 +4454,7 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
   const provCols = providerRateSelectSql(req.user.role);   /* ADMIN-ONLY provider rate columns */
   if (Number.isFinite(cursor) && cursor > 0) {
     const cRows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45,
-        n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
+        n.rate AS number_rate, n.payout AS number_payout, n.client_rate AS number_client_rate, n.payterm AS payterm, r.payment_type AS payment_type,
         r.currency AS range_currency, r.provider AS range_provider${provCols},
         cu.username AS client_name, COALESCE(su.panel_name, au.username) AS agent_name, au.username AS agent_username, su.panel_name AS sharing_panel_name, su.id AS sharing_user_id, mu.username AS manager_name
       ${built.baseSql} AND s.id < ?
@@ -4449,7 +4463,7 @@ app.get('/api/sms/paged', authRequired, (req, res) => cachedJson(req, res, 1200,
     return { rows: attachSmsPayoutFields(attachSmsProviderRate(cRows, req.user.role)), total, page: 1, limit, totalPages: Math.max(1, Math.ceil(total / limit)), totalPayment, next_cursor: nextCursor, cursor_mode: true };
   }
   const rows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45,
-      n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type,
+      n.rate AS number_rate, n.payout AS number_payout, n.client_rate AS number_client_rate, n.payterm AS payterm, r.payment_type AS payment_type,
       r.currency AS range_currency, r.provider AS range_provider${provCols},
       cu.username AS client_name, COALESCE(su.panel_name, au.username) AS agent_name, au.username AS agent_username, su.panel_name AS sharing_panel_name, su.id AS sharing_user_id, mu.username AS manager_name
     ${built.baseSql}
@@ -4993,7 +5007,7 @@ app.get('/api/dashboard', authRequired, (req, res) => cachedJson(req, res, 10000
     const byDate = {}; rows.forEach(r => byDate[r.stat_date] = r.c || 0);
     for (let i = 6; i >= 0; i--) { const dayStr = ukTodayDateStr(-i); daily7.push({ date: dayStr, count: byDate[dayStr] || 0 }); }
   }
-  const recentRows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45, n.rate AS number_rate, n.payout AS number_payout, n.payterm AS payterm, r.payment_type AS payment_type
+  const recentRows = db.all(`SELECT s.*, r.name AS range_name, r.rate_1_1, r.rate_7_1, r.rate_7_7, r.rate_30_45, n.rate AS number_rate, n.payout AS number_payout, n.client_rate AS number_client_rate, n.payterm AS payterm, r.payment_type AS payment_type
     FROM sms_records s
     LEFT JOIN numbers n ON n.id=s.number_id
     LEFT JOIN ranges r ON r.id=s.range_id

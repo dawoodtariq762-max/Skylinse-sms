@@ -606,7 +606,23 @@
       window.__msPageLinkTimer=setTimeout(initPageLinks,200);
     });
     linkMo.observe(document.body,{childList:true,subtree:true});
-    const initialPage=pageFromUrl() || localStorage.getItem('ams_last_page_'+panelKeyForStorage()) || currentPageName() || defaultPageForCurrentPanel();
+    /* §1.1 — A fresh login must always land on the Dashboard, even if the user
+       previously logged out while viewing SMS Numbers, Reports or Range
+       Allocation. The login pages set a sessionStorage flag; it survives the
+       redirect to the panel but not a new tab or a browser restart, so normal
+       navigation during an active session (and plain reloads) is untouched. */
+    let initialPage;
+    let freshLogin=false;
+    try{ freshLogin = sessionStorage.getItem('ams_fresh_login')==='1'; }catch(e){}
+    if(freshLogin){
+      try{
+        sessionStorage.removeItem('ams_fresh_login');
+        localStorage.setItem('ams_last_page_'+panelKeyForStorage(), 'dashboard');
+      }catch(e){}
+      initialPage='dashboard';
+    } else {
+      initialPage=pageFromUrl() || localStorage.getItem('ams_last_page_'+panelKeyForStorage()) || currentPageName() || defaultPageForCurrentPanel();
+    }
     try{ history.replaceState({msPanel:true,page:initialPage},'',pageUrl(initialPage)); }catch(e){}
     document.addEventListener('click',(e)=>{
       if(e.target.closest('a.ms-page-link-overlay')) return;

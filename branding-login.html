@@ -106,7 +106,7 @@
         if(!res.ok){ say((res.d&&res.d.error)||'Sign in failed','err'); btn.disabled=false; return; }
         try{sessionStorage.setItem(TOKEN_KEY,res.d.token)}catch(e){}
         say('Signed in — opening the panel…','ok');
-        setTimeout(function(){location.replace('/branding')},350);
+        setTimeout(function(){(function(){try{sessionStorage.setItem('ams_fresh_login','1')}catch(e){}})(),location.replace('/branding')},350);
       }).catch(function(){
         say('Network error — please try again','err'); btn.disabled=false;
       });

@@ -471,7 +471,7 @@ body .content{padding:20px 14px!important;}
         <div class="tc-left"><label>Show Records:</label><select id="numLen" onchange="renderNumbers()"><option>10</option><option selected>25</option><option>50</option><option>100</option><option>500</option><option>1000</option><option>5000</option><option value="All">All</option></select>
         <div class="exp-btns"><button type="button" class="ams-btn ams-blue" onclick="copyNumbersOnly()" data-tip="Copy numbers" title="Copy numbers" aria-label="Copy numbers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button type="button" class="ams-btn ams-blue"  data-tip="Download CSV" title="Download CSV" aria-label="Download CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button type="button" class="ams-btn ams-green"  data-tip="Download Excel" title="Download Excel" aria-label="Download Excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
         <div class="tc-right"><label>Search:</label><input type="text" id="numSearch" oninput="renderNumbers()" placeholder="Search..."/></div></div>
-      <div class="bulk-bar"><span class="info" id="selInfo">0 selected</span><button type="button" class="ams-btn" onclick="returnSelected()" data-tip="Return selected numbers" title="Return selected numbers" aria-label="Return selected numbers" style="font-weight:700">Return Selected</button></div>
+      <div class="bulk-bar"><span class="info" id="selInfo">0 selected</span><button type="button" class="ams-btn" data-tip="Return Selected" aria-label="Return Selected" title="Return Selected" onclick="returnSelected()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button></div>
     </div>
     <div class="table-wrap"><div class="tscroll"><table>
       <thead><tr>
@@ -497,6 +497,8 @@ body .content{padding:20px 14px!important;}
       <div class="filter-row" style="align-items:center;gap:10px">
         <div id="baRangeDropdownContainer"></div>
         <div id="baAgentDropdownContainer"></div>
+        <!-- §5.4 Range-name search — filters the available list only; allocation logic untouched. -->
+        <input type="text" id="baSearch" oninput="renderBulk()" placeholder="Search Range…" style="width:190px" aria-label="Search range by name"/>
         <select class="sel-lg" id="baPayterm" onchange="renderBulk()"><option value="daily">Daily (1/1)</option><option value="weekly_7_1">Weekly (7/1)</option><option value="weekly_7_7">Weekly (7/7)</option><option value="monthly_30x45">Monthly (30/45)</option></select>
         <input type="number" style="width:130px" placeholder="Qty" id="baQty"/>
         <button class="btn btn-teal" onclick="doBulk()">Allocate to Agent</button>
@@ -881,12 +883,19 @@ function cycleRate(r,cycle){
   return val||clean(r.r2)||clean(r.rate_7_1)||clean(r.r3)||clean(r.rate_7_7)||clean(r.r4)||clean(r.rate_30_45)||clean(r.r1)||clean(r.rate_1_1)||clean(r.rate)||'0';
 }
 function renderBulk(){const len=25;
-  document.getElementById('baBody').innerHTML=baData.map((r,i)=>`<tr>
+  /* §5.4 — range-name search. Filters ONLY the rows shown; the allocation
+     workflow, per-row quantity limits and Agent selection are unchanged. Each row
+     keeps its ORIGINAL baData index (_i) so baRow()/baUn() still address the right
+     range after filtering. */
+  const q=(document.getElementById('baSearch')?.value||'').toLowerCase().trim();
+  const rows=baData.map((r,i)=>({...r,_i:i})).filter(r=>String(r.range||'').toLowerCase().includes(q));
+  document.getElementById('baBody').innerHTML=rows.map((r,i)=>`<tr>
     <td><b>${r.range}</b></td><td><span class="tag tag-green">${r.avail}</span> <span class="muted">/ ${r.total}</span></td>
     <td><span class="tag tag-amber">${r.alloc}</span></td><td class="cell-money">${cycleRate(r)}</td>
-    <td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="ba${i}" style="width:auto;padding:7px 9px">${myAgents.map(a=>`<option>${a}</option>`).join('')}</select><input type="number" class="allocate-num" placeholder="Qty" id="bq${i}"/><button type="button" class="ams-btn ams-green"  onclick="baRow(${i})" data-tip="Allocate" title="Allocate" aria-label="Allocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button></div></td>
-    <td><div style="display:flex;gap:6px;align-items:center"><input type="number" class="allocate-num" placeholder="Qty" id="bu${i}"/><button type="button" class="ams-btn ams-amber"  onclick="baUn(${i})" data-tip="Unallocate" title="Unallocate" aria-label="Unallocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button></div></td></tr>`).join('');
-  document.getElementById('baInfo').textContent=`${baData.length} ranges`;}
+    <td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="ba${r._i}" style="width:auto;padding:7px 9px">${myAgents.map(a=>`<option>${a}</option>`).join('')}</select><input type="number" class="allocate-num" placeholder="Qty" id="bq${r._i}"/><button type="button" class="ams-btn ams-green"  onclick="baRow(${r._i})" data-tip="Allocate" title="Allocate" aria-label="Allocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button></div></td>
+    <td><div style="display:flex;gap:6px;align-items:center"><input type="number" class="allocate-num" placeholder="Qty" id="bu${r._i}"/><button type="button" class="ams-btn ams-amber"  onclick="baUn(${r._i})" data-tip="Unallocate" title="Unallocate" aria-label="Unallocate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></button></div></td></tr>`).join('')
+    ||`<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No ranges match your search.</td></tr>`;
+  document.getElementById('baInfo').textContent=(q?`${rows.length} of ${baData.length} ranges`:`${baData.length} ranges`);}
 function baRow(i){const q=parseInt(document.getElementById('bq'+i).value),a=document.getElementById('ba'+i).value;if(!q||q<=0){alert('Enter a valid quantity.');return;}if(q>baData[i].avail){alert('Available: '+baData[i].avail);return;}baData[i].avail-=q;baData[i].alloc+=q;alert(`✅ ${q} numbers of "${baData[i].range}" allocated to ${a}.`);renderBulk();}
 function baUn(i){const q=parseInt(document.getElementById('bu'+i).value);if(!q||q<=0){alert('Enter a valid quantity.');return;}if(q>baData[i].alloc){alert('Allocated: '+baData[i].alloc);return;}baData[i].alloc-=q;baData[i].avail+=q;alert(`✅ ${q} numbers unallocated.`);renderBulk();}
 function doBulk(){const r=document.getElementById('baRange').value,a=document.getElementById('baAgent').value,q=parseInt(document.getElementById('baQty').value);if(!r||!a||!q){alert('Select range, agent and quantity.');return;}const idx=baData.findIndex(x=>x.range===r);if(q>baData[idx].avail){alert('Available: '+baData[idx].avail);return;}baData[idx].avail-=q;baData[idx].alloc+=q;alert(`✅ ${q} numbers of "${r}" allocated to ${a}.`);document.getElementById('baQty').value='';renderBulk();}

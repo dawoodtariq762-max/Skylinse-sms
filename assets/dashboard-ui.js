@@ -155,20 +155,23 @@
         card = node('section', 'card ams-metric-ranking dash-note-card'); card.dataset.dimension = dim;
         const report = dim === 'range' ? 'rateCard' : dim === 'number' ? 'numbers' : 'stats';
         const href = role === 'client' ? '/client/' + report : '/' + role + '/' + report;
+        // §3.1/§3.3 — the Client panel must not display payout figures at all.
+        var showPayout = (role !== 'client');
+        var cols = showPayout ? 3 : 2;
         card.innerHTML = '<div class="card-head"><div><h3>Top ' + (dim === 'client' ? 'Clients' : dim === 'range' ? 'Ranges' : dim === 'agent' ? 'Agents' : 'Managers') +
           ' · 30 Days</h3></div>' +
           '<a class="ams-metric-report-link" href="' + href + '">View report →</a></div><div class="tscroll"><table><thead><tr><th>' +
-          (dim === 'client' ? 'Client' : dim === 'range' ? 'Range' : dim === 'agent' ? 'Agent' : 'Manager') + '</th><th>SMS</th><th>Payout</th></tr></thead>' +
-          '<tbody><tr><td colspan="3">Loading…</td></tr></tbody></table></div>';
+          (dim === 'client' ? 'Client' : dim === 'range' ? 'Range' : dim === 'agent' ? 'Agent' : 'Manager') + '</th><th>SMS</th>' + (showPayout ? '<th>Payout</th>' : '') + '</tr></thead>' +
+          '<tbody><tr><td colspan="' + cols + '">Loading…</td></tr></tbody></table></div>';
         group.append(card);
       }
       // Part 3.2: Date text and UK Top 5 caption removed per spec — ranking preserved
       var subEl = card.querySelector('.sub'); if(subEl) subEl.remove();
       API.get('/stats-summary/' + dim + '?' + new URLSearchParams({ from, to, sort: 'sms', dir: 'desc' })).then(result => {
         const rows = Array.isArray(result.rows) ? result.rows.slice(0, 5) : [];
-        card.querySelector('tbody').innerHTML = rows.map(r => '<tr><td>' + esc(r.key) + '</td><td>' + esc(count(r.sms)) + '</td><td title="' + esc(r.payment) + '">' + esc(money(r.payment)) + '</td></tr>').join('')
-          || '<tr><td colspan="3" class="ams-metric-empty">No SMS in this reporting period.</td></tr>';
-      }).catch(() => { card.querySelector('tbody').innerHTML = '<tr><td colspan="3" class="ams-metric-empty">Could not load this summary.</td></tr>'; });
+        card.querySelector('tbody').innerHTML = rows.map(r => '<tr><td>' + esc(r.key) + '</td><td>' + esc(count(r.sms)) + '</td>' + (showPayout ? '<td title="' + esc(r.payment) + '">' + esc(money(r.payment)) + '</td>' : '') + '</tr>').join('')
+          || '<tr><td colspan="' + cols + '" class="ams-metric-empty">No SMS in this reporting period.</td></tr>';
+      }).catch(() => { card.querySelector('tbody').innerHTML = '<tr><td colspan="' + cols + '" class="ams-metric-empty">Could not load this summary.</td></tr>'; });
     }
     if (role === 'admin') {
       const host = ensureGroup(root, '.ams-metric-batches');
@@ -398,7 +401,7 @@
     ], metaParts);
   }
 
-  function amsVolume(hostId, smsDaily, earnDaily, smsTotal, earnTotal, moneyLabel) {
+  function amsVolume(hostId, smsDaily, earnDaily, smsTotal, earnTotal, moneyLabel, hideMoney) {
     const moneyName = moneyLabel || 'Earnings';
     const host = document.getElementById(hostId); if (!host) return;
     const byDate = {};
@@ -406,7 +409,7 @@
     (Array.isArray(earnDaily) ? earnDaily : []).forEach(function (r) { if (r && /^\d{4}-\d{2}-\d{2}$/.test(String(r.date))) (byDate[r.date] = byDate[r.date] || { date: r.date, sms: 0, earn: 0 }).earn = Number(r.amount) || 0; });
     const rows = Object.values(byDate).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
     const title = 'Volume · last ' + (rows.length || 0) + ' days';
-    const head = '<div class="ams-panel-chart-card"><div class="ams-panel-chart-head"><h3>' + esc(title) + '</h3><p>Daily volume and ' + esc(moneyName.toLowerCase()) + ' for the period.</p></div>';
+    const head = '<div class="ams-panel-chart-card"><div class="ams-panel-chart-head"><h3>' + esc(title) + '</h3><p>' + (hideMoney ? 'Daily volume for the last ' + (rows.length || 0) + ' days' : 'Daily volume and ' + esc(moneyName.toLowerCase()) + ' for the last ' + (rows.length || 0) + ' days') + '</p></div>';
     const totSms = smsTotal == null || smsTotal === '' ? rows.reduce(function (a, r) { return a + r.sms; }, 0) : smsTotal;
     const totals = '<div class="ams-panel-chart-totals"><span><i class="ams-panel-swatch ams-panel-swatch-blue"></i><strong>' + esc(count(totSms)) + '</strong> <span class="ams-panel-muted">SMS received (bars x10)</span></span>' +
       '<span><i class="ams-panel-swatch ams-panel-swatch-pink"></i><strong>' + esc(amsMoney(earnTotal)) + '</strong> <span class="ams-panel-muted">' + esc(moneyName) + '</span></span></div>';
@@ -432,14 +435,14 @@
       const he = Math.max(0, r.earn / axisMax) * plotH;
       const day = String(r.date).slice(8).replace(/^0/, '');
       return '<rect x="' + (cx - barW - 2).toFixed(2) + '" y="' + (top + plotH - hs).toFixed(2) + '" width="' + barW.toFixed(2) + '" height="' + hs.toFixed(2) + '" rx="2" fill="#3256df"><title>' + esc(r.date + ' · ' + count(r.sms) + ' SMS') + '</title></rect>' +
-        '<rect x="' + (cx + 2).toFixed(2) + '" y="' + (top + plotH - he).toFixed(2) + '" width="' + barW.toFixed(2) + '" height="' + he.toFixed(2) + '" rx="2" fill="#d9534f"><title>' + esc(r.date + ' · ' + amsMoney(r.earn) + ' ' + moneyName.toLowerCase()) + '</title></rect>' +
+        (hideMoney ? '' : '<rect x="' + (cx + 2).toFixed(2) + '" y="' + (top + plotH - he).toFixed(2) + '" width="' + barW.toFixed(2) + '" height="' + he.toFixed(2) + '" rx="2" fill="var(--ams-panel-pink,#e879a6)"/>') +
         '<text x="' + cx.toFixed(2) + '" y="' + (h - 10) + '" text-anchor="middle" class="ams-panel-axis">' + esc(day) + '</text>';
     }).join('');
     host.innerHTML = head + totals +
-      '<svg class="ams-panel-chart-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Daily SMS volume and ' + esc(moneyName.toLowerCase()) + ' for the last ' + rows.length + ' UK reporting days. Daily values are listed below the chart.">' +
+      '<svg class="ams-panel-chart-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Daily SMS volume for the last ' + rows.length + ' UK reporting days. Daily values are listed below the chart.">' +
       grid + bars + '</svg>' +
-      '<details class="ams-panel-chart-values"><summary>View daily values</summary><table><thead><tr><th>Date (UK)</th><th>SMS</th><th>' + esc(moneyName) + '</th></tr></thead><tbody>' +
-      rows.map(function (r) { return '<tr><td>' + esc(r.date) + '</td><td>' + esc(count(r.sms)) + '</td><td>' + esc(amsMoney(r.earn)) + '</td></tr>'; }).join('') +
+      '<details class="ams-panel-chart-values"><summary>View daily values</summary><table><thead><tr><th>Date (UK)</th><th>SMS</th>' + (hideMoney ? '' : '<th>' + esc(moneyName) + '</th>') + '</tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr><td>' + esc(r.date) + '</td><td>' + esc(count(r.sms)) + (hideMoney ? '' : '</td><td>' + esc(amsMoney(r.earn)) + '</td>') + '</tr>'; }).join('') +
       '</tbody></table></details></div>';
   }
 
